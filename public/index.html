@@ -302,7 +302,6 @@ become"></textarea>
 
   <div id="recordPopover" class="popoverLayer hidden" aria-hidden="true" onclick="closePopover(event)">
     <div class="popoverCard" onclick="event.stopPropagation()">
-      <button class="popoverClose" type="button" aria-label="Close" onclick="closePopover()">×</button>
       <h2 class="popoverTitle">The Ledger</h2>
       <div id="ledgerStats"></div>
     </div>
@@ -310,7 +309,6 @@ become"></textarea>
 
   <div id="almanacPopover" class="popoverLayer hidden" aria-hidden="true" onclick="closePopover(event)">
     <div class="popoverCard" onclick="event.stopPropagation()">
-      <button class="popoverClose" type="button" aria-label="Close" onclick="closePopover()">×</button>
       <h2 class="popoverTitle">The Almanac</h2>
       <div id="almanacContent"></div>
     </div>
@@ -605,12 +603,36 @@ function beginRecognitionRound(){
 }
 function buildDefinitionOptions(id){
   const correct=state.words[id];
+
+  // Prefer definitions from the current library, but always build four choices.
   const pool=state.words
     .map((w,i)=>({w,i}))
-    .filter(o=>o.i!==id && o.w.definition!==correct.definition);
-  const distractors=shuffle(pool).slice(0,3).map(o=>({text:o.w.definition,isCorrect:false}));
-  const opts=shuffle([{text:correct.definition,isCorrect:true},...distractors]);
-  return opts;
+    .filter(o=>o.i!==id && o.w.definition && o.w.definition!==correct.definition)
+    .map(o=>o.w.definition);
+
+  const fallbackDefinitions=[
+    "A situation in which something is clearly understood or recognized.",
+    "To move or develop gradually toward a particular condition or result.",
+    "A person or thing that is especially useful or valuable for a purpose.",
+    "Marked by a strong desire to achieve a particular aim.",
+    "The act of making something easier to understand or use.",
+    "A quality of being calm, careful, and thoughtful in difficult circumstances.",
+    "To examine something closely in order to understand it better.",
+    "A change that causes something to become different from its previous state.",
+    "Able to continue for a long time without becoming weaker or less effective.",
+    "A particular way of thinking about or understanding something."
+  ];
+
+  const candidates=shuffle(uniq([
+    ...pool,
+    ...fallbackDefinitions.filter(d=>d!==correct.definition)
+  ]));
+
+  const distractors=candidates.slice(0,3).map(text=>({text,isCorrect:false}));
+  return shuffle([
+    {text:correct.definition,isCorrect:true},
+    ...distractors
+  ]);
 }
 function loadRecognitionQuestion(){
   const id=state.roundQueue[state.roundPos];
@@ -837,16 +859,17 @@ function dateKey(d){const y=d.getFullYear();const m=String(d.getMonth()+1).padSt
 function renderAlmanac(){
   const daily=state.stats.daily||{};
   const today=new Date();
-  const end=new Date(today.getFullYear(),today.getMonth(),today.getDate());
-  const start=new Date(end);
-  start.setDate(end.getDate()-364);
+  const start=new Date(today.getFullYear(),today.getMonth(),today.getDate());
+  const end=new Date(start);
+  end.setFullYear(end.getFullYear()+1);
 
+  // From today through the same calendar date next year, inclusive.
   const days=[];
-  for(let i=0;i<365;i++){
-    const d=new Date(start);
-    d.setDate(start.getDate()+i);
-    const key=dateKey(d);
+  const cursor=new Date(start);
+  while(cursor<=end){
+    const key=dateKey(cursor);
     days.push({key,count:Number(daily[key]||0)});
+    cursor.setDate(cursor.getDate()+1);
   }
 
   const max=Math.max(1,...days.map(x=>x.count));
@@ -860,7 +883,7 @@ function renderAlmanac(){
   }).join('');
 
   return `<div class="almanac">
-    <p class="almanacIntro">A year's record, counted from this day.</p>
+    <p class="almanacIntro">A year's record, beginning today.</p>
     <div class="heatmapWrap"><div class="heatmap">${cells}</div></div>
     <div class="heatLegend"><span>Less</span><span class="heatCell" data-level="0"></span><span class="heatCell" data-level="1"></span><span class="heatCell" data-level="2"></span><span class="heatCell" data-level="3"></span><span class="heatCell" data-level="4"></span><span class="heatCell" data-level="5"></span><span>More</span></div>
     <div class="heatDate">${dateKey(start)} — ${dateKey(end)}</div>
