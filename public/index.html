@@ -264,6 +264,7 @@ textarea{font-family:Georgia,"Times New Roman",serif;font-size:15px;line-height:
     <div class="sub">A private study of language</div>
   </div>
 
+  <div id="importArea">
   <section id="importPanel" class="panel">
     <h2 style="margin-top:0;font-size:17px">The Word Studio</h2>
     <p class="hint">Enter the words you wish to study.</p>
@@ -317,8 +318,18 @@ become"></textarea>
 
 <script>
 const KEY='englishWordLab_v2';
+const STATS_KEY='englishWordLab_stats_v1';
 const TTS_SUPPORTED = 'speechSynthesis' in window;
 let state=null;
+let globalStats={learnedWords:[],spelledWords:[],mistakes:0,daily:{}};
+
+function emptyPersistentStats(){
+  return {learnedWords:[],spelledWords:[],mistakes:0,daily:{}};
+}
+
+function normalizeWordKey(word){
+  return String(word||'').trim().toLowerCase();
+}
 
 function freshState(words){
   return {
@@ -333,13 +344,10 @@ function freshState(words){
       dictAttempts:0,
       dictCorrect:0,
 
-      learnedWords:[],
-      spelledWords:[],
-      mistakes:0,
-
-      daily:{
-        // "2026-09-01": 5
-      }
+      learnedWords:globalStats.learnedWords,
+      spelledWords:globalStats.spelledWords,
+      mistakes:globalStats.mistakes,
+      daily:globalStats.daily
     }
   };
 }
@@ -357,41 +365,106 @@ function todayKey(){
 
 function recordStudyActivity(amount=1){
   const key=todayKey();
-
-  if(!state.stats.daily) state.stats.daily={};
-
-  state.stats.daily[key]=(state.stats.daily[key]||0)+amount;
+  if(!globalStats.daily) globalStats.daily={};
+  globalStats.daily[key]=(globalStats.daily[key]||0)+amount;
+  if(state && state.stats) state.stats.daily=globalStats.daily;
 }
 
 function recordLearnedWord(id){
-  if(!state.stats.learnedWords){
-    state.stats.learnedWords=[];
-  }
-
-  if(!state.stats.learnedWords.includes(id)){
-    state.stats.learnedWords.push(id);
+  const wordKey=normalizeWordKey(state?.words?.[id]?.word);
+  if(!wordKey) return;
+  if(!Array.isArray(globalStats.learnedWords)) globalStats.learnedWords=[];
+  if(!globalStats.learnedWords.includes(wordKey)){
+    globalStats.learnedWords.push(wordKey);
+    if(state && state.stats) state.stats.learnedWords=globalStats.learnedWords;
     recordStudyActivity(1);
   }
 }
 
 function recordSpelledWord(id){
-  if(!state.stats.spelledWords){
-    state.stats.spelledWords=[];
-  }
-
-  if(!state.stats.spelledWords.includes(id)){
-    state.stats.spelledWords.push(id);
+  const wordKey=normalizeWordKey(state?.words?.[id]?.word);
+  if(!wordKey) return;
+  if(!Array.isArray(globalStats.spelledWords)) globalStats.spelledWords=[];
+  if(!globalStats.spelledWords.includes(wordKey)){
+    globalStats.spelledWords.push(wordKey);
+    if(state && state.stats) state.stats.spelledWords=globalStats.spelledWords;
   }
 }
 
 function recordMistake(){
-  state.stats.mistakes=(state.stats.mistakes||0)+1;
+  globalStats.mistakes=(globalStats.mistakes||0)+1;
+  if(state && state.stats) state.stats.mistakes=globalStats.mistakes;
   recordStudyActivity(1);
 }
-function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}}
+
+function save(){
+  try{
+    if(state) localStorage.setItem(KEY,JSON.stringify(state));
+    localStorage.setItem(STATS_KEY,JSON.stringify(globalStats));
+  }catch(e){}
+}
+
+function loadPersistentStats(legacyState){
+  let parsed=null;
+  try{parsed=JSON.parse(localStorage.getItem(STATS_KEY)||'null');}catch(e){}
+
+  if(parsed && typeof parsed==='object'){
+    globalStats={
+      learnedWords:Array.isArray(parsed.learnedWords)?parsed.learnedWords.map(normalizeWordKey).filter(Boolean):[],
+      spelledWords:Array.isArray(parsed.spelledWords)?parsed.spelledWords.map(normalizeWordKey).filter(Boolean):[],
+      mistakes:typeof parsed.mistakes==='number'?parsed.mistakes:0,
+      daily:parsed.daily&&typeof parsed.daily==='object'?parsed.daily:{}
+    };
+    return;
+  }
+
+  // Migrate the statistics from the previous version, where learned/spelled
+  // words were stored as numeric IDs belonging to only one library.
+  const legacy=legacyState?.stats;
+  if(legacy){
+    const words=Array.isArray(legacyState.words)?legacyState.words:[];
+    const convert=value=>{
+      if(typeof value==='number' && words[value]) return normalizeWordKey(words[value].word);
+      return normalizeWordKey(value);
+    };
+    globalStats={
+      learnedWords:Array.isArray(legacy.learnedWords)?legacy.learnedWords.map(convert).filter(Boolean):[],
+      spelledWords:Array.isArray(legacy.spelledWords)?legacy.spelledWords.map(convert).filter(Boolean):[],
+      mistakes:typeof legacy.mistakes==='number'?legacy.mistakes:0,
+      daily:legacy.daily&&typeof legacy.daily==='object'?legacy.daily:{}
+    };
+  }else{
+    globalStats=emptyPersistentStats();
+  }
+  try{localStorage.setItem(STATS_KEY,JSON.stringify(globalStats));}catch(e){}
+}
+
 function loadState(){
-  try{const x=JSON.parse(localStorage.getItem(KEY)); if(x&&Array.isArray(x.words)&&x.words.length){state=x;if(!state.stats)state.stats={};if(!Array.isArray(state.stats.learnedWords))state.stats.learnedWords=[];if(!Array.isArray(state.stats.spelledWords))state.stats.spelledWords=[];if(typeof state.stats.mistakes!=='number')state.stats.mistakes=0;if(!state.stats.daily||typeof state.stats.daily!=='object')state.stats.daily={};}}catch(e){}
-  if(state){document.getElementById('appArea').classList.remove('hidden'); document.getElementById('importPanel').classList.add('hidden'); render();}
+  let x=null;
+  try{x=JSON.parse(localStorage.getItem(KEY)||'null');}catch(e){}
+
+  loadPersistentStats(x);
+
+  if(x&&Array.isArray(x.words)&&x.words.length){
+    state=x;
+    if(!state.stats) state.stats={};
+    if(typeof state.stats.recAttempts!=='number') state.stats.recAttempts=0;
+    if(typeof state.stats.recCorrect!=='number') state.stats.recCorrect=0;
+    if(typeof state.stats.dictAttempts!=='number') state.stats.dictAttempts=0;
+    if(typeof state.stats.dictCorrect!=='number') state.stats.dictCorrect=0;
+    state.stats.learnedWords=globalStats.learnedWords;
+    state.stats.spelledWords=globalStats.spelledWords;
+    state.stats.mistakes=globalStats.mistakes;
+    state.stats.daily=globalStats.daily;
+
+    document.getElementById('appArea').classList.remove('hidden');
+    document.getElementById('importArea').classList.add('hidden');
+    render();
+  }else{
+    state=null;
+    document.getElementById('appArea').classList.add('hidden');
+    document.getElementById('importArea').classList.remove('hidden');
+  }
 }
 
 /* ---------- CSV ---------- */
@@ -437,7 +510,7 @@ function loadCSV(){
   if(!words.length){alert('No valid words found. Please check your CSV format.');return;}
   state=freshState(words);
   document.getElementById('appArea').classList.remove('hidden');
-  document.getElementById('importPanel').classList.add('hidden');
+  document.getElementById('importArea').classList.add('hidden');
   beginRecognitionRound();
   loadRecognitionQuestion();
   save(); render();
@@ -514,7 +587,7 @@ async function generateWithAI(){
 
     state=freshState(normalized);
     document.getElementById('appArea').classList.remove('hidden');
-    document.getElementById('importPanel').classList.add('hidden');
+    document.getElementById('importArea').classList.add('hidden');
     beginRecognitionRound();
     loadRecognitionQuestion();
     save();
@@ -527,8 +600,37 @@ async function generateWithAI(){
     button.disabled=false;
   }
 }
-function clearLibrary(){if(confirm('Clear the library and all progress?')){localStorage.removeItem(KEY);location.reload();}}
-function toggleImport(){document.getElementById('importPanel').classList.toggle('hidden');}
+function importNewLibrary(){
+  // End the current library without touching the long-term Ledger or Almanac.
+  save();
+  localStorage.removeItem(KEY);
+  state=null;
+
+  document.querySelectorAll('.popoverLayer').forEach(el=>{
+    el.classList.add('hidden');
+    el.setAttribute('aria-hidden','true');
+  });
+  document.body.style.overflow='';
+
+  document.getElementById('appArea').classList.add('hidden');
+  document.getElementById('importArea').classList.remove('hidden');
+  document.getElementById('aiWordsInput').value='';
+  document.getElementById('csvInput').value='';
+  document.getElementById('aiStatus').textContent='';
+  document.getElementById('generateAIButton').disabled=false;
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function clearLibrary(){
+  if(confirm('Clear the library and all progress?')){
+    localStorage.removeItem(KEY);
+    localStorage.removeItem(STATS_KEY);
+    globalStats=emptyPersistentStats();
+    state=null;
+    location.reload();
+  }
+}
+function toggleImport(){document.getElementById('importArea').classList.toggle('hidden');}
 function downloadTemplate(){
   const text='word,definition,example1,example2,example3,synonyms,antonyms,root_analysis,cognates\n'+
     'meticulous,very careful about small details,She is meticulous about her work.,His meticulous notes revealed every small error.,A meticulous eye can turn routine work into craft.,careful;thorough;precise,careless;sloppy,"From Latin meticulosus, meaning fearful or overly cautious, from metus meaning fear; developed into the sense of being extremely careful",meticulousness;meticulously\n';
@@ -841,7 +943,7 @@ function renderComplete(){
     </div>
     <div class="centerRow">
       <button onclick="restartSameLibrary()">Study Again</button>
-      <button class="secondary" onclick="clearLibrary()">Import New Library</button>
+      <button class="secondary" onclick="importNewLibrary()">Import New Library</button>
     </div>
   </section>`;
 }
@@ -854,10 +956,10 @@ function restartSameLibrary(){
 }
 
 /* ---------- private statistics & dispatcher ---------- */
-function renderLedger(){const learned=new Set(state.stats.learnedWords||[]).size;const spelled=new Set(state.stats.spelledWords||[]).size;const mistakes=state.stats.mistakes||0;return `<div class="popoverStats"><div class="popoverStat"><div class="value">${learned}</div><div class="name">Words Learned</div></div><div class="popoverStat"><div class="value">${spelled}</div><div class="name">Words Spelled</div></div><div class="popoverStat"><div class="value">${mistakes}</div><div class="name">Mistakes</div></div></div>`;}
+function renderLedger(){const learned=new Set(globalStats.learnedWords||[]).size;const spelled=new Set(globalStats.spelledWords||[]).size;const mistakes=globalStats.mistakes||0;return `<div class="popoverStats"><div class="popoverStat"><div class="value">${learned}</div><div class="name">Words Learned</div></div><div class="popoverStat"><div class="value">${spelled}</div><div class="name">Words Spelled</div></div><div class="popoverStat"><div class="value">${mistakes}</div><div class="name">Mistakes</div></div></div>`;}
 function dateKey(d){const y=d.getFullYear();const m=String(d.getMonth()+1).padStart(2,'0');const day=String(d.getDate()).padStart(2,'0');return `${y}-${m}-${day}`;}
 function renderAlmanac(){
-  const daily=state.stats.daily||{};
+  const daily=globalStats.daily||{};
   const today=new Date();
   const start=new Date(today.getFullYear(),today.getMonth(),today.getDate());
   const end=new Date(start);
