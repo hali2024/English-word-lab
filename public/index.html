@@ -90,7 +90,19 @@ textarea{width:100%;min-height:170px;border:1px solid var(--border);border-radiu
   </div>
 
   <section id="importPanel" class="panel">
-    <h2 style="margin-top:0;font-size:17px">Import Word Library</h2>
+    <h2 style="margin-top:0;font-size:17px">✨ Generate with DeepSeek</h2>
+    <p class="hint">输入你想学习的英文单词。每行一个，也可以用逗号分隔。</p>
+    <textarea id="aiWordsInput" style="min-height:130px;font-family:inherit" placeholder="meticulous
+ambiguous
+reluctant"></textarea>
+    <div class="row">
+      <button id="generateAIButton" onclick="generateWithAI()">✨ Generate Word Library</button>
+    </div>
+    <p id="aiStatus" class="hint" style="margin-bottom:0"></p>
+  </section>
+
+  <section class="panel">
+    <h2 style="margin-top:0;font-size:17px">Import Word Library (CSV)</h2>
     <p class="hint">Paste your CSV here</p>
     <textarea id="csvInput" placeholder="word,definition,example,synonyms,antonyms,root_analysis,cognates
 "></textarea>
@@ -99,7 +111,7 @@ textarea{width:100%;min-height:170px;border:1px solid var(--border);border-radiu
       <button class="secondary" onclick="downloadTemplate()">Download CSV Template</button>
       <button class="ghost" onclick="clearLibrary()">Clear Library & Progress</button>
     </div>
-    <p class="hint" style="margin-bottom:0">Tip: ask an AI to generate a CSV in this format for any word list, then paste it here. Your library and progress are stored only in this browser.</p>
+    <p class="hint" style="margin-bottom:0">Tip: CSV import is still available. Your library and progress are stored only in this browser.</p>
   </section>
 
   <div id="appArea" class="hidden">
@@ -107,7 +119,7 @@ textarea{width:100%;min-height:170px;border:1px solid var(--border);border-radiu
     <div id="stage"></div>
   </div>
 
-  <div class="footer">数据与进度保存在浏览器本地存储中，无需联网。单词发音使用系统内置语音（Web Speech API），部分浏览器可能不支持。</div>
+  <div class="footer">词库与学习进度保存在浏览器本地存储中。使用「✨ Generate with DeepSeek」时需要联网；DeepSeek API Key 保存在服务器端，不会暴露给浏览器。</div>
 </div>
 
 <script>
@@ -176,6 +188,85 @@ function loadCSV(){
   beginRecognitionRound();
   loadRecognitionQuestion();
   save(); render();
+}
+
+async function generateWithAI(){
+  const input=document.getElementById('aiWordsInput');
+  const button=document.getElementById('generateAIButton');
+  const status=document.getElementById('aiStatus');
+
+  const words=[...new Set(
+    input.value
+      .split(/[\\n,，;；]+/)
+      .map(x=>x.trim())
+      .filter(Boolean)
+  )];
+
+  if(!words.length){
+    status.textContent='Please enter at least one English word.';
+    return;
+  }
+
+  if(words.length>50){
+    status.textContent='Please enter no more than 50 words at a time.';
+    return;
+  }
+
+  button.disabled=true;
+  status.textContent=`Generating ${words.length} word${words.length===1?'':'s'} with DeepSeek…`;
+
+  try{
+    const response=await fetch('/api/generate',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({words})
+    });
+
+    let data={};
+    try{
+      data=await response.json();
+    }catch(e){
+      throw new Error('Server returned an invalid response.');
+    }
+
+    if(!response.ok){
+      throw new Error(data.error || `Request failed (${response.status})`);
+    }
+
+    if(!data.words || !Array.isArray(data.words) || !data.words.length){
+      throw new Error('DeepSeek returned no valid vocabulary.');
+    }
+
+    const normalized=data.words
+      .map(w=>({
+        word:String(w.word||'').trim(),
+        definition:String(w.definition||'').trim(),
+        example:String(w.example||'').trim(),
+        synonyms:Array.isArray(w.synonyms)?w.synonyms.map(String).map(x=>x.trim()).filter(Boolean):[],
+        antonyms:Array.isArray(w.antonyms)?w.antonyms.map(String).map(x=>x.trim()).filter(Boolean):[],
+        root:String(w.root||'').trim(),
+        cognates:Array.isArray(w.cognates)?w.cognates.map(String).map(x=>x.trim()).filter(Boolean):[]
+      }))
+      .filter(w=>w.word && w.definition);
+
+    if(!normalized.length){
+      throw new Error('DeepSeek returned words without usable definitions.');
+    }
+
+    state=freshState(normalized);
+    document.getElementById('appArea').classList.remove('hidden');
+    document.getElementById('importPanel').classList.add('hidden');
+    beginRecognitionRound();
+    loadRecognitionQuestion();
+    save();
+    render();
+
+  }catch(error){
+    console.error('AI generation failed:',error);
+    status.textContent=`❌ ${error.message}`;
+  }finally{
+    button.disabled=false;
+  }
 }
 function clearLibrary(){if(confirm('Clear the library and all progress?')){localStorage.removeItem(KEY);location.reload();}}
 function toggleImport(){document.getElementById('importPanel').classList.toggle('hidden');}
