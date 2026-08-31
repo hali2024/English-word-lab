@@ -289,15 +289,17 @@ become"></textarea>
     </div>
   </section>
 
-  <div id="appArea" class="hidden">
-  <div class="stats" id="statsRow"></div>
-  <div id="stage"></div>
+  </div> <!-- /importArea -->
 
-  <div class="utilityBar">
-    <button class="utilityButton" type="button" onclick="openPopover('recordPopover')">The Ledger</button>
-    <button class="utilityButton" type="button" onclick="openPopover('almanacPopover')">The Almanac</button>
+  <div id="appArea" class="hidden">
+    <div class="stats" id="statsRow"></div>
+    <div id="stage"></div>
+
+    <div class="utilityBar">
+      <button class="utilityButton" type="button" onclick="openPopover('recordPopover')">The Ledger</button>
+      <button class="utilityButton" type="button" onclick="openPopover('almanacPopover')">The Almanac</button>
+    </div>
   </div>
-</div>
 
   <div class="footer">The Lexicon · Developed by H.H</div>
 
@@ -321,10 +323,10 @@ const KEY='englishWordLab_v2';
 const STATS_KEY='englishWordLab_stats_v1';
 const TTS_SUPPORTED = 'speechSynthesis' in window;
 let state=null;
-let globalStats={learnedWords:[],spelledWords:[],mistakes:0,daily:{}};
+let globalStats={learnedWords:[],spelledWords:[],mistakes:0,daily:{},dailyWords:{}};
 
 function emptyPersistentStats(){
-  return {learnedWords:[],spelledWords:[],mistakes:0,daily:{}};
+  return {learnedWords:[],spelledWords:[],mistakes:0,daily:{},dailyWords:{}};
 }
 
 function normalizeWordKey(word){
@@ -377,10 +379,18 @@ function recordLearnedWord(id){
   if(!globalStats.learnedWords.includes(wordKey)){
     globalStats.learnedWords.push(wordKey);
     if(state && state.stats) state.stats.learnedWords=globalStats.learnedWords;
-    recordStudyActivity(1);
+  }
+
+  // Almanac counts distinct words studied on each day, not mistakes.
+  const day=todayKey();
+  if(!globalStats.dailyWords || typeof globalStats.dailyWords!=='object') globalStats.dailyWords={};
+  if(!Array.isArray(globalStats.dailyWords[day])) globalStats.dailyWords[day]=[];
+  if(!globalStats.dailyWords[day].includes(wordKey)){
+    globalStats.dailyWords[day].push(wordKey);
+    globalStats.daily[day]=globalStats.dailyWords[day].length;
+    if(state && state.stats) state.stats.daily=globalStats.daily;
   }
 }
-
 function recordSpelledWord(id){
   const wordKey=normalizeWordKey(state?.words?.[id]?.word);
   if(!wordKey) return;
@@ -394,7 +404,6 @@ function recordSpelledWord(id){
 function recordMistake(){
   globalStats.mistakes=(globalStats.mistakes||0)+1;
   if(state && state.stats) state.stats.mistakes=globalStats.mistakes;
-  recordStudyActivity(1);
 }
 
 function save(){
@@ -413,7 +422,8 @@ function loadPersistentStats(legacyState){
       learnedWords:Array.isArray(parsed.learnedWords)?parsed.learnedWords.map(normalizeWordKey).filter(Boolean):[],
       spelledWords:Array.isArray(parsed.spelledWords)?parsed.spelledWords.map(normalizeWordKey).filter(Boolean):[],
       mistakes:typeof parsed.mistakes==='number'?parsed.mistakes:0,
-      daily:parsed.daily&&typeof parsed.daily==='object'?parsed.daily:{}
+      daily:parsed.daily&&typeof parsed.daily==='object'?parsed.daily:{},
+      dailyWords:parsed.dailyWords&&typeof parsed.dailyWords==='object'?parsed.dailyWords:{}
     };
     return;
   }
@@ -431,7 +441,8 @@ function loadPersistentStats(legacyState){
       learnedWords:Array.isArray(legacy.learnedWords)?legacy.learnedWords.map(convert).filter(Boolean):[],
       spelledWords:Array.isArray(legacy.spelledWords)?legacy.spelledWords.map(convert).filter(Boolean):[],
       mistakes:typeof legacy.mistakes==='number'?legacy.mistakes:0,
-      daily:legacy.daily&&typeof legacy.daily==='object'?legacy.daily:{}
+      daily:legacy.daily&&typeof legacy.daily==='object'?legacy.daily:{},
+      dailyWords:{}
     };
   }else{
     globalStats=emptyPersistentStats();
@@ -960,6 +971,7 @@ function renderLedger(){const learned=new Set(globalStats.learnedWords||[]).size
 function dateKey(d){const y=d.getFullYear();const m=String(d.getMonth()+1).padStart(2,'0');const day=String(d.getDate()).padStart(2,'0');return `${y}-${m}-${day}`;}
 function renderAlmanac(){
   const daily=globalStats.daily||{};
+  const dailyWords=globalStats.dailyWords&&typeof globalStats.dailyWords==='object'?globalStats.dailyWords:{};
   const today=new Date();
   const start=new Date(today.getFullYear(),today.getMonth(),today.getDate());
   const end=new Date(start);
@@ -970,24 +982,21 @@ function renderAlmanac(){
   const cursor=new Date(start);
   while(cursor<=end){
     const key=dateKey(cursor);
-    days.push({key,count:Number(daily[key]||0)});
+    const derivedCount=Array.isArray(dailyWords[key]) ? dailyWords[key].length : Number(daily[key]||0);
+    days.push({key,count:derivedCount});
     cursor.setDate(cursor.getDate()+1);
   }
 
-  const max=Math.max(1,...days.map(x=>x.count));
+  // Fixed, meaningful study-count bands: 0, 1–10, 11–20, 21–30, 31–40, 41+.
   const cells=days.map(c=>{
-    let level=0;
-    if(c.count){
-      const r=c.count/max;
-      level=r<=.2?1:r<=.4?2:r<=.6?3:r<=.8?4:5;
-    }
-    return `<div class="heatCell" data-level="${level}" title="${c.key} · ${c.count} study activities"></div>`;
+    const level=c.count===0 ? 0 : c.count<=10 ? 1 : c.count<=20 ? 2 : c.count<=30 ? 3 : c.count<=40 ? 4 : 5;
+    return `<div class="heatCell" data-level="${level}" title="${c.key} · ${c.count} words studied"></div>`;
   }).join('');
 
   return `<div class="almanac">
     <p class="almanacIntro">A year's record, beginning today.</p>
     <div class="heatmapWrap"><div class="heatmap">${cells}</div></div>
-    <div class="heatLegend"><span>Less</span><span class="heatCell" data-level="0"></span><span class="heatCell" data-level="1"></span><span class="heatCell" data-level="2"></span><span class="heatCell" data-level="3"></span><span class="heatCell" data-level="4"></span><span class="heatCell" data-level="5"></span><span>More</span></div>
+    <div class="heatLegend"><span>0</span><span class="heatCell" data-level="0" title="0"></span><span class="heatCell" data-level="1" title="1–10"></span><span class="heatCell" data-level="2" title="11–20"></span><span class="heatCell" data-level="3" title="21–30"></span><span class="heatCell" data-level="4" title="31–40"></span><span class="heatCell" data-level="5" title="41+"></span><span>41+</span></div>
     <div class="heatDate">${dateKey(start)} — ${dateKey(end)}</div>
   </div>`;
 }
