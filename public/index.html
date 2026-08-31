@@ -178,90 +178,8 @@ textarea::placeholder{color:#a79f91}
 .interstitial h2{font-family:Georgia,"Times New Roman",serif;margin:6px 0 10px;font-size:34px;font-weight:400}
 .interstitial p{color:var(--muted);font-size:13px;line-height:1.7;margin:0 0 14px}
 .footer{font-family:Georgia,"Times New Roman",serif;font-size:9px;color:var(--muted);text-align:center;margin-top:30px;line-height:1.7;letter-spacing:.04em}
-/* ---------- learning almanac ---------- */
-
-.almanac{
-  margin-top:28px;
-  padding:26px 0 6px;
-  border-top:1px solid var(--line);
-}
-
-.almanacTitle{
-  font-family:Georgia,"Times New Roman",serif;
-  font-size:10px;
-  letter-spacing:.18em;
-  text-transform:uppercase;
-  color:#9a7b4e;
-  margin-bottom:14px;
-}
-
-.heatmap{
-  display:grid;
-  grid-template-columns:repeat(14,1fr);
-  gap:5px;
-}
-
-.heatCell{
-  aspect-ratio:1;
-  min-width:0;
-  border:1px solid rgba(74,55,39,.16);
-  background:rgba(255,252,245,.55);
-  position:relative;
-}
-
-.heatCell[data-level="1"]{
-  background:#e8ddd0;
-}
-
-.heatCell[data-level="2"]{
-  background:#d7c5b5;
-}
-
-.heatCell[data-level="3"]{
-  background:#bca392;
-}
-
-.heatCell[data-level="4"]{
-  background:#8e6d61;
-}
-
-.heatCell[data-level="5"]{
-  background:#71343b;
-}
-
-.heatLegend{
-  display:flex;
-  justify-content:flex-end;
-  align-items:center;
-  gap:5px;
-  margin-top:10px;
-  font-size:10px;
-  color:var(--muted);
-}
-
-.heatLegend .heatCell{
-  width:11px;
-  height:11px;
-  min-width:11px;
-  aspect-ratio:auto;
-}
-
-@media(max-width:700px){
-  .heatmap{
-    grid-template-columns:repeat(14,1fr);
-    gap:3px;
-  }
-}
-@media(max-width:700px){
-  .app{width:min(100% - 24px,1080px);padding:25px 0 52px}
-  .top{grid-template-columns:1fr;gap:18px;align-items:start}
-  .top .row{margin-top:0}
-  .panel,.quiz,.detail,.interstitial{padding:22px}
-  .stats{grid-template-columns:1fr}
-  .stat{border-right:0;border-bottom:1px solid var(--line);padding:13px 15px}
-  .stat:last-child{border-bottom:0}
-  .word{font-size:48px}
-}
+/* ---------- private statistics & learning almanac ---------- */
+.utilityBar{display:flex;justify-content:center;gap:8px;margin:4px 0 22px}.utilityButton{border:1px solid rgba(113,52,59,.28);background:rgba(251,247,237,.5);color:var(--accent);padding:8px 13px;border-radius:2px;font-size:11px;letter-spacing:.08em;font-weight:400}.utilityButton:hover{background:rgba(113,52,59,.07);color:var(--accent);border-color:rgba(113,52,59,.5);transform:none}.popoverLayer{position:fixed;inset:0;z-index:100;display:flex;align-items:flex-start;justify-content:center;padding:90px 18px 30px;background:rgba(43,39,35,.12);backdrop-filter:blur(2px)}.popoverCard{position:relative;width:min(760px,100%);max-height:min(78vh,700px);overflow:auto;padding:30px;background:linear-gradient(rgba(255,255,255,.22),rgba(255,255,255,.06)),#f3ecdd;border:1px solid rgba(74,55,39,.25);box-shadow:0 28px 80px rgba(52,38,24,.22);border-radius:2px}.popoverCard:before{content:"";position:absolute;inset:8px;border:1px solid rgba(170,138,91,.20);pointer-events:none}.popoverClose{position:absolute;top:17px;right:19px;width:28px;height:28px;padding:0;border:0;background:transparent;color:var(--muted);font-size:18px;font-weight:400}.popoverClose:hover{background:transparent;color:var(--accent);transform:none}.popoverTitle{position:relative;font-family:Georgia,"Times New Roman",serif;color:#54262c;font-size:24px;font-weight:400;margin:0 0 20px}.popoverStats{position:relative;display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line)}.popoverStat{background:rgba(255,252,245,.55);padding:20px 16px;text-align:center}.popoverStat .value{font-family:Georgia,"Times New Roman",serif;color:var(--accent);font-size:38px;font-weight:400;line-height:1}.popoverStat .name{margin-top:8px;font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted)}.almanac{position:relative}.almanacIntro{color:var(--muted);font-size:12px;font-style:italic;margin:-8px 0 20px}.heatmapWrap{overflow-x:auto;padding-bottom:4px}.heatmap{display:grid;grid-template-columns:repeat(53,11px);grid-template-rows:repeat(7,11px);grid-auto-flow:column;gap:3px;width:max-content;min-width:100%}.heatCell{width:11px;height:11px;border:1px solid rgba(74,55,39,.16);background:rgba(255,252,245,.55)}.heatCell[data-level="1"]{background:#e8ddd0}.heatCell[data-level="2"]{background:#d7c5b5}.heatCell[data-level="3"]{background:#bca392}.heatCell[data-level="4"]{background:#8e6d61}.heatCell[data-level="5"]{background:#71343b}.heatLegend{display:flex;justify-content:flex-end;align-items:center;gap:5px;margin-top:12px;font-size:10px;color:var(--muted)}.heatLegend .heatCell{width:10px;height:10px}.heatDate{margin-top:14px;font-size:11px;color:var(--muted);text-align:right}@media(max-width:700px){.utilityBar{margin-bottom:18px}.popoverLayer{padding:70px 12px 20px}.popoverCard{padding:24px 18px}.popoverStats{grid-template-columns:1fr}.popoverStat{padding:15px}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
 
 /* --- classical edition --- */
@@ -330,6 +248,13 @@ textarea{font-family:Georgia,"Times New Roman",serif;font-size:15px;line-height:
 .footer{font-family:Georgia,"Times New Roman",serif;font-size:10px;letter-spacing:.12em;color:var(--muted);text-align:center;margin-top:28px}
 @media(max-width:700px){.app{width:min(100% - 24px,900px);padding:28px 0 52px}.panel,.quiz,.detail,.interstitial{padding:23px 18px}.word{font-size:48px}.stats{grid-template-columns:1fr}.stat{border-right:0;border-bottom:1px solid var(--line)}.stat:last-child{border-bottom:0}.results{grid-template-columns:1fr}}
 
+
+/* Final popover safeguards */
+.popoverLayer.hidden { display: none !important; }
+.popoverLayer { width: 100%; }
+#recordPopover .popoverCard { width: min(560px, calc(100vw - 32px)); }
+#almanacPopover .popoverCard { width: min(820px, calc(100vw - 32px)); }
+.popoverCard { max-width: calc(100vw - 32px); }
 </style>
 </head>
 <body>
@@ -366,10 +291,30 @@ become"></textarea>
   <div id="appArea" class="hidden">
   <div class="stats" id="statsRow"></div>
   <div id="stage"></div>
-  <div id="almanacArea"></div>
+
+  <div class="utilityBar">
+    <button class="utilityButton" type="button" onclick="openPopover('recordPopover')">The Ledger</button>
+    <button class="utilityButton" type="button" onclick="openPopover('almanacPopover')">The Almanac</button>
+  </div>
 </div>
 
   <div class="footer">The Lexicon · Developed by H.H</div>
+
+  <div id="recordPopover" class="popoverLayer hidden" aria-hidden="true" onclick="closePopover(event)">
+    <div class="popoverCard" onclick="event.stopPropagation()">
+      <button class="popoverClose" type="button" aria-label="Close" onclick="closePopover()">×</button>
+      <h2 class="popoverTitle">The Ledger</h2>
+      <div id="ledgerStats"></div>
+    </div>
+  </div>
+
+  <div id="almanacPopover" class="popoverLayer hidden" aria-hidden="true" onclick="closePopover(event)">
+    <div class="popoverCard" onclick="event.stopPropagation()">
+      <button class="popoverClose" type="button" aria-label="Close" onclick="closePopover()">×</button>
+      <h2 class="popoverTitle">The Almanac</h2>
+      <div id="almanacContent"></div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -447,7 +392,7 @@ function recordMistake(){
 }
 function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}}
 function loadState(){
-  try{const x=JSON.parse(localStorage.getItem(KEY)); if(x&&Array.isArray(x.words)&&x.words.length) state=x;}catch(e){}
+  try{const x=JSON.parse(localStorage.getItem(KEY)); if(x&&Array.isArray(x.words)&&x.words.length){state=x;if(!state.stats)state.stats={};if(!Array.isArray(state.stats.learnedWords))state.stats.learnedWords=[];if(!Array.isArray(state.stats.spelledWords))state.stats.spelledWords=[];if(typeof state.stats.mistakes!=='number')state.stats.mistakes=0;if(!state.stats.daily||typeof state.stats.daily!=='object')state.stats.daily={};}}catch(e){}
   if(state){document.getElementById('appArea').classList.remove('hidden'); document.getElementById('importPanel').classList.add('hidden'); render();}
 }
 
@@ -886,113 +831,79 @@ function restartSameLibrary(){
   save(); render();
 }
 
-/* ---------- stats + dispatcher ---------- */
+/* ---------- private statistics & dispatcher ---------- */
+function renderLedger(){const learned=new Set(state.stats.learnedWords||[]).size;const spelled=new Set(state.stats.spelledWords||[]).size;const mistakes=state.stats.mistakes||0;return `<div class="popoverStats"><div class="popoverStat"><div class="value">${learned}</div><div class="name">Words Learned</div></div><div class="popoverStat"><div class="value">${spelled}</div><div class="name">Words Spelled</div></div><div class="popoverStat"><div class="value">${mistakes}</div><div class="name">Mistakes</div></div></div>`;}
+function dateKey(d){const y=d.getFullYear();const m=String(d.getMonth()+1).padStart(2,'0');const day=String(d.getDate()).padStart(2,'0');return `${y}-${m}-${day}`;}
 function renderAlmanac(){
   const daily=state.stats.daily||{};
-
-  const cells=[];
   const today=new Date();
+  const end=new Date(today.getFullYear(),today.getMonth(),today.getDate());
+  const start=new Date(end);
+  start.setDate(end.getDate()-364);
 
-  // Show the last 84 days
-  for(let i=83;i>=0;i--){
-    const d=new Date(today);
-    d.setDate(today.getDate()-i);
-
-    const y=d.getFullYear();
-    const m=String(d.getMonth()+1).padStart(2,'0');
-    const day=String(d.getDate()).padStart(2,'0');
-
-    const key=`${y}-${m}-${day}`;
-    const count=daily[key]||0;
-
-    cells.push({key,count});
+  const days=[];
+  for(let i=0;i<365;i++){
+    const d=new Date(start);
+    d.setDate(start.getDate()+i);
+    const key=dateKey(d);
+    days.push({key,count:Number(daily[key]||0)});
   }
 
-  const max=Math.max(
-    1,
-    ...cells.map(x=>x.count)
-  );
+  const max=Math.max(1,...days.map(x=>x.count));
+  const cells=days.map(c=>{
+    let level=0;
+    if(c.count){
+      const r=c.count/max;
+      level=r<=.2?1:r<=.4?2:r<=.6?3:r<=.8?4:5;
+    }
+    return `<div class="heatCell" data-level="${level}" title="${c.key} · ${c.count} study activities"></div>`;
+  }).join('');
 
-  return `
-    <div class="almanac">
-      <div class="almanacTitle">Learning Almanac</div>
-
-      <div class="heatmap">
-        ${cells.map(cell=>{
-          let level=0;
-
-          if(cell.count>0){
-            const ratio=cell.count/max;
-
-            if(ratio<=.2) level=1;
-            else if(ratio<=.4) level=2;
-            else if(ratio<=.6) level=3;
-            else if(ratio<=.8) level=4;
-            else level=5;
-          }
-
-          return `
-            <div
-              class="heatCell"
-              data-level="${level}"
-              title="${cell.key} · ${cell.count} study activities">
-            </div>
-          `;
-        }).join('')}
-      </div>
-
-      <div class="heatLegend">
-        <span>Less</span>
-        <span class="heatCell" data-level="0"></span>
-        <span class="heatCell" data-level="1"></span>
-        <span class="heatCell" data-level="2"></span>
-        <span class="heatCell" data-level="3"></span>
-        <span class="heatCell" data-level="4"></span>
-        <span class="heatCell" data-level="5"></span>
-        <span>More</span>
-      </div>
-    </div>
-  `;
+  return `<div class="almanac">
+    <p class="almanacIntro">A year's record, counted from this day.</p>
+    <div class="heatmapWrap"><div class="heatmap">${cells}</div></div>
+    <div class="heatLegend"><span>Less</span><span class="heatCell" data-level="0"></span><span class="heatCell" data-level="1"></span><span class="heatCell" data-level="2"></span><span class="heatCell" data-level="3"></span><span class="heatCell" data-level="4"></span><span class="heatCell" data-level="5"></span><span>More</span></div>
+    <div class="heatDate">${dateKey(start)} — ${dateKey(end)}</div>
+  </div>`;
 }
-function renderStats(){
-  let total=state.words.length, v2=0, l2='Mastered', v3='0%', l3='Accuracy';
-  if(state.phase==='recognition'){
-    v2=state.masteredIds.length;
-    v3=state.stats.recAttempts?Math.round(state.stats.recCorrect/state.stats.recAttempts*100)+'%':'0%';
-  } else if(state.phase==='dictation'){
-    l2='Completed';
-    v2=total-uniq(state.dictQueue).length;
-    v3=state.stats.dictAttempts?Math.round(state.stats.dictCorrect/state.stats.dictAttempts*100)+'%':'0%';
-  } else {
-    v2=total; v3='100%';
-  }
-  return `
-  <div class="stat"><div class="num">${total}</div><div class="label">Total Words</div></div>
-  <div class="stat"><div class="num">${v2}</div><div class="label">${l2}</div></div>
-  <div class="stat"><div class="num">${v3}</div><div class="label">${l3}</div></div>`;
-}
-function render(){
-  document.getElementById('statsRow').innerHTML=renderStats();
+function openPopover(id){
+  document.querySelectorAll('.popoverLayer').forEach(el=>{
+    el.classList.add('hidden');
+    el.setAttribute('aria-hidden','true');
+  });
 
-  const almanac=document.getElementById('almanacArea');
-  if(almanac){
-    almanac.innerHTML=renderAlmanac();
+  const el=document.getElementById(id);
+  if(!el)return;
+
+  if(id==='recordPopover'){
+    document.getElementById('ledgerStats').innerHTML=renderLedger();
+  }
+  if(id==='almanacPopover'){
+    document.getElementById('almanacContent').innerHTML=renderAlmanac();
   }
 
-  const stage=document.getElementById('stage');
-
-  switch(state.screen){
-    case 'question': stage.innerHTML=renderQuestionScreen(); break;
-    case 'detail': stage.innerHTML=renderDetailScreen(); break;
-    case 'roundTransition': stage.innerHTML=renderRoundTransition(); break;
-    case 'phaseTransition': stage.innerHTML=renderPhaseTransition(); break;
-    case 'dictQuestion': stage.innerHTML=renderDictQuestionScreen(); focusDictInput(); break;
-    case 'dictFeedback': stage.innerHTML=renderDictFeedbackScreen(); break;
-    case 'complete': stage.innerHTML=renderComplete(); break;
-    default: stage.innerHTML='';
-  }
+  el.classList.remove('hidden');
+  el.setAttribute('aria-hidden','false');
+  document.body.style.overflow='hidden';
 }
 
+function closePopover(event){
+  if(event && event.target!==event.currentTarget)return;
+  document.querySelectorAll('.popoverLayer').forEach(el=>{
+    el.classList.add('hidden');
+    el.setAttribute('aria-hidden','true');
+  });
+  document.body.style.overflow='';
+}
+
+function renderStats(){let total=state.words.length,v2=0,l2='Mastered',v3='0%',l3='Accuracy';if(state.phase==='recognition'){v2=state.masteredIds.length;v3=state.stats.recAttempts?Math.round(state.stats.recCorrect/state.stats.recAttempts*100)+'%':'0%';}else if(state.phase==='dictation'){l2='Completed';v2=total-uniq(state.dictQueue).length;v3=state.stats.dictAttempts?Math.round(state.stats.dictCorrect/state.stats.dictAttempts*100)+'%':'0%';}else{v2=total;v3='100%';}return `<div class="stat"><div class="num">${total}</div><div class="label">Total Words</div></div><div class="stat"><div class="num">${v2}</div><div class="label">${l2}</div></div><div class="stat"><div class="num">${v3}</div><div class="label">${l3}</div></div>`;}
+function render(){document.getElementById('statsRow').innerHTML=renderStats();const stage=document.getElementById('stage');switch(state.screen){case 'question':stage.innerHTML=renderQuestionScreen();break;case 'detail':stage.innerHTML=renderDetailScreen();break;case 'roundTransition':stage.innerHTML=renderRoundTransition();break;case 'phaseTransition':stage.innerHTML=renderPhaseTransition();break;case 'dictQuestion':stage.innerHTML=renderDictQuestionScreen();focusDictInput();break;case 'dictFeedback':stage.innerHTML=renderDictFeedbackScreen();break;case 'complete':stage.innerHTML=renderComplete();break;default:stage.innerHTML='';}}
+
+document.querySelectorAll('.popoverLayer').forEach(el=>{
+  el.classList.add('hidden');
+  el.setAttribute('aria-hidden','true');
+});
+document.body.style.overflow='';
 loadState();
 </script>
 </body>
