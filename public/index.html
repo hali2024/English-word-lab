@@ -197,7 +197,7 @@ async function generateWithAI(){
 
   const words=[...new Set(
     input.value
-      .split(/[\\n,，;；]+/)
+      .split(/[\n,，;；]+/)
       .map(x=>x.trim())
       .filter(Boolean)
   )];
