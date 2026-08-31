@@ -206,6 +206,13 @@ if (expectedWords.some((word, index) => returnedWords[index] !== word)) {
     error: "DeepSeek did not preserve the original vocabulary words"
   });
 }
+for (const item of result.words) {
+  if (!Array.isArray(item.examples) || item.examples.length !== 3) {
+    return res.status(502).json({
+      error: `DeepSeek did not return exactly three examples for "${item.word}"`
+    });
+  }
+}
     res.json(result);
 
   } catch (error) {
