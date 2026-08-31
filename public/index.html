@@ -178,6 +178,80 @@ textarea::placeholder{color:#a79f91}
 .interstitial h2{font-family:Georgia,"Times New Roman",serif;margin:6px 0 10px;font-size:34px;font-weight:400}
 .interstitial p{color:var(--muted);font-size:13px;line-height:1.7;margin:0 0 14px}
 .footer{font-family:Georgia,"Times New Roman",serif;font-size:9px;color:var(--muted);text-align:center;margin-top:30px;line-height:1.7;letter-spacing:.04em}
+/* ---------- learning almanac ---------- */
+
+.almanac{
+  margin-top:28px;
+  padding:26px 0 6px;
+  border-top:1px solid var(--line);
+}
+
+.almanacTitle{
+  font-family:Georgia,"Times New Roman",serif;
+  font-size:10px;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+  color:#9a7b4e;
+  margin-bottom:14px;
+}
+
+.heatmap{
+  display:grid;
+  grid-template-columns:repeat(14,1fr);
+  gap:5px;
+}
+
+.heatCell{
+  aspect-ratio:1;
+  min-width:0;
+  border:1px solid rgba(74,55,39,.16);
+  background:rgba(255,252,245,.55);
+  position:relative;
+}
+
+.heatCell[data-level="1"]{
+  background:#e8ddd0;
+}
+
+.heatCell[data-level="2"]{
+  background:#d7c5b5;
+}
+
+.heatCell[data-level="3"]{
+  background:#bca392;
+}
+
+.heatCell[data-level="4"]{
+  background:#8e6d61;
+}
+
+.heatCell[data-level="5"]{
+  background:#71343b;
+}
+
+.heatLegend{
+  display:flex;
+  justify-content:flex-end;
+  align-items:center;
+  gap:5px;
+  margin-top:10px;
+  font-size:10px;
+  color:var(--muted);
+}
+
+.heatLegend .heatCell{
+  width:11px;
+  height:11px;
+  min-width:11px;
+  aspect-ratio:auto;
+}
+
+@media(max-width:700px){
+  .heatmap{
+    grid-template-columns:repeat(14,1fr);
+    gap:3px;
+  }
+}
 @media(max-width:700px){
   .app{width:min(100% - 24px,1080px);padding:25px 0 52px}
   .top{grid-template-columns:1fr;gap:18px;align-items:start}
@@ -290,9 +364,10 @@ become"></textarea>
   </section>
 
   <div id="appArea" class="hidden">
-    <div class="stats" id="statsRow"></div>
-    <div id="stage"></div>
-  </div>
+  <div class="stats" id="statsRow"></div>
+  <div id="stage"></div>
+  <div id="almanacArea"></div>
+</div>
 
   <div class="footer">The Lexicon · Developed by H.H</div>
 </div>
@@ -812,6 +887,73 @@ function restartSameLibrary(){
 }
 
 /* ---------- stats + dispatcher ---------- */
+function renderAlmanac(){
+  const daily=state.stats.daily||{};
+
+  const cells=[];
+  const today=new Date();
+
+  // Show the last 84 days
+  for(let i=83;i>=0;i--){
+    const d=new Date(today);
+    d.setDate(today.getDate()-i);
+
+    const y=d.getFullYear();
+    const m=String(d.getMonth()+1).padStart(2,'0');
+    const day=String(d.getDate()).padStart(2,'0');
+
+    const key=`${y}-${m}-${day}`;
+    const count=daily[key]||0;
+
+    cells.push({key,count});
+  }
+
+  const max=Math.max(
+    1,
+    ...cells.map(x=>x.count)
+  );
+
+  return `
+    <div class="almanac">
+      <div class="almanacTitle">Learning Almanac</div>
+
+      <div class="heatmap">
+        ${cells.map(cell=>{
+          let level=0;
+
+          if(cell.count>0){
+            const ratio=cell.count/max;
+
+            if(ratio<=.2) level=1;
+            else if(ratio<=.4) level=2;
+            else if(ratio<=.6) level=3;
+            else if(ratio<=.8) level=4;
+            else level=5;
+          }
+
+          return `
+            <div
+              class="heatCell"
+              data-level="${level}"
+              title="${cell.key} · ${cell.count} study activities">
+            </div>
+          `;
+        }).join('')}
+      </div>
+
+      <div class="heatLegend">
+        <span>Less</span>
+        <span class="heatCell" data-level="0"></span>
+        <span class="heatCell" data-level="1"></span>
+        <span class="heatCell" data-level="2"></span>
+        <span class="heatCell" data-level="3"></span>
+        <span class="heatCell" data-level="4"></span>
+        <span class="heatCell" data-level="5"></span>
+        <span>More</span>
+      </div>
+    </div>
+  `;
+}
 function renderStats(){
   let total=state.words.length, v2=0, l2='Mastered', v3='0%', l3='Accuracy';
   if(state.phase==='recognition'){
@@ -831,7 +973,14 @@ function renderStats(){
 }
 function render(){
   document.getElementById('statsRow').innerHTML=renderStats();
+
+  const almanac=document.getElementById('almanacArea');
+  if(almanac){
+    almanac.innerHTML=renderAlmanac();
+  }
+
   const stage=document.getElementById('stage');
+
   switch(state.screen){
     case 'question': stage.innerHTML=renderQuestionScreen(); break;
     case 'detail': stage.innerHTML=renderDetailScreen(); break;
