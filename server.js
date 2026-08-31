@@ -133,8 +133,13 @@ ${cleanedWords.join("\n")}
           "Authorization": `Bearer ${process.env.DEEPSEEK_API_KEY}`
         },
         body: JSON.stringify({
-          model: "deepseek-v4-flash",
-          messages: [
+  model: "deepseek-v4-flash",
+
+  thinking: {
+    type: "disabled"
+  },
+
+  messages: [
             {
               role: "system",
               content: systemPrompt
