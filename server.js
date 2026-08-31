@@ -57,12 +57,25 @@ app.post("/api/generate", async (req, res) => {
       });
     }
 
-    const systemPrompt = `
+const systemPrompt = `
 You are an English vocabulary learning assistant.
 
-The user will provide a list of English words.
+The user will provide a list of English vocabulary words.
 
 Generate a vocabulary library for these words.
+
+IMPORTANT:
+Each item in the user's list represents exactly ONE vocabulary word.
+Treat each input item as a complete word.
+NEVER split, segment, decompose, shorten, or reinterpret an input word.
+
+For example:
+- "banana" must produce exactly one entry with "word": "banana"
+- "beautiful" must produce exactly one entry with "word": "beautiful"
+- "reluctant" must produce exactly one entry with "word": "reluctant"
+
+The number of vocabulary entries MUST match the number of valid input words.
+Preserve the original word spelling exactly.
 
 You MUST return valid JSON.
 
@@ -72,8 +85,12 @@ The JSON must have exactly this structure:
   "words": [
     {
       "word": "example",
-      "definition": "a clear English definition",
-      "example": "A natural example sentence.",
+      "definition": "a clear and concise English definition",
+      "examples": [
+        "A natural English example sentence.",
+        "A second natural English example sentence.",
+        "A third natural English example sentence."
+      ],
       "synonyms": ["word1", "word2", "word3"],
       "antonyms": ["word1", "word2"],
       "root": "A concise explanation of the word origin or root.",
@@ -84,16 +101,23 @@ The JSON must have exactly this structure:
 
 Rules:
 
-1. Keep the original word spelling.
-2. Definitions should be clear and suitable for English learners.
-3. Example sentences should sound natural.
-4. Provide useful synonyms and antonyms when possible.
-5. Explain the word root or etymology briefly.
-6. Provide useful English derivatives or cognates when possible.
-7. If a field has no useful information, use an empty array or an empty string.
-8. Return JSON only.
+1. Keep the original word spelling exactly as provided by the user.
+2. Never split one input word into multiple words.
+3. Create exactly one vocabulary entry for each input word.
+4. The number of entries in "words" must match the number of valid input words.
+5. Definitions must be clear, concise, and suitable for English learners.
+6. Generate EXACTLY THREE example sentences for every word.
+7. The three example sentences should be natural, grammatically correct, and useful for learning.
+8. The three examples should use the target word naturally and demonstrate meaningful usage.
+9. Avoid making the three example sentences repetitive.
+10. Provide useful synonyms when possible.
+11. Provide useful antonyms when possible.
+12. Explain the word's root or etymology briefly and accurately when possible.
+13. Provide useful English derivatives or cognates when possible.
+14. If a field has no useful information, use an empty array or an empty string.
+15. Do not add extra fields.
+16. Return JSON only.
 `;
-
     const userPrompt = `
 Generate the vocabulary library for these words:
 
@@ -166,7 +190,22 @@ ${cleanedWords.join("\n")}
         error: "Invalid vocabulary data returned by DeepSeek"
       });
     }
+   if (result.words.length !== cleanedWords.length) {
+  return res.status(502).json({
+    error: "DeepSeek returned an incorrect number of vocabulary entries"
+  });
+}
 
+const expectedWords = cleanedWords.map(word => word.toLowerCase());
+const returnedWords = result.words.map(item =>
+  String(item.word || "").trim().toLowerCase()
+);
+
+if (expectedWords.some((word, index) => returnedWords[index] !== word)) {
+  return res.status(502).json({
+    error: "DeepSeek did not preserve the original vocabulary words"
+  });
+}
     res.json(result);
 
   } catch (error) {
