@@ -242,6 +242,29 @@ textarea::placeholder{color:#a79f91}
 .addWordInput{position:relative;width:100%;padding:13px 14px;border:1px solid var(--line-dark);background:rgba(255,252,245,.55);color:var(--ink);outline:none;font-size:16px}
 .addWordInput:focus{border-color:var(--accent)}
 .addWordStatus{position:relative;color:var(--muted);font-size:11px;font-style:italic;min-height:17px;margin-top:8px}
+.profileSummary{position:relative;margin-bottom:20px;color:var(--muted);font-size:12px;font-style:italic;line-height:1.7}
+.profileGrid{position:relative;display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);margin-bottom:22px}
+.profileStat{background:rgba(255,252,245,.55);padding:18px 12px;text-align:center}
+.profileStat .value{font-size:30px;color:var(--accent);line-height:1}
+.profileStat .name{margin-top:7px;font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
+.rankingSection{position:relative;margin-top:20px;padding-top:17px;border-top:1px solid var(--line)}
+.rankingTitle{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#9a7b4e;font-weight:600;margin-bottom:10px}
+.ranking{display:grid;gap:4px}
+.rankRow{display:grid;grid-template-columns:38px 1fr auto;align-items:center;gap:10px;padding:8px 10px;border-bottom:1px solid var(--line);background:rgba(255,252,245,.25)}
+.rankNo{font-size:11px;color:#9a7b4e;font-style:italic}
+.rankWord{font-size:14px;color:var(--accent);overflow-wrap:anywhere}
+.rankCount{font-size:11px;color:var(--muted);font-style:italic;text-align:right;white-space:nowrap}
+.profileNote{position:relative;color:var(--muted);font-size:11px;font-style:italic;line-height:1.7;margin-top:9px}
+.poemCard{position:relative;margin-top:24px;padding:20px;background:rgba(230,218,197,.30);border-left:2px solid #aa8a5b}
+.poemTitle{font-size:22px;color:#54262c;margin:0 0 6px;font-weight:400}
+.poemMeta{font-size:10px;color:var(--muted);font-style:italic;margin-bottom:15px}
+.poemText{white-space:pre-line;font-size:15px;line-height:1.85;color:var(--ink);font-style:italic}
+.profileLoading{position:relative;color:var(--muted);font-size:12px;font-style:italic;padding:12px 0}
+.actionModalText{position:relative;color:var(--muted);font-size:13px;line-height:1.75;margin:0}
+.actionModalWarning{position:relative;margin-top:13px;padding:12px 14px;border-left:2px solid #aa8a5b;background:rgba(230,218,197,.35);color:var(--muted);font-size:11px;line-height:1.7}
+.actionModalInput{position:relative;width:100%;padding:13px 14px;border:1px solid var(--line-dark);background:rgba(255,252,245,.55);color:var(--ink);outline:none;font-size:16px;margin-top:4px}
+.actionModalInput:focus{border-color:var(--accent)}
+
 /* Almanac ruler */
 .heatScaleColors{display:grid;grid-template-columns:2% 13% 23% 31% 31%;height:11px;gap:0;margin-top:0;align-items:stretch}
 .heatScaleColors .scaleColor{height:11px;border:1px solid rgba(74,55,39,.16);box-sizing:border-box}
@@ -262,6 +285,8 @@ textarea::placeholder{color:#a79f91}
 .heatScale .scaleSegment:last-child span{left:-1px}
 
 @media(max-width:700px){
+  .profileGrid{grid-template-columns:1fr}
+  .rankRow{grid-template-columns:32px 1fr auto}
   .app{width:min(100% - 24px,900px);padding:28px 0 52px}
   .panel,.quiz,.detail,.interstitial{padding:23px 18px}
   .word{font-size:48px}
@@ -433,7 +458,7 @@ become"></textarea>
   <div id="rememberModal" class="modalLayer hidden" aria-hidden="true">
     <div class="modalCard" onclick="event.stopPropagation()">
       <h2 class="modalTitle">Remember this device?</h2>
-      <p class="modalIntro">If you choose Yes, this browser will keep you signed in on this device. If you choose No, you will need to sign in again after the session ends.</p>
+      <p class="modalIntro">If you choose Yes, this browser will keep you signed in on this device.<br><br>If you choose No, you will need to sign in again after the session ends.</p>
       <div class="rememberBox">For your security, only choose Yes on a private device that you control.</div>
       <div class="modalActions">
         <button onclick="finishRememberChoice(true)">Yes, remember this device</button>
@@ -498,7 +523,7 @@ become"></textarea>
         <p id="addWordStatus" class="addWordStatus"></p>
       </div>
       <div id="editAddButtonRow" class="modalActions"><button class="secondary" onclick="showAddWordInput()">Add Word</button></div>
-      <div class="modalActions"><button onclick="saveEditedLibrary()">Save Changes</button><button class="secondary" onclick="closeLayer(null,'editLibraryModal')">Cancel</button></div>
+      <div class="modalActions"><button onclick="saveEditedLibrary()">Save Changes</button></div>
     </div>
   </div>
 
@@ -509,13 +534,14 @@ become"></textarea>
       <p class="drawerIntro">Records, almanac, and the archive.</p>
 
       <div class="drawerSection">
+        <button type="button" onclick="openProfileFromDrawer()">Profile</button>
         <button type="button" onclick="openLedgerFromDrawer()">The Ledger</button>
         <button type="button" onclick="openAlmanacFromDrawer()">The Almanac</button>
       </div>
 
       <div class="drawerSection">
-        <button type="button" onclick="exportArchive()">Export Archive</button>
-        <button type="button" onclick="document.getElementById('restoreFile').click()">Restore Archive</button>
+        <button type="button" onclick="openArchiveInfo('export')">Export Archive</button>
+        <button type="button" onclick="openArchiveInfo('restore')">Restore Archive</button>
         <input id="restoreFile" class="hidden" type="file" accept=".json,application/json" onchange="restoreArchive(event)">
       </div>
     </aside>
@@ -534,6 +560,37 @@ become"></textarea>
     <div class="modalCard" onclick="event.stopPropagation()">
       <h2 class="modalTitle">The Almanac</h2>
       <div id="almanacContent"></div>
+    </div>
+  </div>
+
+  <!-- Profile -->
+  <div id="profilePopover" class="modalLayer hidden" aria-hidden="true" onclick="closeLayer(event,'profilePopover')">
+    <div class="modalCard" onclick="event.stopPropagation()">
+      <h2 class="modalTitle">Profile</h2>
+      <p class="modalIntro">A record of the words you have met, mastered, and missed.</p>
+      <div id="profileContent"></div>
+    </div>
+  </div>
+
+  <!-- Cabinet action confirmation -->
+  <div id="cabinetActionModal" class="modalLayer hidden" aria-hidden="true" onclick="closeLayer(event,'cabinetActionModal')">
+    <div class="modalCard" onclick="event.stopPropagation()">
+      <h2 id="cabinetActionTitle" class="modalTitle">Confirm</h2>
+      <p id="cabinetActionIntro" class="modalIntro"></p>
+      <input id="cabinetActionInput" class="actionModalInput hidden" type="text" maxlength="80" autocomplete="off" placeholder="A name for this library" onkeydown="if(event.key==='Enter')confirmCabinetAction()">
+      <div id="cabinetActionWarning" class="actionModalWarning hidden"></div>
+      <div class="modalActions"><button id="cabinetActionConfirmButton" onclick="confirmCabinetAction()">Confirm</button></div>
+    </div>
+  </div>
+
+  <!-- Archive information -->
+  <div id="archiveInfoModal" class="modalLayer hidden" aria-hidden="true" onclick="closeLayer(event,'archiveInfoModal')">
+    <div class="modalCard" onclick="event.stopPropagation()">
+      <h2 id="archiveInfoTitle" class="modalTitle">Archive</h2>
+      <p id="archiveInfoIntro" class="modalIntro"></p>
+      <p id="archiveInfoText" class="actionModalText"></p>
+      <div id="archiveInfoWarning" class="actionModalWarning hidden"></div>
+      <div class="modalActions"><button id="archiveInfoConfirmButton" onclick="confirmArchiveInfo()">Confirm</button></div>
     </div>
   </div>
 
@@ -560,6 +617,8 @@ function emptyPersistentStats(){
     mistakes:0,
     daily:{},
     dailyWords:{},
+    dailyWordPractice:{},
+    dailyWordMistakes:{},
     wordStats:{},
     dailyReview:{}
   };
@@ -637,6 +696,10 @@ function recordWordEncounter(id){
   const ws=ensureWordStats(wordKey);
   ws.practised=(ws.practised||0)+1;
   if(!ws.firstEncountered)ws.firstEncountered=todayKey();
+  const day=todayKey();
+  if(!globalStats.dailyWordPractice||typeof globalStats.dailyWordPractice!=='object')globalStats.dailyWordPractice={};
+  if(!globalStats.dailyWordPractice[day]||typeof globalStats.dailyWordPractice[day]!=='object')globalStats.dailyWordPractice[day]={};
+  globalStats.dailyWordPractice[day][wordKey]=(globalStats.dailyWordPractice[day][wordKey]||0)+1;
   saveGlobalStatsOnly();
 }
 
@@ -671,6 +734,10 @@ function recordMistake(id){
     const ws=ensureWordStats(wordKey);
     ws.mistakes=(ws.mistakes||0)+1;
     ws.lastMissed=todayKey();
+    const day=todayKey();
+    if(!globalStats.dailyWordMistakes||typeof globalStats.dailyWordMistakes!=='object')globalStats.dailyWordMistakes={};
+    if(!globalStats.dailyWordMistakes[day]||typeof globalStats.dailyWordMistakes[day]!=='object')globalStats.dailyWordMistakes[day]={};
+    globalStats.dailyWordMistakes[day][wordKey]=(globalStats.dailyWordMistakes[day][wordKey]||0)+1;
   }
   saveGlobalStatsOnly();
 }
@@ -711,6 +778,8 @@ function loadPersistentStats(legacyState){
       mistakes:typeof parsed.mistakes==='number'?parsed.mistakes:0,
       daily:parsed.daily&&typeof parsed.daily==='object'?parsed.daily:{},
       dailyWords:parsed.dailyWords&&typeof parsed.dailyWords==='object'?parsed.dailyWords:{},
+      dailyWordPractice:parsed.dailyWordPractice&&typeof parsed.dailyWordPractice==='object'?parsed.dailyWordPractice:{},
+      dailyWordMistakes:parsed.dailyWordMistakes&&typeof parsed.dailyWordMistakes==='object'?parsed.dailyWordMistakes:{},
       wordStats:parsed.wordStats&&typeof parsed.wordStats==='object'?parsed.wordStats:{},
       dailyReview:parsed.dailyReview&&typeof parsed.dailyReview==='object'?parsed.dailyReview:{}
     };
@@ -729,7 +798,7 @@ function loadPersistentStats(legacyState){
       spelledWords:Array.isArray(legacy.spelledWords)?legacy.spelledWords.map(convert).filter(Boolean):[],
       mistakes:typeof legacy.mistakes==='number'?legacy.mistakes:0,
       daily:legacy.daily&&typeof legacy.daily==='object'?legacy.daily:{},
-      dailyWords:{},wordStats:{},dailyReview:{}
+      dailyWords:{},dailyWordPractice:{},dailyWordMistakes:{},wordStats:{},dailyReview:{}
     };
   }else globalStats=emptyPersistentStats();
   saveGlobalStatsOnly();
@@ -1090,16 +1159,52 @@ function renderDictQuestionScreen(){
     <div class="mode">Spelling <small>${remaining} remaining</small></div>
     <div class="dictBox">
       <button type="button" class="speaker" title="Play pronunciation" onclick="speak('${safeJSString(w.word)}')"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round"><path d="M4 9v6h4l5 4V5L8 9H4"></path><path d="M16 9.5c1 .8 1.5 1.6 1.5 2.5s-.5 1.7-1.5 2.5"></path><path d="M18.5 7c1.7 1.4 2.5 3 2.5 5s-.8 3.6-2.5 5"></path></svg></button>
-      <input class="dictInput" id="dictInput" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Write what you hear" onkeydown="if(event.key==='Enter')checkDictation()">
+      <input class="dictInput" id="dictInput" lang="en" inputmode="latin" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="done" placeholder="Write what you hear" onbeforeinput="handleDictBeforeInput(event)" oncompositionstart="handleDictCompositionStart(event)" oncompositionend="handleDictCompositionEnd(event)" onpaste="handleDictPaste(event)" ondrop="handleDictDrop(event)" onkeydown="if(event.key==='Enter')checkDictation()">
       <div class="centerRow"><button class="secondary" type="button" onclick="speak('${safeJSString(w.word)}')">Replay</button><button type="button" onclick="checkDictation()">Submit</button></div>
     </div>
   </section>`;
 }
+let dictCompositionActive=false;
+let dictCompositionStartValue='';
+let dictCheatingNoticeOpen=false;
 function focusDictInput(){const el=document.getElementById('dictInput');if(el)el.focus();}
+function showCheatingNotice(message){
+  if(dictCheatingNoticeOpen)return;
+  dictCheatingNoticeOpen=true;
+  const title=document.getElementById('cabinetActionTitle'),intro=document.getElementById('cabinetActionIntro'),input=document.getElementById('cabinetActionInput'),warning=document.getElementById('cabinetActionWarning'),btn=document.getElementById('cabinetActionConfirmButton');
+  title.textContent='A gentle reminder';
+  intro.textContent='This spelling test is meant to measure what you can spell yourself.';
+  input.classList.add('hidden');
+  warning.classList.remove('hidden');
+  warning.textContent=message||'Please type the word yourself using direct English letter input. Paste and predictive-composition input are not allowed during the spelling test.';
+  btn.textContent='Understood';
+  btn.onclick=()=>{closeLayer(null,'cabinetActionModal');dictCheatingNoticeOpen=false;setTimeout(focusDictInput,50);};
+  openLayer('cabinetActionModal');
+}
+function handleDictCompositionStart(){
+  const el=document.getElementById('dictInput');
+  dictCompositionStartValue=el?el.value:'';
+  dictCompositionActive=true;
+}
+function handleDictCompositionEnd(){
+  dictCompositionActive=false;
+  const el=document.getElementById('dictInput');
+  if(el)el.value=dictCompositionStartValue;
+  showCheatingNotice('Predictive or IME composition was detected. Please type the spelling directly instead of selecting a suggested completed word. Voice input is still allowed.');
+}
+function handleDictBeforeInput(event){
+  if(event.inputType==='insertFromPaste'||event.inputType==='insertFromDrop')return;
+  if(dictCompositionActive)return;
+  if(typeof event.data==='string' && /[^A-Za-z' -]/.test(event.data)){event.preventDefault();showCheatingNotice('Only direct English letters are accepted in the spelling test.');return;}
+}
+function handleDictPaste(event){event.preventDefault();showCheatingNotice('Pasting the answer is not allowed during the spelling test. Please type it yourself.');}
+function handleDictDrop(event){event.preventDefault();showCheatingNotice('Dropping text into the answer box is not allowed during the spelling test. Please type it yourself.');}
 function checkDictation(){
   if(state.locked)return;
+  if(dictCompositionActive){showCheatingNotice('Please finish typing with direct English letter input before submitting.');return;}
   const el=document.getElementById('dictInput'),val=(el?el.value:'').trim();
   if(!val)return;
+  if(!/^[A-Za-z][A-Za-z' -]*$/.test(val)){showCheatingNotice('The answer contains characters that are not accepted in the spelling test. Please type the word directly in English.');return;}
   state.locked=true;
   const w=state.words[state.current.id],correct=val.toLowerCase()===w.word.toLowerCase();
   state.stats.dictAttempts++;
@@ -1231,99 +1336,94 @@ function openCabinetLibrary(id){
   if(lib.progress&&lib.progress.words?.length)startLibrary(lib.words,id,false,lib.progress);
   else startLibrary(lib.words,id,false,null);
 }
-function renameLibrary(id){
-  const cabinet=getCabinet(),lib=cabinet.find(x=>x.id===id);if(!lib)return;
-  const name=prompt('Rename this library:',lib.name);
-  if(name===null)return;
-  const clean=name.trim();if(!clean)return;
-  lib.name=clean;lib.updatedAt=new Date().toISOString();setCabinet(cabinet);renderCabinet();
+let pendingCabinetAction=null;
+function openCabinetAction(type,id){
+  const lib=getCabinet().find(x=>x.id===id);if(!lib)return;
+  pendingCabinetAction={type,id};
+  const title=document.getElementById('cabinetActionTitle'),intro=document.getElementById('cabinetActionIntro'),input=document.getElementById('cabinetActionInput'),warning=document.getElementById('cabinetActionWarning'),btn=document.getElementById('cabinetActionConfirmButton');
+  dictCheatingNoticeOpen=false;
+  input.classList.add('hidden');warning.classList.add('hidden');btn.textContent='Confirm';btn.onclick=confirmCabinetAction;
+  if(type==='rename'){title.textContent='Rename this volume';intro.textContent='Choose a new name for this library.';input.classList.remove('hidden');input.value=lib.name;}
+  else if(type==='clear'){title.textContent='Clear progress?';intro.textContent=`Clear the learning progress for “${lib.name}” and begin the volume again?`;warning.classList.remove('hidden');warning.textContent='The words will remain in the volume. Only its study progress will be reset.';}
+  else{title.textContent='Remove this volume?';intro.textContent=`Remove “${lib.name}” from The Cabinet?`;warning.classList.remove('hidden');warning.textContent='The saved volume and its stored progress will be removed from The Cabinet. This cannot be undone.';}
+  openLayer('cabinetActionModal','cabinetModal');
+  if(type==='rename')setTimeout(()=>input.focus(),40);
 }
-function clearLibraryProgress(id){
-  const cabinet=getCabinet(),lib=cabinet.find(x=>x.id===id);if(!lib)return;
-  if(!confirm(`Clear progress for "${lib.name}" and begin again?`))return;
-  lib.progress=null;lib.updatedAt=new Date().toISOString();setCabinet(cabinet);
-  if(state?.libraryId===id){
-    state=freshState(lib.words,id,false);beginRecognitionRound();loadRecognitionQuestion();save();closeAllLayers();render();
-  }else renderCabinet();
-}
-function deleteLibrary(id){
-  const cabinet=getCabinet(),lib=cabinet.find(x=>x.id===id);if(!lib)return;
-  if(!confirm(`Remove "${lib.name}" from The Cabinet?`))return;
+function renameLibrary(id){openCabinetAction('rename',id);}
+function clearLibraryProgress(id){openCabinetAction('clear',id);}
+function deleteLibrary(id){openCabinetAction('remove',id);}
+function confirmCabinetAction(){
+  if(dictCheatingNoticeOpen)return;
+  if(!pendingCabinetAction)return;
+  const {type,id}=pendingCabinetAction,cabinet=getCabinet(),lib=cabinet.find(x=>x.id===id);if(!lib)return;
+  if(type==='rename'){const input=document.getElementById('cabinetActionInput'),clean=(input.value||'').trim();if(!clean){input.focus();return;}lib.name=clean;lib.updatedAt=new Date().toISOString();setCabinet(cabinet);pendingCabinetAction=null;closeLayer(null,'cabinetActionModal');renderCabinet();return;}
+  if(type==='clear'){lib.progress=null;lib.updatedAt=new Date().toISOString();setCabinet(cabinet);if(state?.libraryId===id){state=freshState(lib.words,id,false);beginRecognitionRound();loadRecognitionQuestion();save();pendingCabinetAction=null;closeLayer(null,'cabinetActionModal');openCabinet();render();return;}pendingCabinetAction=null;closeLayer(null,'cabinetActionModal');renderCabinet();return;}
   setCabinet(cabinet.filter(x=>x.id!==id));
   if(state?.libraryId===id){localStorage.removeItem(KEY);state=null;showHome();}
-  renderCabinet();
+  pendingCabinetAction=null;closeLayer(null,'cabinetActionModal');renderCabinet();
 }
 
 /* ---------- Ledger / Almanac ---------- */
 function renderLedger(){
-  const learned=new Set(globalStats.learnedWords||[]).size;
-  const spelled=new Set(globalStats.spelledWords||[]).size;
-  const mistakes=globalStats.mistakes||0;
-  return `<div class="ledgerGrid">
-    <div class="ledgerStat"><div class="value">${learned}</div><div class="name">Words Learned</div></div>
-    <div class="ledgerStat"><div class="value">${spelled}</div><div class="name">Words Spelled</div></div>
-    <div class="ledgerStat"><div class="value">${mistakes}</div><div class="name">Mistakes</div></div>
-  </div>`;
+  const learned=new Set(globalStats.learnedWords||[]).size,spelled=new Set(globalStats.spelledWords||[]).size,mistakes=globalStats.mistakes||0;
+  return `<div class="ledgerGrid"><div class="ledgerStat"><div class="value">${learned}</div><div class="name">Words Learned</div></div><div class="ledgerStat"><div class="value">${spelled}</div><div class="name">Words Spelled</div></div><div class="ledgerStat"><div class="value">${mistakes}</div><div class="name">Mistakes</div></div></div>`;
 }
 function renderAlmanac(){
   const daily=globalStats.daily||{},dailyWords=globalStats.dailyWords||{};
-  const start=new Date();start.setHours(0,0,0,0);
-  const end=new Date(start);end.setFullYear(end.getFullYear()+1);
-  const days=[],cursor=new Date(start);
-  while(cursor<=end){
-    const key=dateKey(cursor),count=Array.isArray(dailyWords[key])?dailyWords[key].length:Number(daily[key]||0);
-    days.push({key,count});cursor.setDate(cursor.getDate()+1);
-  }
-  const cells=days.map(c=>{
-    const level=c.count===0?0:c.count<=10?1:c.count<=30?2:c.count<=60?3:c.count<=100?4:5;
-    return `<div class="heatCell" data-level="${level}" data-over="${c.count>100?'100':''}" title="${escapeHTML(formatDate(c.key))} · ${c.count} words studied"></div>`;
-  }).join('');
-  return `<div>
-    <p class="modalIntro">A year's record, beginning today.</p>
-    <div class="heatmapWrap"><div class="heatmap">${cells}</div></div>
-    <div class="heatLegendTitle">Words studied in one day</div>
-    <div class="heatScaleColors" aria-hidden="true">
-      <div class="scaleColor c0" title="0"></div>
-      <div class="scaleColor c1" title="1–10"></div>
-      <div class="scaleColor c2" title="11–30"></div>
-      <div class="scaleColor c3" title="31–60"></div>
-      <div class="scaleColor c4" title="61–100"></div>
-    </div>
-    <div class="heatScale">
-      <div class="scaleSegment"><span>0</span></div>
-      <div class="scaleSegment"><span>1–10</span></div>
-      <div class="scaleSegment"><span>11–30</span></div>
-      <div class="scaleSegment"><span>31–60</span></div>
-      <div class="scaleSegment"><span>61–100</span></div>
-    </div>
-    <div class="heatLegendNote">✦ marks a day above 100 words.</div>
-    <div class="heatDate">${dateKey(start)} — ${dateKey(end)}</div>
-  </div>`;
+  const start=new Date();start.setHours(0,0,0,0);const end=new Date(start);end.setFullYear(end.getFullYear()+1);
+  const days=[],cursor=new Date(start);while(cursor<=end){const key=dateKey(cursor),count=Array.isArray(dailyWords[key])?dailyWords[key].length:Number(daily[key]||0);days.push({key,count});cursor.setDate(cursor.getDate()+1);}
+  const cells=days.map(c=>{const level=c.count===0?0:c.count<=10?1:c.count<=30?2:c.count<=60?3:c.count<=100?4:5;return `<div class="heatCell" data-level="${level}" data-over="${c.count>100?'100':''}" title="${escapeHTML(formatDate(c.key))} · ${c.count} words studied"></div>`;}).join('');
+  return `<div><p class="modalIntro">A year's record, beginning today.</p><div class="heatmapWrap"><div class="heatmap">${cells}</div></div><div class="heatLegendTitle">Words studied in one day</div><div class="heatScaleColors" aria-hidden="true"><div class="scaleColor c0" title="0"></div><div class="scaleColor c1" title="1–10"></div><div class="scaleColor c2" title="11–30"></div><div class="scaleColor c3" title="31–60"></div><div class="scaleColor c4" title="61–100"></div></div><div class="heatScale"><div class="scaleSegment"><span>0</span></div><div class="scaleSegment"><span>1–10</span></div><div class="scaleSegment"><span>11–30</span></div><div class="scaleSegment"><span>31–60</span></div><div class="scaleSegment"><span>61–100</span></div></div><div class="heatLegendNote">✦ marks a day above 100 words.</div><div class="heatDate">${dateKey(start)} — ${dateKey(end)}</div></div>`;
+}
+function getMondayKey(date=new Date()){const d=new Date(date);d.setHours(12,0,0,0);const day=d.getDay();d.setDate(d.getDate()+(day===0?-6:1-day));return dateKey(d);}
+function getPreviousMondayKey(){const d=new Date();d.setHours(12,0,0,0);d.setDate(d.getDate()-7);return getMondayKey(d);}
+function addDaysKey(key,days){const d=new Date(`${key}T12:00:00`);d.setDate(d.getDate()+days);return dateKey(d);}
+function getWeeklyRanking(type,limit=10){
+  const source=type==='practised'?globalStats.dailyWordPractice||{}:globalStats.dailyWordMistakes||{},start=getPreviousMondayKey(),totals={};
+  for(let i=0;i<7;i++){const day=source[addDaysKey(start,i)]||{};Object.entries(day).forEach(([word,count])=>{totals[word]=(totals[word]||0)+Number(count||0);});}
+  return Object.entries(totals).map(([word,count])=>({word,count})).sort((a,b)=>b.count-a.count||a.word.localeCompare(b.word)).slice(0,limit);
+}
+function getRanking(type,limit=10){
+  const entries=Object.entries(globalStats.wordStats||{}).map(([word,ws])=>({word,practised:Number(ws?.practised||0),mistakes:Number(ws?.mistakes||0)}));
+  entries.sort((a,b)=>type==='practised'?(b.practised-a.practised||a.word.localeCompare(b.word)):(b.mistakes-a.mistakes||a.word.localeCompare(b.word)));
+  return entries.filter(x=>type==='practised'?x.practised>0:x.mistakes>0).slice(0,limit);
+}
+function renderRanking(items,label){if(!items.length)return `<div class="profileNote">No ${label.toLowerCase()} recorded yet.</div>`;return `<div class="ranking">${items.map((x,i)=>`<div class="rankRow"><div class="rankNo">No. ${i+1}</div><div class="rankWord">${escapeHTML(x.word)}</div><div class="rankCount">${label==='Practice count'?x.practised+' '+(x.practised===1?'time':'times'):x.mistakes+' '+(x.mistakes===1?'mistake':'mistakes')}</div></div>`).join('')}</div>`;}
+function renderProfile(){
+  const practised=getRanking('practised',10),missed=getRanking('mistakes',10),allWords=new Set(Object.keys(globalStats.wordStats||{})),learned=new Set(globalStats.learnedWords||[]),spelled=new Set(globalStats.spelledWords||[]);
+  const studyDays=new Set(Object.keys(globalStats.dailyWords||{}).filter(k=>Array.isArray(globalStats.dailyWords[k])&&globalStats.dailyWords[k].length));
+  let currentStreak=0;const cursor=new Date();cursor.setHours(12,0,0,0);while(true){const k=dateKey(cursor);if(!studyDays.has(k))break;currentStreak++;cursor.setDate(cursor.getDate()-1);}
+  const bestDay=Object.entries(globalStats.daily||{}).sort((a,b)=>Number(b[1])-Number(a[1]))[0],poem=globalStats.weeklyPoem&&typeof globalStats.weeklyPoem==='object'?globalStats.weeklyPoem:null;
+  return `<div class="profileSummary">Your learning record is built from the study activity already saved to this account or browser.</div><div class="profileGrid"><div class="profileStat"><div class="value">${allWords.size}</div><div class="name">Words Encountered</div></div><div class="profileStat"><div class="value">${learned.size}</div><div class="name">Words Learned</div></div><div class="profileStat"><div class="value">${spelled.size}</div><div class="name">Words Spelled</div></div><div class="profileStat"><div class="value">${globalStats.mistakes||0}</div><div class="name">Total Mistakes</div></div><div class="profileStat"><div class="value">${studyDays.size}</div><div class="name">Study Days</div></div><div class="profileStat"><div class="value">${currentStreak}</div><div class="name">Current Streak</div></div></div><div class="rankingSection"><div class="rankingTitle">Most Practised · Top 10</div>${renderRanking(practised,'Practice count')}</div><div class="rankingSection"><div class="rankingTitle">Most Missed · Top 10</div>${renderRanking(missed,'Mistake count')}</div>${bestDay?`<div class="profileNote">Best study day · ${escapeHTML(formatDate(bestDay[0]))} · ${Number(bestDay[1])} words studied.</div>`:''}<div id="weeklyPoemArea">${poem&&poem.weekKey===getMondayKey()?renderWeeklyPoem(poem):`<div class="poemCard"><div class="poemTitle">The Weekly Poem</div><div class="profileLoading">${accountMode==='account'?'Composing this week’s poem from last week’s study record…':'Weekly poems are available when you are signed in.'}</div></div>`}</div>`;
+}
+function renderWeeklyPoem(poem){return `<div class="poemCard"><div class="poemTitle">${escapeHTML(poem.title||'The Weekly Poem')}</div><div class="poemMeta">A poem composed from the previous week’s study record.</div><div class="poemText">${escapeHTML(poem.poem||'')}</div></div>`;}
+async function ensureWeeklyPoem(){
+  const area=document.getElementById('weeklyPoemArea');if(!area||accountMode!=='account')return;const weekKey=getMondayKey(),existing=globalStats.weeklyPoem;if(existing&&existing.weekKey===weekKey){area.innerHTML=renderWeeklyPoem(existing);return;}
+  area.innerHTML=`<div class="poemCard"><div class="poemTitle">The Weekly Poem</div><div class="profileLoading">Composing this week’s poem from last week’s ten most practised and ten most missed words…</div></div>`;
+  try{const response=await fetch('/api/profile/weekly-poem',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({weekKey,practised:getWeeklyRanking('practised',10).map(x=>x.word),mistakes:getWeeklyRanking('mistakes',10).map(x=>x.word)})});const data=await response.json().catch(()=>({}));if(!response.ok)throw new Error(data.error||'Unable to compose the weekly poem.');if(data.poem){globalStats.weeklyPoem=data.poem;saveGlobalStatsOnly();area.innerHTML=renderWeeklyPoem(data.poem);}else area.innerHTML=`<div class="poemCard"><div class="poemTitle">The Weekly Poem</div><div class="profileLoading">No poem is available yet.</div></div>`;}catch(e){console.warn('Weekly poem failed:',e);area.innerHTML=`<div class="poemCard"><div class="poemTitle">The Weekly Poem</div><div class="profileLoading">The poem could not be composed right now. Please return later this week.</div></div>`;}
 }
 
 /* ---------- layers ---------- */
-function openLayer(id){
-  closeAllLayers();
-  const el=document.getElementById(id);if(!el)return;
-  el.classList.remove('hidden');el.setAttribute('aria-hidden','false');
-  if(id==='recordPopover')document.getElementById('ledgerStats').innerHTML=renderLedger();
-  if(id==='almanacPopover')document.getElementById('almanacContent').innerHTML=renderAlmanac();
-  document.body.style.overflow='hidden';
-}
-function closeLayer(event,id){
-  if(event&&event.target!==event.currentTarget)return;
-  if(id==='authModal')return;
-  const el=document.getElementById(id);if(el){el.classList.add('hidden');el.setAttribute('aria-hidden','true');}
-  document.body.style.overflow='';
-  if((id==='recordPopover'||id==='almanacPopover') && state===null && document.getElementById('homeArea') && !document.getElementById('homeArea').classList.contains('hidden')) openSettings();
-}
-function closeAllLayers(){
-  document.querySelectorAll('.modalLayer,.drawerLayer').forEach(el=>{el.classList.add('hidden');el.setAttribute('aria-hidden','true');});
-  document.body.style.overflow='';
-}
+const layerParents={};
+function openLayer(id,parentId=null){closeAllLayers();const el=document.getElementById(id);if(!el)return;if(parentId)layerParents[id]=parentId;el.classList.remove('hidden');el.setAttribute('aria-hidden','false');if(id==='recordPopover')document.getElementById('ledgerStats').innerHTML=renderLedger();if(id==='almanacPopover')document.getElementById('almanacContent').innerHTML=renderAlmanac();if(id==='profilePopover'){document.getElementById('profileContent').innerHTML=renderProfile();setTimeout(ensureWeeklyPoem,0);}document.body.style.overflow='hidden';}
+function closeLayer(event,id){if(event&&event.target!==event.currentTarget)return;if(id==='authModal')return;const el=document.getElementById(id);if(el){el.classList.add('hidden');el.setAttribute('aria-hidden','true');}document.body.style.overflow='';if(id==='cabinetActionModal'&&dictCheatingNoticeOpen){dictCheatingNoticeOpen=false;setTimeout(focusDictInput,50);}const parent=layerParents[id];if(parent&&document.getElementById(parent)){delete layerParents[id];openLayer(parent);}}
+function closeAllLayers(){document.querySelectorAll('.modalLayer,.drawerLayer').forEach(el=>{el.classList.add('hidden');el.setAttribute('aria-hidden','true');});document.body.style.overflow='';}
 function openSettings(){openLayer('settingsDrawer');}
-function openLedgerFromDrawer(){openLayer('recordPopover');}
-function openAlmanacFromDrawer(){openLayer('almanacPopover');}
+function openProfileFromDrawer(){openLayer('profilePopover','settingsDrawer');}
+function openLedgerFromDrawer(){openLayer('recordPopover','settingsDrawer');}
+function openAlmanacFromDrawer(){openLayer('almanacPopover','settingsDrawer');}
+
+/* ---------- archive ---------- */
+let pendingArchiveAction=null;
+function openArchiveInfo(type){pendingArchiveAction=type;const title=document.getElementById('archiveInfoTitle'),intro=document.getElementById('archiveInfoIntro'),text=document.getElementById('archiveInfoText'),warning=document.getElementById('archiveInfoWarning'),btn=document.getElementById('archiveInfoConfirmButton');if(type==='export'){title.textContent='Export Archive';intro.textContent='Create a complete backup of your Lexicon data.';text.textContent='The archive contains your saved libraries, learning progress, long-term statistics, and the current study state. You can use it later to restore this data in the browser.';warning.classList.add('hidden');}else{title.textContent='Restore Archive';intro.textContent='Restore your Lexicon data from a previous backup.';text.textContent='After you confirm, choose a previously exported JSON archive. The records contained in that archive will replace the current local Cabinet, statistics, and study state.';warning.classList.remove('hidden');warning.textContent='Restore only an archive you trust. Your current local records may be replaced.';}btn.textContent='Confirm';openLayer('archiveInfoModal','settingsDrawer');}
+function confirmArchiveInfo(){const type=pendingArchiveAction;pendingArchiveAction=null;if(type==='export'){exportArchiveNow();return;}closeLayer(null,'archiveInfoModal');setTimeout(()=>document.getElementById('restoreFile')?.click(),80);}
+function exportArchiveNow(){const archive={version:1,exportedAt:new Date().toISOString(),cabinet:getCabinet(),globalStats,currentState:state};const blob=new Blob([JSON.stringify(archive,null,2)],{type:'application/json;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`the-lexicon-archive-${todayKey()}.json`;a.click();URL.revokeObjectURL(a.href);closeLayer(null,'archiveInfoModal');}
+function restoreArchive(event){const file=event.target.files?.[0];if(!file)return;const reader=new FileReader();reader.onload=()=>{try{const archive=JSON.parse(reader.result);if(!archive||!Array.isArray(archive.cabinet)||!archive.globalStats)throw new Error('Invalid archive.');localStorage.setItem(CABINET_KEY,JSON.stringify(archive.cabinet));localStorage.setItem(STATS_KEY,JSON.stringify(archive.globalStats));if(archive.currentState)localStorage.setItem(KEY,JSON.stringify(archive.currentState));else localStorage.removeItem(KEY);closeAllLayers();loadState();showToast('Archive restored.');}catch(e){showToast('This archive could not be restored.');console.error(e);}event.target.value='';};reader.readAsText(file);}
+
+/* ---------- toast / stats / dispatcher ---------- */
+function showToast(message){const el=document.getElementById('toast');el.textContent=message;el.classList.remove('hidden');clearTimeout(showToast.timer);showToast.timer=setTimeout(()=>el.classList.add('hidden'),2200);}
+function renderStats(){const total=state.words.length;let v2=0,l2='Mastered',v3='0%',l3='Accuracy';if(state.phase==='recognition'){v2=state.masteredIds.length;v3=state.stats.recAttempts?Math.round(state.stats.recCorrect/state.stats.recAttempts*100)+'%':'0%';}else if(state.phase==='dictation'){l2='Completed';v2=total-uniq(state.dictQueue).length;v3=state.stats.dictAttempts?Math.round(state.stats.dictCorrect/state.stats.dictAttempts*100)+'%':'0%';}else{v2=total;v3='100%';}return `<div class="stat"><div class="num">${total}</div><div class="label">Total Words</div></div><div class="stat"><div class="num">${v2}</div><div class="label">${l2}</div></div><div class="stat"><div class="num">${v3}</div><div class="label">${l3}</div></div>`;}
+function render(){if(!state){renderReviewBanner();return;}document.getElementById('statsRow').innerHTML=renderStats();const stage=document.getElementById('stage');switch(state.screen){case 'question':stage.innerHTML=renderQuestionScreen();break;case 'detail':stage.innerHTML=renderDetailScreen();break;case 'roundTransition':stage.innerHTML=renderRoundTransition();break;case 'phaseTransition':stage.innerHTML=renderPhaseTransition();break;case 'dictQuestion':stage.innerHTML=renderDictQuestionScreen();focusDictInput();break;case 'dictFeedback':stage.innerHTML=renderDictFeedbackScreen();break;case 'complete':stage.innerHTML=renderComplete();break;default:stage.innerHTML='';}}
 
 /* ---------- account / authentication ---------- */
 const ACCOUNT_KEY='theLexicon_accountMode_v2';
@@ -1594,140 +1694,22 @@ let remotePollTimer=setInterval(async()=>{
 
 /* ---------- Cabinet editing ---------- */
 let editingLibraryId=null,editingWords=[];
-function openEditLibrary(id){const lib=getCabinet().find(x=>x.id===id);if(!lib)return;editingLibraryId=id;editingWords=lib.words.map(normalizeWordRecord);document.getElementById('editLibraryIntro').textContent=`${lib.name} · ${editingWords.length} words. Add or remove words; definitions and other details are composed automatically.`;renderEditWordList();cancelAddWord();openLayer('editLibraryModal');}
+function openEditLibrary(id){const lib=getCabinet().find(x=>x.id===id);if(!lib)return;editingLibraryId=id;editingWords=lib.words.map(normalizeWordRecord);document.getElementById('editLibraryIntro').textContent=`${lib.name} · ${editingWords.length} words. Add or remove words; definitions and other details are composed automatically.`;renderEditWordList();cancelAddWord();openLayer('editLibraryModal','cabinetModal');}
 function renderEditWordList(){const el=document.getElementById('editWordList');if(!editingWords.length){el.innerHTML='<div class="emptyState">No words yet.</div>';return;}el.innerHTML=editingWords.map((w,i)=>`<div class="editRow"><div class="editWord">${escapeHTML(w.word)}</div><button class="ghost" onclick="removeEditedWord(${i})">Delete</button></div>`).join('');}
 function removeEditedWord(i){if(editingWords.length<=1){showToast('A library must contain at least one word.');return;}editingWords.splice(i,1);renderEditWordList();}
 function showAddWordInput(){document.getElementById('editAddButtonRow').classList.add('hidden');document.getElementById('addWordPanel').classList.remove('hidden');document.getElementById('addWordInput').value='';document.getElementById('addWordStatus').textContent='';setTimeout(()=>document.getElementById('addWordInput').focus(),40);}
 function cancelAddWord(){document.getElementById('addWordPanel').classList.add('hidden');document.getElementById('editAddButtonRow').classList.remove('hidden');document.getElementById('addWordStatus').textContent='';}
 async function addWordWithAI(){const input=document.getElementById('addWordInput'),status=document.getElementById('addWordStatus'),btn=document.getElementById('addWordGenerateButton'),word=(input.value||'').trim();if(!word){input.focus();return;}if(editingWords.some(w=>normalizeWordKey(w.word)===normalizeWordKey(word))){status.textContent='That word is already in this volume.';return;}btn.disabled=true;status.textContent='Composing the word…';try{const r=await fetch('/api/generate-one',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({word})});const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data.error||`Request failed (${r.status})`);if(!Array.isArray(data.words)||!data.words[0])throw new Error('No vocabulary was returned.');const w=normalizeWordRecord({...data.words[0],word});if(!w.word||!w.definition)throw new Error('The generated word did not contain a definition.');editingWords.push(w);renderEditWordList();input.value='';status.textContent='Added. You can add another word or save the changes.';}catch(e){status.textContent=e.message||'Unable to generate this word.';}finally{btn.disabled=false;}}
-function saveEditedLibrary(){
-  const cabinet=getCabinet();
-  const lib=cabinet.find(x=>x.id===editingLibraryId);
-  if(!lib)return;
-  if(!editingWords.length){showToast('A library must contain at least one word.');return;}
-
-  const newWords=editingWords.map(normalizeWordRecord);
-  const oldWords=lib.words.map(normalizeWordRecord);
-  const changed=JSON.stringify(oldWords)!==JSON.stringify(newWords);
-
-  // IMPORTANT: update the active study state BEFORE saving the Cabinet.
-  // Otherwise save() -> syncActiveLibraryProgress() can copy the old
-  // state.words back into the edited library and erase newly-added words.
-  lib.words=newWords;
-  lib.updatedAt=new Date().toISOString();
-  lib.progress=null;
-
-  if(state?.libraryId===editingLibraryId){
-    state=freshState(newWords,editingLibraryId,false);
-    beginRecognitionRound();
-    loadRecognitionQuestion();
-  }
-
-  setCabinet(cabinet);
-
-  if(state?.libraryId===editingLibraryId){
-    save();
-  }else{
-    syncAccountData();
-  }
-
-  closeAllLayers();
-  openCabinet();
-  showToast(changed?'Changes saved. Study progress was reset for this volume.':'No changes were made.');
-}
-
-/* ---------- archive ---------- */
-function exportArchive(){
-  const archive={
-    version:1,
-    exportedAt:new Date().toISOString(),
-    cabinet:getCabinet(),
-    globalStats,
-    currentState:state
-  };
-  const blob=new Blob([JSON.stringify(archive,null,2)],{type:'application/json;charset=utf-8'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
-  a.download=`the-lexicon-archive-${todayKey()}.json`;a.click();URL.revokeObjectURL(a.href);
-  closeAllLayers();
-}
-function restoreArchive(event){
-  const file=event.target.files?.[0];if(!file)return;
-  const reader=new FileReader();
-  reader.onload=()=>{
-    try{
-      const archive=JSON.parse(reader.result);
-      if(!archive||!Array.isArray(archive.cabinet)||!archive.globalStats)throw new Error('Invalid archive.');
-      if(!confirm('Restore this archive? Existing Cabinet records and statistics will be replaced.'))return;
-      localStorage.setItem(CABINET_KEY,JSON.stringify(archive.cabinet));
-      localStorage.setItem(STATS_KEY,JSON.stringify(archive.globalStats));
-      if(archive.currentState)localStorage.setItem(KEY,JSON.stringify(archive.currentState));else localStorage.removeItem(KEY);
-      closeAllLayers();loadState();showToast('Archive restored.');
-    }catch(e){showToast('This archive could not be restored.');console.error(e);}
-    event.target.value='';
-  };
-  reader.readAsText(file);
-}
-
-/* ---------- toast / stats / dispatcher ---------- */
-function showToast(message){
-  const el=document.getElementById('toast');el.textContent=message;el.classList.remove('hidden');
-  clearTimeout(showToast.timer);showToast.timer=setTimeout(()=>el.classList.add('hidden'),2200);
-}
-function renderStats(){
-  const total=state.words.length;let v2=0,l2='Mastered',v3='0%',l3='Accuracy';
-  if(state.phase==='recognition'){
-    v2=state.masteredIds.length;v3=state.stats.recAttempts?Math.round(state.stats.recCorrect/state.stats.recAttempts*100)+'%':'0%';
-  }else if(state.phase==='dictation'){
-    l2='Completed';v2=total-uniq(state.dictQueue).length;v3=state.stats.dictAttempts?Math.round(state.stats.dictCorrect/state.stats.dictAttempts*100)+'%':'0%';
-  }else{v2=total;v3='100%';}
-  return `<div class="stat"><div class="num">${total}</div><div class="label">Total Words</div></div>
-    <div class="stat"><div class="num">${v2}</div><div class="label">${l2}</div></div>
-    <div class="stat"><div class="num">${v3}</div><div class="label">${l3}</div></div>`;
-}
-function render(){
-  if(!state){renderReviewBanner();return;}
-  document.getElementById('statsRow').innerHTML=renderStats();
-  const stage=document.getElementById('stage');
-  switch(state.screen){
-    case 'question':stage.innerHTML=renderQuestionScreen();break;
-    case 'detail':stage.innerHTML=renderDetailScreen();break;
-    case 'roundTransition':stage.innerHTML=renderRoundTransition();break;
-    case 'phaseTransition':stage.innerHTML=renderPhaseTransition();break;
-    case 'dictQuestion':stage.innerHTML=renderDictQuestionScreen();focusDictInput();break;
-    case 'dictFeedback':stage.innerHTML=renderDictFeedbackScreen();break;
-    case 'complete':stage.innerHTML=renderComplete();break;
-    default:stage.innerHTML='';
-  }
-}
+function saveEditedLibrary(){const lib=getCabinet().find(x=>x.id===editingLibraryId);if(!lib)return;if(!editingWords.length){showToast('A library must contain at least one word.');return;}const changed=JSON.stringify(lib.words.map(normalizeWordRecord))!==JSON.stringify(editingWords.map(normalizeWordRecord));lib.words=editingWords.map(normalizeWordRecord);lib.updatedAt=new Date().toISOString();if(changed)lib.progress=null;setCabinet(getCabinet());if(state?.libraryId===editingLibraryId){state=freshState(lib.words,editingLibraryId,false);beginRecognitionRound();loadRecognitionQuestion();save();}closeAllLayers();openCabinet();showToast(changed?'Changes saved. Study progress was reset for this volume.':'No changes were made.');}
 
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeAllLayers();});
 renderAccountBar();
 closeAllLayers();
 if(resetToken){openResetFromToken();}
 if(accountMode==='account'){
-  fetch('/api/auth/me',{credentials:'include'}).then(async r=>{
-    if(!r.ok){
-      const data=await r.json().catch(()=>({}));
-      throw new Error(data.error||'Your session is no longer active.');
-    }
-    return r.json();
-  }).then(data=>{
-    accountUser=data.user||null;
-    renderAccountBar();
-    return loadRemoteData();
-  }).catch(error=>{
-    // Do NOT silently turn an account into Guest mode when the session
-    // cookie is missing/expired. That made mobile browsers look as if
-    // the account could not log in. Keep the account choice visible.
-    accountUser=null;
-    accountMode='';
-    localStorage.removeItem(ACCOUNT_KEY);
-    renderAccountBar();
-    loadState();
-    showAuthChoice();
-    openLayer('authModal');
-    if(error?.message)document.getElementById('authError').textContent='Please log in again.';
-  });
+  fetch('/api/auth/me',{credentials:'include'}).then(r=>r.ok?r.json():Promise.reject()).then(data=>{
+    accountUser=data.user||null;renderAccountBar();return loadRemoteData();
+  }).catch(()=>{setAccountMode('guest',null);loadState();});
 }else if(accountMode==='guest'){
   loadState();
 }else{
