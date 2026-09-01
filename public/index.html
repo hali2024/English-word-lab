@@ -186,6 +186,22 @@ textarea::placeholder{color:#a79f91}
 .cabinetDetail h3{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#9a7b4e;font-weight:600}
 .wordList{display:flex;flex-wrap:wrap;gap:6px}
 .wordPill{padding:6px 9px;border:1px solid var(--line-dark);color:var(--accent);font-size:11px;background:rgba(255,252,245,.35)}
+
+.editLibraryIntro{position:relative;color:var(--muted);font-size:12px;font-style:italic;margin:0 0 16px}
+.editWordList{position:relative;display:grid;gap:8px;max-height:48vh;overflow:auto;padding-right:3px}
+.editWordRow{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
+.editWordRow:first-child{border-top:0}
+.editWordText{min-width:0;color:var(--ink);font-size:13px}
+.editWordDefinition{display:block;color:var(--muted);font-size:10px;font-style:italic;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.editDelete{font-size:10px!important;padding:6px 9px!important;border-color:var(--line-dark)!important;color:var(--muted)!important;background:transparent!important}
+.editDelete:hover{color:var(--accent)!important;border-color:var(--accent)!important;background:rgba(113,52,59,.05)!important}
+.editAddBox{position:relative;border-top:1px solid var(--line);margin-top:16px;padding-top:16px}
+.editAddBox h3{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#9a7b4e;margin:0 0 9px;font-weight:600}
+.editAddGrid{display:grid;grid-template-columns:1fr 1.5fr;gap:8px}
+.editAddGrid input{width:100%;border:1px solid var(--line-dark);background:rgba(255,252,245,.45);padding:9px 10px;color:var(--ink);border-radius:2px}
+.editAddGrid input:focus{outline:none;border-color:var(--accent)}
+.editLibraryActions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+@media(max-width:700px){.editAddGrid{grid-template-columns:1fr}.editWordList{max-height:42vh}}
 .emptyState{position:relative;text-align:center;color:var(--muted);font-style:italic;padding:28px 10px}
 .ledgerGrid{position:relative;display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line)}
 .ledgerStat{background:rgba(255,252,245,.55);padding:20px 14px;text-align:center}
@@ -313,6 +329,26 @@ become"></textarea>
     </div>
   </div>
 
+  <!-- Edit library -->
+  <div id="editLibraryModal" class="modalLayer hidden" aria-hidden="true" onclick="closeLayer(event,'editLibraryModal')">
+    <div class="modalCard" onclick="event.stopPropagation()">
+      <h2 class="modalTitle">Edit this volume</h2>
+      <p id="editLibraryIntro" class="editLibraryIntro"></p>
+      <div id="editLibraryWords" class="editWordList"></div>
+      <div class="editAddBox">
+        <h3>Add a word</h3>
+        <div class="editAddGrid">
+          <input id="editWordInput" maxlength="120" placeholder="word">
+          <input id="editDefinitionInput" maxlength="500" placeholder="definition">
+        </div>
+        <div class="editLibraryActions">
+          <button class="secondary" type="button" onclick="addWordToEditingLibrary()">Add Word</button>
+          <button type="button" onclick="saveEditedLibrary()">Save Changes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Cabinet -->
   <div id="cabinetModal" class="modalLayer hidden" aria-hidden="true" onclick="closeLayer(event,'cabinetModal')">
     <div class="modalCard" onclick="event.stopPropagation()">
@@ -371,6 +407,8 @@ const TTS_SUPPORTED='speechSynthesis' in window;
 let state=null;
 let pendingLibraryWords=null;
 let pendingLibrarySource='';
+let editingLibraryId=null;
+let editingLibraryWords=[];
 let globalStats=emptyPersistentStats();
 
 function emptyPersistentStats(){
@@ -1023,6 +1061,7 @@ function renderCabinet(){
       <div class="cabinetActions">
         <button onclick="openCabinetLibrary('${lib.id}')">Open</button>
         <button class="secondary" onclick="showCabinetDetail('${lib.id}')">View</button>
+        <button class="secondary" onclick="openEditLibrary('${lib.id}')">Edit</button>
         <button class="secondary" onclick="renameLibrary('${lib.id}')">Rename</button>
         <button class="secondary" onclick="clearLibraryProgress('${lib.id}')">Clear Progress</button>
         <button class="ghost" onclick="deleteLibrary('${lib.id}')">Remove</button>
@@ -1031,6 +1070,65 @@ function renderCabinet(){
     </div>`;
   }).join('')}</div>`;
 }
+function openEditLibrary(id){
+  const lib=getCabinet().find(x=>x.id===id);if(!lib)return;
+  editingLibraryId=id;
+  editingLibraryWords=lib.words.map(normalizeWordRecord);
+  document.getElementById('editLibraryIntro').textContent=`${lib.name} · ${editingLibraryWords.length} word${editingLibraryWords.length===1?'':'s'}. Add or remove words, then save.`;
+  renderEditLibraryWords();
+  document.getElementById('editWordInput').value='';
+  document.getElementById('editDefinitionInput').value='';
+  openLayer('editLibraryModal');
+  setTimeout(()=>document.getElementById('editWordInput')?.focus(),40);
+}
+function renderEditLibraryWords(){
+  const el=document.getElementById('editLibraryWords');if(!el)return;
+  if(!editingLibraryWords.length){el.innerHTML='<div class="emptyState">No words in this volume yet.</div>';return;}
+  el.innerHTML=editingLibraryWords.map((w,i)=>`<div class="editWordRow">
+    <div class="editWordText"><strong>${escapeHTML(w.word)}</strong><span class="editWordDefinition">${escapeHTML(w.definition)}</span></div>
+    <button class="ghost editDelete" type="button" onclick="removeWordFromEditingLibrary(${i})">Delete</button>
+  </div>`).join('');
+}
+function removeWordFromEditingLibrary(index){
+  if(index<0||index>=editingLibraryWords.length)return;
+  editingLibraryWords.splice(index,1);
+  renderEditLibraryWords();
+  const lib=getCabinet().find(x=>x.id===editingLibraryId);
+  if(lib)document.getElementById('editLibraryIntro').textContent=`${lib.name} · ${editingLibraryWords.length} word${editingLibraryWords.length===1?'':'s'}. Add or remove words, then save.`;
+}
+function addWordToEditingLibrary(){
+  const word=document.getElementById('editWordInput').value.trim();
+  const definition=document.getElementById('editDefinitionInput').value.trim();
+  if(!word||!definition){showToast('Please enter both a word and its definition.');return;}
+  const key=normalizeWordKey(word);
+  if(editingLibraryWords.some(w=>normalizeWordKey(w.word)===key)){showToast('That word is already in this volume.');return;}
+  editingLibraryWords.push(normalizeWordRecord({word,definition}));
+  document.getElementById('editWordInput').value='';
+  document.getElementById('editDefinitionInput').value='';
+  renderEditLibraryWords();
+  const lib=getCabinet().find(x=>x.id===editingLibraryId);
+  if(lib)document.getElementById('editLibraryIntro').textContent=`${lib.name} · ${editingLibraryWords.length} words. Add or remove words, then save.`;
+  document.getElementById('editWordInput').focus();
+}
+function saveEditedLibrary(){
+  const cabinet=getCabinet(),lib=cabinet.find(x=>x.id===editingLibraryId);if(!lib)return;
+  if(!editingLibraryWords.length){showToast('A volume must contain at least one word.');return;}
+  const oldWords=lib.words.map(normalizeWordRecord);
+  lib.words=editingLibraryWords.map(normalizeWordRecord);
+  lib.progress=null;
+  lib.updatedAt=new Date().toISOString();
+  setCabinet(cabinet);
+  if(state?.libraryId===editingLibraryId){
+    state=freshState(lib.words,editingLibraryId,false);
+    beginRecognitionRound();loadRecognitionQuestion();
+    save();
+  }
+  editingLibraryId=null;editingLibraryWords=[];
+  closeAllLayers();
+  renderCabinet();
+  showToast('Volume updated. Study progress was reset for this volume.');
+}
+
 function showCabinetDetail(id){
   const lib=getCabinet().find(x=>x.id===id);if(!lib)return;
   const el=document.getElementById('cabinetDetail_'+id);if(!el)return;
@@ -1203,7 +1301,10 @@ function render(){
   }
 }
 
-document.addEventListener('keydown',e=>{if(e.key==='Escape')closeAllLayers();});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape')closeAllLayers();
+  if(e.key==='Enter'&&document.getElementById('editLibraryModal')&&!document.getElementById('editLibraryModal').classList.contains('hidden')&&document.activeElement?.id==='editDefinitionInput')addWordToEditingLibrary();
+});
 closeAllLayers();
 loadState();
 
