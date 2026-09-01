@@ -51,48 +51,6 @@ const RESET_TTL_MINUTES = 30;
 const REGISTER_VERIFICATION_TTL_MINUTES = 15;
 
 // ============================================================
-// Mail configuration
-// ============================================================
-
-async function sendMail(to, subject, text, html) {
-  const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.RESEND_FROM;
-
-  if (!apiKey || !from) {
-    throw new Error("Email service is not configured.");
-  }
-
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${apiKey}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      from,
-      to,
-      subject,
-      text,
-      html
-    })
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-
-    console.error("Resend API error:", errorText);
-
-    throw new Error("Unable to send email.");
-  }
-
-  const result = await response.json();
-
-  console.log("Email sent successfully:", result.id);
-
-  return result;
-}
-
-// ============================================================
 // Middleware
 // ============================================================
 
@@ -122,6 +80,8 @@ if (pool) {
     })
   );
 } else {
+  // Local fallback.
+  // Authentication/data sync still require PostgreSQL.
   app.use(
     session({
       secret: SESSION_SECRET,
@@ -202,6 +162,17 @@ async function initDB() {
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
 
+    /*
+     * IMPORTANT:
+     *
+     * This table fixes the registration verification problem.
+     *
+     * We no longer rely only on req.session.registerVerifiedEmail.
+     * Once an email verification code is successfully verified,
+     * the server creates a database record here.
+     *
+     * The subsequent "Create account" request checks this table.
+     */
     CREATE TABLE IF NOT EXISTS register_verifications (
       email TEXT PRIMARY KEY,
       verified_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -239,6 +210,48 @@ function isValidEmail(email) {
 }
 
 // ============================================================
+// Email sending
+// ============================================================
+
+async function sendMail(to, subject, text, html) {
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.RESEND_FROM;
+
+  if (!apiKey || !from) {
+    throw new Error("Email service is not configured.");
+  }
+
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${apiKey}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      from,
+      to,
+      subject,
+      text,
+      html
+    })
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+
+    console.error("Resend API error:", errorText);
+
+    throw new Error("Unable to send email.");
+  }
+
+  const result = await response.json();
+
+  console.log("Email sent successfully:", result.id);
+
+  return result;
+}
+
+// ============================================================
 // Email verification code
 // ============================================================
 
@@ -247,6 +260,7 @@ async function issueEmailCode(email, purpose) {
     throw new Error("Database is not configured.");
   }
 
+  // Prevent excessive code requests.
   const recent = await pool.query(
     `SELECT created_at
      FROM email_codes
@@ -266,6 +280,7 @@ async function issueEmailCode(email, purpose) {
 
   const code = makeCode();
 
+  // Invalidate all previous unused codes for this email/purpose.
   await pool.query(
     `UPDATE email_codes
      SET consumed_at=NOW()
@@ -363,6 +378,14 @@ async function verifyEmailCode(email, purpose, code) {
 // Registration verification state
 // ============================================================
 
+/*
+ * Mark the email as verified for registration.
+ *
+ * This is the important fix.
+ *
+ * The browser Session is still updated for compatibility,
+ * but the database is now the real source of truth.
+ */
 async function markRegistrationEmailVerified(email) {
   if (!pool) return;
 
@@ -385,6 +408,10 @@ async function markRegistrationEmailVerified(email) {
   );
 }
 
+/*
+ * Check whether an email has recently passed registration
+ * verification.
+ */
 async function isRegistrationEmailVerified(email) {
   if (!pool) return false;
 
@@ -400,6 +427,10 @@ async function isRegistrationEmailVerified(email) {
   return result.rowCount > 0;
 }
 
+/*
+ * Once the account is successfully created, the temporary
+ * verification record is removed.
+ */
 async function clearRegistrationEmailVerification(email) {
   if (!pool) return;
 
@@ -414,25 +445,33 @@ async function clearRegistrationEmailVerification(email) {
 // Session helpers
 // ============================================================
 
-function publicUser(user) {
-  return {
-    id: user.id,
-    email: user.email,
-    emailVerified: !!user.email_verified,
-  };
-}
-
 function setRememberCookie(req, remember) {
+  /*
+   * The session itself is stored server-side.
+   *
+   * remember = true:
+   *   cookie survives browser restarts for 30 days.
+   *
+   * remember = false:
+   *   browser session cookie.
+   */
   req.session.cookie.maxAge = remember
     ? 1000 * 60 * 60 * 24 * 30
     : null;
 }
 
+function publicUser(row) {
+  return {
+    id: row.id,
+    email: row.email,
+    emailVerified: !!row.email_verified,
+  };
+}
+
 async function createLoggedInSession(req, user, remember) {
   req.session.userId = user.id;
-  req.session.userEmail = user.email;
 
-  delete req.session.registerEmail;
+  // Registration verification should never remain in the session.
   delete req.session.registerVerifiedEmail;
 
   setRememberCookie(req, remember);
@@ -491,6 +530,10 @@ app.post("/api/auth/register/request-code", async (req, res) => {
       [email]
     );
 
+    /*
+     * If a verified account already exists,
+     * registration is not allowed.
+     */
     if (
       existing.rowCount &&
       existing.rows[0].email_verified
@@ -501,10 +544,22 @@ app.post("/api/auth/register/request-code", async (req, res) => {
       });
     }
 
+    /*
+     * If the user starts registration again,
+     * invalidate any previous temporary verification state.
+     */
     await clearRegistrationEmailVerification(email);
 
+    /*
+     * Send the verification code.
+     */
     await issueEmailCode(email, "register");
 
+    /*
+     * Keep the email in the Session too.
+     * This is only a convenience/backward compatibility layer.
+     * The database record will be the actual verification source.
+     */
     req.session.registerEmail = email;
 
     await new Promise((resolve, reject) => {
@@ -551,6 +606,9 @@ app.post("/api/auth/register/verify", async (req, res) => {
       });
     }
 
+    /*
+     * Verify the actual one-time code.
+     */
     const valid = await verifyEmailCode(
       email,
       "register",
@@ -563,8 +621,25 @@ app.post("/api/auth/register/verify", async (req, res) => {
       });
     }
 
+    /*
+     * ========================================================
+     * IMPORTANT FIX
+     * ========================================================
+     *
+     * The verification result is now written to PostgreSQL.
+     *
+     * Therefore the next request:
+     *
+     * POST /api/auth/register
+     *
+     * does NOT depend only on the Session.
+     */
     await markRegistrationEmailVerified(email);
 
+    /*
+     * Also keep the Session state for compatibility with
+     * the current frontend.
+     */
     req.session.registerVerifiedEmail = email;
     req.session.registerEmail = email;
 
@@ -581,19 +656,20 @@ app.post("/api/auth/register/verify", async (req, res) => {
   } catch (error) {
     console.error(error);
 
-    res.status(500).json({
-      error:
-        "Unable to verify the email address.",
+    res.status(400).json({
+      error: "Unable to verify this email.",
     });
   }
 });
 
 // ============================================================
-// AUTH — REGISTER
+// AUTH — REGISTER: CREATE ACCOUNT
 // ============================================================
 
 app.post("/api/auth/register", async (req, res) => {
   if (!(await requireDB(res))) return;
+
+  const client = await pool.connect();
 
   try {
     const email = normalizeEmail(req.body.email);
@@ -607,17 +683,17 @@ app.post("/api/auth/register", async (req, res) => {
 
     if (password.length < 8) {
       return res.status(400).json({
-        error:
-          "Password must be at least 8 characters.",
+        error: "Password must be at least 8 characters.",
       });
     }
 
     /*
-     * IMPORTANT:
-     * Registration verification is now stored in PostgreSQL.
+     * ========================================================
+     * IMPORTANT FIX
+     * ========================================================
      *
-     * This means registration does not depend exclusively
-     * on the browser session.
+     * The server now checks PostgreSQL instead of relying
+     * exclusively on req.session.registerVerifiedEmail.
      */
     const verified = await isRegistrationEmailVerified(email);
 
@@ -628,10 +704,15 @@ app.post("/api/auth/register", async (req, res) => {
       });
     }
 
-    const existing = await pool.query(
-      `SELECT id, email_verified
+    /*
+     * Check whether the email already belongs to a verified
+     * account.
+     */
+    const existing = await client.query(
+      `SELECT *
        FROM users
-       WHERE email=$1`,
+       WHERE email=$1
+       LIMIT 1`,
       [email]
     );
 
@@ -645,112 +726,159 @@ app.post("/api/auth/register", async (req, res) => {
       });
     }
 
-    const passwordHash =
-      await bcrypt.hash(password, 12);
+    const passwordHash = await bcrypt.hash(password, 12);
 
-    const userId = crypto.randomUUID();
+    await client.query("BEGIN");
 
-    const client = await pool.connect();
+    let user;
 
-    try {
-      await client.query("BEGIN");
+    /*
+     * --------------------------------------------------------
+     * Case 1:
+     * There is an old unverified user record.
+     *
+     * Complete that account instead of creating a duplicate.
+     * --------------------------------------------------------
+     */
+    if (existing.rowCount) {
+      await client.query(
+        `UPDATE users
+         SET
+           password_hash=$1,
+           email_verified=TRUE,
+           updated_at=NOW()
+         WHERE id=$2`,
+        [
+          passwordHash,
+          existing.rows[0].id,
+        ]
+      );
+
+      const updated = await client.query(
+        `SELECT *
+         FROM users
+         WHERE id=$1`,
+        [existing.rows[0].id]
+      );
+
+      user = updated.rows[0];
+
+      /*
+       * Make sure user_data exists.
+       */
+      await client.query(
+        `INSERT INTO user_data(
+           user_id,
+           cabinet,
+           global_stats,
+           current_state
+         )
+         VALUES(
+           $1,
+           '[]'::jsonb,
+           '{}'::jsonb,
+           NULL
+         )
+         ON CONFLICT(user_id) DO NOTHING`,
+        [user.id]
+      );
+    }
+
+    /*
+     * --------------------------------------------------------
+     * Case 2:
+     * New account.
+     * --------------------------------------------------------
+     */
+    else {
+      const id = crypto.randomUUID();
 
       await client.query(
         `INSERT INTO users(
            id,
            email,
            password_hash,
-           email_verified,
-           created_at,
-           updated_at
+           email_verified
          )
          VALUES(
            $1,
            $2,
            $3,
-           TRUE,
-           NOW(),
-           NOW()
-         )
-         ON CONFLICT(email)
-         DO UPDATE SET
-           password_hash=EXCLUDED.password_hash,
-           email_verified=TRUE,
-           updated_at=NOW()`,
+           TRUE
+         )`,
         [
-          userId,
+          id,
           email,
           passwordHash,
         ]
       );
-
-      const userResult = await client.query(
-        `SELECT *
-         FROM users
-         WHERE email=$1`,
-        [email]
-      );
-
-      const user = userResult.rows[0];
 
       await client.query(
         `INSERT INTO user_data(
            user_id,
            cabinet,
            global_stats,
-           current_state,
-           updated_at
+           current_state
          )
          VALUES(
            $1,
            '[]'::jsonb,
            '{}'::jsonb,
-           NULL,
-           NOW()
-         )
-         ON CONFLICT(user_id)
-         DO NOTHING`,
-        [user.id]
+           NULL
+         )`,
+        [id]
       );
 
-      await client.query(
-        `DELETE FROM register_verifications
-         WHERE email=$1`,
-        [email]
+      const created = await client.query(
+        `SELECT *
+         FROM users
+         WHERE id=$1`,
+        [id]
       );
 
-      await client.query("COMMIT");
-
-      await createLoggedInSession(
-        req,
-        user,
-        false
-      );
-
-      res.json({
-        user: publicUser(user),
-      });
-    } catch (error) {
-      try {
-        await client.query("ROLLBACK");
-      } catch (_) {}
-
-      throw error;
-    } finally {
-      client.release();
+      user = created.rows[0];
     }
+
+    await client.query("COMMIT");
+
+    /*
+     * Verification is a one-time registration state.
+     * Once account creation succeeds, remove it.
+     */
+    await clearRegistrationEmailVerification(email);
+
+    /*
+     * Log the user in.
+     *
+     * The frontend will then show the "Remember this device?"
+     * modal.
+     */
+    await createLoggedInSession(
+      req,
+      user,
+      false
+    );
+
+    res.json({
+      user: publicUser(user),
+    });
   } catch (error) {
+    try {
+      await client.query("ROLLBACK");
+    } catch (_) {}
+
     console.error(error);
 
-    res.status(500).json({
-      error:
-        "Unable to create the account.",
+    res.status(400).json({
+      error: "Unable to create the account.",
     });
+  } finally {
+    client.release();
   }
 });
 
 // ============================================================
-// AUTH — LOGIN WITH PASSWORD
+// AUTH — PASSWORD LOGIN
 // ============================================================
 
 app.post("/api/auth/login/password", async (req, res) => {
@@ -760,38 +888,43 @@ app.post("/api/auth/login/password", async (req, res) => {
     const email = normalizeEmail(req.body.email);
     const password = String(req.body.password || "");
 
-    if (!isValidEmail(email)) {
+    if (!email || !password) {
       return res.status(400).json({
-        error: "Please enter a valid email address.",
+        error:
+          "Please enter your email and password.",
       });
     }
 
     const result = await pool.query(
       `SELECT *
        FROM users
-       WHERE email=$1
-         AND email_verified=TRUE`,
+       WHERE email=$1`,
       [email]
     );
 
     if (!result.rowCount) {
       return res.status(401).json({
-        error:
-          "Incorrect email or password.",
+        error: "Incorrect email or password.",
       });
     }
 
     const user = result.rows[0];
 
-    const valid = await bcrypt.compare(
+    if (!user.email_verified) {
+      return res.status(403).json({
+        error:
+          "Please verify your email before logging in.",
+      });
+    }
+
+    const ok = await bcrypt.compare(
       password,
       user.password_hash
     );
 
-    if (!valid) {
+    if (!ok) {
       return res.status(401).json({
-        error:
-          "Incorrect email or password.",
+        error: "Incorrect email or password.",
       });
     }
 
@@ -808,8 +941,7 @@ app.post("/api/auth/login/password", async (req, res) => {
     console.error(error);
 
     res.status(500).json({
-      error:
-        "Unable to log in.",
+      error: "Unable to log in.",
     });
   }
 });
@@ -1039,6 +1171,10 @@ app.post(
   async (req, res) => {
     if (!(await requireDB(res))) return;
 
+    /*
+     * Always use the same response so attackers cannot
+     * determine whether an email is registered.
+     */
     const generic =
       "If that account exists, a reset link has been sent.";
 
@@ -1069,6 +1205,9 @@ app.post(
         });
       }
 
+      /*
+       * Invalidate older unused reset tokens.
+       */
       await pool.query(
         `UPDATE password_reset_tokens
          SET used_at=NOW()
@@ -1077,6 +1216,9 @@ app.post(
         [result.rows[0].id]
       );
 
+      /*
+       * Generate a secure random reset token.
+       */
       const rawToken =
         crypto.randomBytes(32).toString("hex");
 
@@ -1097,6 +1239,11 @@ app.post(
         ]
       );
 
+      /*
+       * Build reset URL.
+       *
+       * APP_URL should normally be your Railway/public website URL.
+       */
       const base =
         APP_URL ||
         `${req.protocol}://${req.get("host")}`;
@@ -1137,6 +1284,10 @@ app.post(
     } catch (error) {
       console.error(error);
 
+      /*
+       * Do not expose account existence or internal
+       * email-service errors to the user.
+       */
       res.json({
         ok: true,
         message: generic,
@@ -1222,6 +1373,9 @@ app.post(
         [user.reset_id]
       );
 
+      /*
+       * Invalidate every other reset token for this account.
+       */
       await client.query(
         `UPDATE password_reset_tokens
          SET used_at=NOW()
@@ -1232,6 +1386,9 @@ app.post(
 
       await client.query("COMMIT");
 
+      /*
+       * Automatically log the user in.
+       */
       await createLoggedInSession(
         req,
         user,
@@ -1288,7 +1445,6 @@ app.get("/api/data", async (req, res) => {
         cabinet: [],
         globalStats: {},
         currentState: null,
-        updatedAt: null,
       });
     }
 
@@ -1368,25 +1524,8 @@ app.put("/api/data", async (req, res) => {
       ]
     );
 
-    /*
-     * IMPORTANT:
-     *
-     * Return the exact server timestamp after saving.
-     *
-     * The frontend uses this timestamp to determine whether
-     * another device has newer data.
-     */
-    const saved = await pool.query(
-      `SELECT updated_at
-       FROM user_data
-       WHERE user_id=$1`,
-      [req.session.userId]
-    );
-
     res.json({
       ok: true,
-      updatedAt:
-        saved.rows[0]?.updated_at || null,
     });
   } catch (error) {
     console.error(error);
@@ -1669,318 +1808,21 @@ ${cleanedWords.join("\n")}
 });
 
 // ============================================================
-// DEEPSEEK — GENERATE ONE WORD FOR CABINET EDITING
-// ============================================================
-
-/*
- * This is the endpoint used by:
- *
- * Edit this volume
- *        ↓
- * Add Word
- *        ↓
- * Generate & Add
- *
- * It is separate from /api/generate because the edit screen
- * only needs one word at a time.
- */
-
-app.post("/api/generate-one", async (req, res) => {
-  try {
-    const word = String(
-      req.body?.word || ""
-    ).trim();
-
-    if (!word) {
-      return res.status(400).json({
-        error:
-          "Please provide a word.",
-      });
-    }
-
-    if (word.length > 200) {
-      return res.status(400).json({
-        error:
-          "The word is too long.",
-      });
-    }
-
-    if (!process.env.DEEPSEEK_API_KEY) {
-      return res.status(500).json({
-        error:
-          "DeepSeek API key is not configured",
-      });
-    }
-
-    const systemPrompt = `
-You are an English vocabulary learning assistant.
-
-The user will provide exactly ONE English vocabulary word.
-
-Return exactly ONE vocabulary entry for that exact word.
-
-Never split, shorten, reinterpret, or replace the word.
-
-Return valid JSON only, using exactly this structure:
-
-{
-  "words": [
-    {
-      "word": "the exact input word",
-      "definition": "a clear and concise English definition",
-      "examples": [
-        "A natural English example sentence.",
-        "A second natural English example sentence.",
-        "A third natural English example sentence."
-      ],
-      "synonyms": [],
-      "antonyms": [],
-      "root": "A concise explanation of the word origin or root.",
-      "cognates": []
-    }
-  ]
-}
-
-Rules:
-
-1. Preserve the input word exactly.
-2. Return exactly one item in words.
-3. Provide exactly three useful example sentences.
-4. Synonyms, antonyms, root, and cognates may be empty when there is no useful information.
-5. Return JSON only.
-`;
-
-    const userPrompt =
-      `Generate one vocabulary entry for this exact word:\n${word}`;
-
-    const response =
-      await fetch(
-        "https://api.deepseek.com/chat/completions",
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type":
-              "application/json",
-
-            "Authorization":
-              `Bearer ${process.env.DEEPSEEK_API_KEY}`,
-          },
-
-          body: JSON.stringify({
-            model:
-              "deepseek-v4-flash",
-
-            thinking: {
-              type: "disabled",
-            },
-
-            messages: [
-              {
-                role: "system",
-                content:
-                  systemPrompt,
-              },
-
-              {
-                role: "user",
-                content:
-                  userPrompt,
-              },
-            ],
-
-            response_format: {
-              type: "json_object",
-            },
-
-            max_tokens: 2000,
-
-            stream: false,
-          }),
-        }
-      );
-
-    if (!response.ok) {
-      const errorText =
-        await response.text();
-
-      console.error(
-        "DeepSeek single-word API error:",
-        errorText
-      );
-
-      return res.status(502).json({
-        error:
-          "DeepSeek could not generate this word. Please try again.",
-      });
-    }
-
-    const data =
-      await response.json();
-
-    const content =
-      data?.choices?.[0]?.message
-        ?.content;
-
-    if (!content) {
-      return res.status(502).json({
-        error:
-          "DeepSeek returned an empty response. Please try again.",
-      });
-    }
-
-    let result;
-
-    try {
-      result =
-        JSON.parse(content);
-    } catch (error) {
-      console.error(
-        "Invalid JSON from DeepSeek single-word request:",
-        content
-      );
-
-      return res.status(502).json({
-        error:
-          "DeepSeek returned invalid vocabulary data. Please try again.",
-      });
-    }
-
-    const item =
-      Array.isArray(
-        result?.words
-      )
-        ? result.words[0]
-        : null;
-
-    if (
-      !item ||
-      typeof item !== "object"
-    ) {
-      return res.status(502).json({
-        error:
-          "DeepSeek returned no vocabulary entry. Please try again.",
-      });
-    }
-
-    const definition =
-      String(
-        item.definition || ""
-      ).trim();
-
-    if (!definition) {
-      return res.status(502).json({
-        error:
-          "DeepSeek did not return a definition. Please try again.",
-      });
-    }
-
-    const examples =
-      Array.isArray(
-        item.examples
-      )
-        ? item.examples
-            .map(v =>
-              String(v || "")
-                .trim()
-            )
-            .filter(Boolean)
-            .slice(0, 3)
-        : [];
-
-    while (
-      examples.length < 3
-    ) {
-      examples.push("");
-    }
-
-    const synonyms =
-      Array.isArray(
-        item.synonyms
-      )
-        ? item.synonyms
-            .map(v =>
-              String(v || "")
-                .trim()
-            )
-            .filter(Boolean)
-        : [];
-
-    const antonyms =
-      Array.isArray(
-        item.antonyms
-      )
-        ? item.antonyms
-            .map(v =>
-              String(v || "")
-                .trim()
-            )
-            .filter(Boolean)
-        : [];
-
-    const cognates =
-      Array.isArray(
-        item.cognates
-      )
-        ? item.cognates
-            .map(v =>
-              String(v || "")
-                .trim()
-            )
-            .filter(Boolean)
-        : [];
-
-    res.json({
-      words: [
-        {
-          word,
-
-          definition,
-
-          examples,
-
-          synonyms,
-
-          antonyms,
-
-          root:
-            String(
-              item.root || ""
-            ).trim(),
-
-          cognates,
-        },
-      ],
-    });
-  } catch (error) {
-    console.error(
-      "Single-word generation server error:",
-      error
-    );
-
-    res.status(500).json({
-      error:
-        "Unable to generate this word right now. Please try again.",
-    });
-  }
-});
-
-// ============================================================
 // RESET PASSWORD PAGE
 // ============================================================
 
-app.get(
-  "/reset-password",
-  (req, res) => {
-    res.sendFile(
-      path.join(
-        __dirname,
-        "public",
-        "index.html"
-      )
-    );
-  }
-);
+/*
+ * Serve the same SPA entry point for password reset links.
+ */
+app.get("/reset-password", (req, res) => {
+  res.sendFile(
+    path.join(
+      __dirname,
+      "public",
+      "index.html"
+    )
+  );
+});
 
 // ============================================================
 // STATIC WEBSITE
@@ -2001,26 +1843,19 @@ app.use(
 
 initDB()
   .then(() => {
-    console.log(
-      "Database initialized."
-    );
+    console.log("Database initialized.");
 
-    app.listen(
-      PORT,
-      () => {
-        console.log(
-          `Server running on port ${PORT}`
-        );
-      }
-    );
-  })
-  .catch(
-    (error) => {
-      console.error(
-        "Database initialization failed:",
-        error
+    app.listen(PORT, () => {
+      console.log(
+        `Server running on port ${PORT}`
       );
+    });
+  })
+  .catch((error) => {
+    console.error(
+      "Database initialization failed:",
+      error
+    );
 
-      process.exit(1);
-    }
-  );
+    process.exit(1);
+  });
