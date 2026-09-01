@@ -74,7 +74,7 @@ textarea{
 textarea:focus{border-color:var(--accent);box-shadow:none}
 textarea::placeholder{color:#a79f91}
 .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
-.homeTools{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin:0;z-index:5}
+.homeTools{position:absolute;top:0;left:0;right:0;display:flex;justify-content:flex-end;align-items:flex-start;gap:8px;margin:0;z-index:5}
 .utilityButton{
   border:1px solid rgba(113,52,59,.28);background:rgba(251,247,237,.5);color:var(--accent);
   padding:8px 13px;border-radius:2px;font-size:11px;letter-spacing:.08em;font-weight:400;
@@ -214,9 +214,9 @@ textarea::placeholder{color:#a79f91}
 }
 
 /* Account / authentication */
-.accountBar{position:absolute;top:38px;right:0;display:flex;align-items:flex-end;gap:8px;z-index:4}\n.studyToolsButton{position:absolute;top:46px;right:0;z-index:4;font-size:10px;padding:7px 10px;background:transparent;color:var(--accent);border-color:rgba(113,52,59,.35)}\n.studyToolsButton:hover{background:rgba(113,52,59,.07);color:var(--accent);border-color:var(--accent)}
-.accountButton{font-size:10px;padding:7px 10px;background:transparent;color:var(--accent);border-color:rgba(113,52,59,.35)}
-.accountButton:hover{background:rgba(113,52,59,.07);color:var(--accent);border-color:var(--accent)}
+.accountBar{position:fixed;top:0;left:0;display:flex;align-items:flex-start;gap:8px;z-index:4}\n.studyToolsButton{position:absolute;top:46px;right:0;z-index:4;font-size:10px;padding:7px 10px;background:transparent;color:var(--accent);border-color:rgba(113,52,59,.35)}\n.studyToolsButton:hover{background:rgba(113,52,59,.07);color:var(--accent);border-color:var(--accent)}
+.accountButton{font-size:10px;padding:7px 10px;background:transparent;color:var(--accent);border:0}
+.accountButton:hover{background:transparent;color:var(--accent);border:0}
 .accountStatus{font-size:10px;color:var(--muted);font-style:italic}
 .authChoiceGrid{display:grid;grid-template-columns:1fr;gap:9px}
 .authModeRow{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px}
@@ -298,7 +298,7 @@ textarea::placeholder{color:#a79f91}
   .ledgerGrid{grid-template-columns:1fr}
   .modalCard{padding:26px 19px}
   .drawerCard{width:min(390px,calc(92vw - 38px));padding-left:22px;padding-right:22px}
-  .accountBar{right:0;top:38px}
+  .accountBar{right:auto;top:0;left:0}
   .accountStatus{display:none}
 }
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
@@ -1465,7 +1465,7 @@ function renderLedger(){
 }
 function renderAlmanac(){
   const daily=globalStats.daily||{},dailyWords=globalStats.dailyWords||{};
-  const start=new Date();start.setHours(0,0,0,0);const end=new Date(start);end.setFullYear(end.getFullYear()+1);
+  const end=new Date();end.setHours(0,0,0,0);const start=new Date(end);start.setDate(start.getDate()-364);
   const days=[],cursor=new Date(start);while(cursor<=end){const key=dateKey(cursor),count=Array.isArray(dailyWords[key])?dailyWords[key].length:Number(daily[key]||0);days.push({key,count});cursor.setDate(cursor.getDate()+1);}
   const cells=days.map(c=>{const level=c.count===0?0:c.count<=10?1:c.count<=30?2:c.count<=60?3:c.count<=100?4:5;return `<div class="heatCell" data-level="${level}" data-over="${c.count>100?'100':''}" title="${escapeHTML(formatDate(c.key))} · ${c.count} words studied"></div>`;}).join('');
   return `<div><p class="modalIntro">A year's record, beginning today.</p><div class="heatmapWrap"><div class="heatmap">${cells}</div></div><div class="heatLegendTitle">Words studied in one day</div><div class="heatScaleColors" aria-hidden="true"><div class="scaleColor c0" title="0"></div><div class="scaleColor c1" title="1–10"></div><div class="scaleColor c2" title="11–30"></div><div class="scaleColor c3" title="31–60"></div><div class="scaleColor c4" title="61–100"></div></div><div class="heatScale"><div class="scaleSegment"><span>0</span></div><div class="scaleSegment"><span>1–10</span></div><div class="scaleSegment"><span>11–30</span></div><div class="scaleSegment"><span>31–60</span></div><div class="scaleSegment"><span>61–100</span></div></div><div class="heatLegendNote">✦ marks a day above 100 words.</div><div class="heatDate">${dateKey(start)} — ${dateKey(end)}</div></div>`;
