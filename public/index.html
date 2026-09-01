@@ -1529,7 +1529,7 @@ async function composeDailyPoem(){
   if(!practised.length&&!missed.length){showToast('There are not enough study records to compose a verse yet.');return;}
   if(area)area.innerHTML=`<div class="poemCard"><div class="poemHeader"><div class="poemTitle">The Weekly Poem</div><button class="poemComposeButton" type="button" disabled>Composing a Verse…</button></div><div class="profileLoading">A small verse is being composed from your most practised and most missed words…</div></div>`;
   try{
-    const response=await fetch('/api/profile/weekly-poem',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({weekKey:today,practised,mistakes,limit:200,daily:true})});
+    const response=await fetch('/api/profile/weekly-poem',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({weekKey:today,practised,mistakes:missed,limit:200,daily:true})});
     const data=await response.json().catch(()=>({}));
     if(!response.ok)throw new Error(data.error||'Unable to compose today’s verse.');
     if(!data.poem)throw new Error('No poem was returned.');
