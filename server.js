@@ -250,6 +250,29 @@ async function initDB() {
 
     CREATE INDEX IF NOT EXISTS register_verifications_expiry
       ON register_verifications(expires_at);
+
+    CREATE TABLE IF NOT EXISTS study_events (
+      id BIGSERIAL PRIMARY KEY,
+      user_id UUID NOT NULL
+        REFERENCES users(id)
+        ON DELETE CASCADE,
+      event_type TEXT NOT NULL,
+      word TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+    CREATE INDEX IF NOT EXISTS study_events_user_time
+      ON study_events(user_id, created_at);
+
+    CREATE TABLE IF NOT EXISTS daily_email_logs (
+      id BIGSERIAL PRIMARY KEY,
+      user_id UUID NOT NULL
+        REFERENCES users(id)
+        ON DELETE CASCADE,
+      report_date DATE NOT NULL,
+      sent_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE(user_id, report_date)
+    );
   `);
 }
 
@@ -1632,6 +1655,145 @@ app.get(
 
 
 // ============================================================
+// DAILY EMAIL ACTIVITY LOGGING
+// ============================================================
+
+async function recordStudyEvents(
+  client,
+  userId,
+  oldStats,
+  newStats,
+  hadPreviousSnapshot
+) {
+  // The first ever /api/data save only establishes the baseline.
+  // This prevents old historical counters from becoming today's events.
+  if (!hadPreviousSnapshot) {
+    return;
+  }
+
+  const oldData =
+    oldStats && typeof oldStats === 'object'
+      ? oldStats
+      : {};
+
+  const newData =
+    newStats && typeof newStats === 'object'
+      ? newStats
+      : {};
+
+  const oldWordStats =
+    oldData.wordStats && typeof oldData.wordStats === 'object'
+      ? oldData.wordStats
+      : {};
+
+  const newWordStats =
+    newData.wordStats && typeof newData.wordStats === 'object'
+      ? newData.wordStats
+      : {};
+
+  for (const [word, newWord] of Object.entries(newWordStats)) {
+    const oldWord = oldWordStats[word] || {};
+
+    const oldPractised =
+      Number(oldWord.practised || 0);
+    const newPractised =
+      Number(newWord?.practised || 0);
+
+    const practiceDelta =
+      Math.max(0, newPractised - oldPractised);
+
+    for (let i = 0; i < practiceDelta; i += 1) {
+      await client.query(
+        `
+        INSERT INTO study_events(
+          user_id, event_type, word, created_at
+        )
+        VALUES($1, 'practice', $2, NOW())
+        `,
+        [userId, word]
+      );
+    }
+
+    const oldMistakes =
+      Number(oldWord.mistakes || 0);
+    const newMistakes =
+      Number(newWord?.mistakes || 0);
+
+    const mistakeDelta =
+      Math.max(0, newMistakes - oldMistakes);
+
+    for (let i = 0; i < mistakeDelta; i += 1) {
+      await client.query(
+        `
+        INSERT INTO study_events(
+          user_id, event_type, word, created_at
+        )
+        VALUES($1, 'mistake', $2, NOW())
+        `,
+        [userId, word]
+      );
+    }
+  }
+
+  const oldLearned =
+    new Set(
+      Array.isArray(oldData.learnedWords)
+        ? oldData.learnedWords
+        : []
+    );
+
+  const newLearned =
+    Array.isArray(newData.learnedWords)
+      ? newData.learnedWords
+      : [];
+
+  for (const word of newLearned) {
+    if (oldLearned.has(word)) {
+      continue;
+    }
+
+    await client.query(
+      `
+      INSERT INTO study_events(
+        user_id, event_type, word, created_at
+      )
+      VALUES($1, 'learned', $2, NOW())
+      `,
+      [userId, word]
+    );
+  }
+
+  const oldSpelled =
+    new Set(
+      Array.isArray(oldData.spelledWords)
+        ? oldData.spelledWords
+        : []
+    );
+
+  const newSpelled =
+    Array.isArray(newData.spelledWords)
+      ? newData.spelledWords
+      : [];
+
+  for (const word of newSpelled) {
+    if (oldSpelled.has(word)) {
+      continue;
+    }
+
+    await client.query(
+      `
+      INSERT INTO study_events(
+        user_id, event_type, word, created_at
+      )
+      VALUES($1, 'spelling', $2, NOW())
+      `,
+      [userId, word]
+    );
+  }
+}
+
+
+// ============================================================
 // USER DATA — SAVE
 // ============================================================
 
@@ -1648,6 +1810,9 @@ app.put(
           'Not logged in.'
       });
     }
+
+    const client =
+      await pool.connect();
 
     try {
       const cabinet =
@@ -1668,7 +1833,28 @@ app.put(
         req.body.currentState ??
         null;
 
-      await pool.query(
+      await client.query('BEGIN');
+
+      const previous =
+        await client.query(
+          `
+          SELECT global_stats
+          FROM user_data
+          WHERE user_id=$1
+          FOR UPDATE
+          `,
+          [req.session.userId]
+        );
+
+      await recordStudyEvents(
+        client,
+        req.session.userId,
+        previous.rows[0]?.global_stats || {},
+        globalStats,
+        previous.rowCount > 0
+      );
+
+      await client.query(
         `
         INSERT INTO user_data(
           user_id,
@@ -1718,7 +1904,7 @@ app.put(
       );
 
       const saved =
-        await pool.query(
+        await client.query(
           `
           SELECT updated_at
           FROM user_data
@@ -1726,6 +1912,8 @@ app.put(
           `,
           [req.session.userId]
         );
+
+      await client.query('COMMIT');
 
       res.json({
         ok: true,
@@ -1736,12 +1924,18 @@ app.put(
           null
       });
     } catch (error) {
+      try {
+        await client.query('ROLLBACK');
+      } catch (_) {}
+
       console.error(error);
 
       res.status(500).json({
         error:
           'Unable to save user data.'
       });
+    } finally {
+      client.release();
     }
   }
 );
