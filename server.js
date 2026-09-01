@@ -2,7 +2,6 @@ const express = require("express");
 const path = require("path");
 const crypto = require("crypto");
 const bcrypt = require("bcryptjs");
-const nodemailer = require("nodemailer");
 const session = require("express-session");
 const pg = require("pg");
 const pgSession = require("connect-pg-simple")(session);
@@ -50,21 +49,7 @@ const REGISTER_VERIFICATION_TTL_MINUTES = 15;
 // Mail configuration
 // ============================================================
 
-const mailer =
-  process.env.SMTP_HOST &&
-  process.env.SMTP_USER &&
-  process.env.SMTP_PASS
-    ? nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
-        port: Number(process.env.SMTP_PORT || 587),
-        secure:
-          String(process.env.SMTP_SECURE || "false").toLowerCase() === "true",
-        auth: {
-          user: process.env.SMTP_USER,
-          pass: process.env.SMTP_PASS,
-        },
-      })
-    : null;
+
 
 // ============================================================
 // Middleware
@@ -230,26 +215,42 @@ function isValidEmail(email) {
 // ============================================================
 
 async function sendMail(to, subject, text, html) {
-  if (!mailer) {
-    if (process.env.NODE_ENV !== "production") {
-      console.log(
-        `[DEV EMAIL] To: ${to}\nSubject: ${subject}\n${text}`
-      );
-      return;
-    }
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.RESEND_FROM;
 
+  if (!apiKey || !from) {
     throw new Error("Email service is not configured.");
   }
 
-  await mailer.sendMail({
-    from: process.env.SMTP_FROM || process.env.SMTP_USER,
-    to,
-    subject,
-    text,
-    html,
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${apiKey}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      from,
+      to,
+      subject,
+      text,
+      html
+    })
   });
-}
 
+  if (!response.ok) {
+    const errorText = await response.text();
+
+    console.error("Resend API error:", errorText);
+
+    throw new Error("Unable to send email.");
+  }
+
+  const result = await response.json();
+
+  console.log("Email sent successfully:", result.id);
+
+  return result;
+}
 // ============================================================
 // Email verification code
 // ============================================================
