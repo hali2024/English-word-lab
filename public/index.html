@@ -205,11 +205,6 @@ textarea::placeholder{color:#a79f91}
 .heatLegendTitle{position:relative;text-align:right;font-size:10px;color:var(--muted);margin-top:8px}
 .heatLegendBoxes{position:relative;display:flex;justify-content:flex-end;gap:5px;margin-top:8px}
 .heatLegendBoxes .heatCell{flex:0 0 11px;cursor:default}
-.heatScale{position:relative;display:flex;justify-content:flex-end;align-items:flex-start;gap:0;margin-top:8px}
-.scaleSegment{height:5px;border-top:2px solid var(--line-dark);border-left:1px solid var(--line-dark);position:relative}
-.scaleSegment:last-child{border-right:1px solid var(--line-dark)}
-.scaleSegment span{display:block;position:absolute;top:7px;right:0;white-space:nowrap;font-size:8px;color:var(--muted)}
-.scaleSegment.l1{width:13%}.scaleSegment.l2{width:23%}.scaleSegment.l3{width:31%}.scaleSegment.l4{width:33%}
 .heatLegendNote{position:relative;font-size:9px;color:var(--muted);font-style:italic;text-align:right;margin-top:22px}
 .heatDate{position:relative;margin-top:14px;font-size:11px;color:var(--muted);text-align:right}
 .toast{
@@ -223,6 +218,17 @@ textarea::placeholder{color:#a79f91}
 .accountButton{font-size:10px;padding:7px 10px;background:transparent;color:var(--accent);border-color:rgba(113,52,59,.35)}
 .accountButton:hover{background:rgba(113,52,59,.07);color:var(--accent);border-color:var(--accent)}
 .accountStatus{font-size:10px;color:var(--muted);font-style:italic}
+.authChoiceGrid{display:grid;grid-template-columns:1fr;gap:9px}
+.authModeRow{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px}
+.authModeRow button{flex:1;min-width:110px}
+.authStep{display:grid;gap:10px}
+.authHint{font-size:11px;color:var(--muted);line-height:1.65;margin:0}
+.authLink{border:0;background:transparent;color:var(--accent);padding:0;font-size:11px;text-decoration:underline;cursor:pointer}
+.authLink:hover{background:transparent;border:0;transform:none}
+.codeRow{display:grid;grid-template-columns:1fr auto;gap:8px}
+.codeInput{text-align:center;letter-spacing:.22em}
+.rememberBox{padding:14px;border-left:2px solid #aa8a5b;background:rgba(230,218,197,.35);color:var(--muted);font-size:12px;line-height:1.7}
+
 .authStack{position:relative;display:grid;gap:10px}
 .authInput{position:relative;width:100%;padding:13px 14px;border:1px solid var(--line-dark);background:rgba(255,252,245,.55);color:var(--ink);outline:none;font-size:15px}
 .authInput:focus{border-color:var(--accent)}
@@ -237,16 +243,20 @@ textarea::placeholder{color:#a79f91}
 .addWordInput:focus{border-color:var(--accent)}
 .addWordStatus{position:relative;color:var(--muted);font-size:11px;font-style:italic;min-height:17px;margin-top:8px}
 /* Almanac ruler */
-.heatScaleColors{display:flex;height:11px;gap:5px;margin-top:0;justify-content:flex-end}
+.heatScaleColors{display:grid;grid-template-columns:2% 13% 23% 31% 31%;height:11px;gap:0;margin-top:0;align-items:stretch}
 .heatScaleColors .scaleColor{height:11px;border:1px solid rgba(74,55,39,.16);box-sizing:border-box}
-.heatScaleColors .c0{background:rgba(255,252,245,.55);width:2%}
-.heatScaleColors .c1{background:#e8ddd0;width:13%}
-.heatScaleColors .c2{background:#d7c5b5;width:23%}
-.heatScaleColors .c3{background:#bca392;width:31%}
-.heatScaleColors .c4{background:#8e6d61;width:31%}
-.heatScale{position:relative;display:grid;grid-template-columns:2% 13% 23% 31% 31%;align-items:start;gap:0;margin-top:18px;height:29px;border-top:1px solid var(--line-dark)}
-.heatScale .scaleSegment{height:8px;border-left:1px solid var(--line-dark);position:relative}
-.heatScale .scaleSegment:last-child{border-right:1px solid var(--line-dark)}
+.heatScaleColors .c0{background:rgba(255,252,245,.55)}
+.heatScaleColors .c1{background:#e8ddd0}
+.heatScaleColors .c2{background:#d7c5b5}
+.heatScaleColors .c3{background:#bca392}
+.heatScaleColors .c4{background:#8e6d61}
+.heatScale{position:relative;display:grid;grid-template-columns:2% 13% 23% 31% 31%;align-items:start;gap:0;margin-top:8px;height:28px}
+.scaleSegment{height:7px;border-left:1px solid var(--line-dark);position:relative}
+.scaleSegment:first-child{border-left:1px solid var(--line-dark)}
+.scaleSegment:last-child{border-right:1px solid var(--line-dark)}
+.scaleSegment:before{content:"";position:absolute;left:-1px;top:0;height:9px;border-left:1px solid var(--line-dark)}
+.scaleSegment:first-child:before{left:-1px}
+.scaleSegment span{display:block;position:absolute;top:9px;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:8px;color:var(--muted)}
 .heatScale .scaleSegment:before{content:"";position:absolute;top:-1px;left:-1px;width:1px;height:8px;background:var(--line-dark)}
 .heatScale .scaleSegment span{display:block;position:absolute;top:10px;left:-1px;transform:translateX(-50%);white-space:nowrap;font-size:8px;color:var(--muted)}
 .heatScale .scaleSegment:last-child span{left:-1px}
@@ -326,33 +336,119 @@ become"></textarea>
       <div id="authChoiceView">
         <h2 class="modalTitle">Your Study</h2>
         <p class="modalIntro">Choose how you would like to keep your records.</p>
-        <div class="modalActions">
+        <div class="authChoiceGrid">
           <button onclick="showAuthForm('login')">Log in</button>
           <button class="secondary" onclick="showAuthForm('register')">Register</button>
           <button class="secondary" onclick="showGuestNotice()">Continue as Guest</button>
         </div>
       </div>
+
       <div id="authFormView" class="hidden">
         <h2 id="authFormTitle" class="modalTitle">Log in</h2>
-        <p id="authFormIntro" class="modalIntro">Your study data will be kept with your account.</p>
-        <div class="authStack">
-          <input id="authEmail" class="authInput" type="email" autocomplete="email" placeholder="Email address">
-          <input id="authPassword" class="authInput" type="password" autocomplete="current-password" placeholder="Password" onkeydown="if(event.key==='Enter')submitAuth()">
-          <p id="authError" class="authError"></p>
+        <p id="authFormIntro" class="modalIntro">Sign in to restore your libraries and learning records.</p>
+
+        <div id="loginModeChooser" class="authModeRow">
+          <button id="passwordModeButton" onclick="setLoginMethod('password')">Password</button>
+          <button id="codeModeButton" class="secondary" onclick="setLoginMethod('code')">Email code</button>
         </div>
+
+        <div id="authStepEmail" class="authStep">
+          <input id="authEmail" class="authInput" type="email" autocomplete="email" placeholder="Email address">
+          <div id="registerEmailActions" class="hidden">
+            <button id="sendRegisterCodeButton" onclick="requestRegisterCode()">Send verification code</button>
+          </div>
+          <div id="loginCodeActions" class="hidden">
+            <button id="sendLoginCodeButton" onclick="requestLoginCode()">Send login code</button>
+          </div>
+        </div>
+
+        <div id="registerVerifyStep" class="hidden authStep">
+          <p class="authHint">We sent a 6-digit verification code to your email. Verify it before choosing a password.</p>
+          <div class="codeRow">
+            <input id="registerCode" class="authInput codeInput" inputmode="numeric" maxlength="6" placeholder="000000">
+            <button class="secondary" onclick="requestRegisterCode()">Resend</button>
+          </div>
+          <button onclick="verifyRegisterEmail()">Verify email</button>
+        </div>
+
+        <div id="passwordRegisterStep" class="hidden authStep">
+          <p class="authHint">Your email is verified. Now choose a password.</p>
+          <input id="registerPassword" class="authInput" type="password" autocomplete="new-password" placeholder="Password (8+ characters)">
+          <input id="registerPasswordConfirm" class="authInput" type="password" autocomplete="new-password" placeholder="Confirm password" onkeydown="if(event.key==='Enter')completeRegistration()">
+          <button onclick="completeRegistration()">Create account</button>
+        </div>
+
+        <div id="passwordLoginStep" class="hidden authStep">
+          <input id="loginPassword" class="authInput" type="password" autocomplete="current-password" placeholder="Password" onkeydown="if(event.key==='Enter')submitPasswordLogin()">
+          <button onclick="submitPasswordLogin()">Log in</button>
+          <div><button class="authLink" onclick="showPasswordReset()">Forgot password?</button></div>
+        </div>
+
+        <div id="codeLoginStep" class="hidden authStep">
+          <p class="authHint">Request a one-time code, then enter it below.</p>
+          <div class="codeRow">
+            <input id="loginCode" class="authInput codeInput" inputmode="numeric" maxlength="6" placeholder="000000">
+            <button class="secondary" onclick="requestLoginCode()">Resend</button>
+          </div>
+          <button onclick="submitCodeLogin()">Log in with code</button>
+        </div>
+
+        <div id="resetRequestStep" class="hidden authStep">
+          <p class="authHint">Enter your account email. We will send a secure password-reset link.</p>
+          <input id="resetEmail" class="authInput" type="email" autocomplete="email" placeholder="Email address">
+          <button onclick="requestPasswordReset()">Send reset link</button>
+          <button class="secondary" onclick="showAuthForm('login')">Back to login</button>
+        </div>
+
+        <div id="authError" class="authError"></div>
         <div class="modalActions">
-          <button id="authSubmitButton" data-mode="login" onclick="submitAuth()">Log in</button>
           <button class="secondary" onclick="showAuthChoice()">Back</button>
         </div>
       </div>
+
+      <div id="resetPasswordView" class="hidden">
+        <h2 class="modalTitle">Reset password</h2>
+        <p class="modalIntro">Choose a new password for your account.</p>
+        <div class="authStep">
+          <input id="newResetPassword" class="authInput" type="password" autocomplete="new-password" placeholder="New password (8+ characters)">
+          <input id="newResetPasswordConfirm" class="authInput" type="password" autocomplete="new-password" placeholder="Confirm new password">
+          <p id="resetPasswordError" class="authError"></p>
+          <button onclick="completePasswordReset()">Set new password</button>
+          <button class="secondary" onclick="showAuthChoice()">Back</button>
+        </div>
+      </div>
+
       <div id="guestNoticeView" class="hidden">
         <h2 class="modalTitle">Continue as Guest</h2>
         <p class="modalIntro">Guest mode keeps your data only in this browser.</p>
-        <div class="guestNotice">Your word libraries, learning progress, and study records will stay on this device only. If you change browser, device, or clear this browser's storage, your guest data will not follow you.</div>
+        <div class="guestNotice">Your word libraries, learning progress, and study records will stay on this browser only. If you change browser, device, or clear this browser's storage, your guest data will not follow you.</div>
         <div class="modalActions">
           <button onclick="confirmGuestMode()">Confirm Guest Mode</button>
           <button class="secondary" onclick="showAuthChoice()">Back</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="rememberModal" class="modalLayer hidden" aria-hidden="true">
+    <div class="modalCard" onclick="event.stopPropagation()">
+      <h2 class="modalTitle">Remember this device?</h2>
+      <p class="modalIntro">If you choose Yes, this browser will keep you signed in on this device. If you choose No, you will need to sign in again after the session ends.</p>
+      <div class="rememberBox">For your security, only choose Yes on a private device that you control.</div>
+      <div class="modalActions">
+        <button onclick="finishRememberChoice(true)">Yes, remember this device</button>
+        <button class="secondary" onclick="finishRememberChoice(false)">No, not now</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="logoutConfirmModal" class="modalLayer hidden" aria-hidden="true" onclick="if(event.target===event.currentTarget)closeLayer(event,'logoutConfirmModal')">
+    <div class="modalCard" onclick="event.stopPropagation()">
+      <h2 class="modalTitle">Log out?</h2>
+      <p class="modalIntro">Are you sure you want to log out of this account?</p>
+      <div class="modalActions">
+        <button onclick="confirmLogout()">Yes, log out</button>
+        <button class="secondary" onclick="closeLayer(event,'logoutConfirmModal')">Cancel</button>
       </div>
     </div>
   </div>
@@ -398,7 +494,7 @@ become"></textarea>
       <div id="editWordList" class="editList"></div>
       <div id="addWordPanel" class="addWordPanel hidden">
         <input id="addWordInput" class="addWordInput" type="text" autocomplete="off" placeholder="word" onkeydown="if(event.key==='Enter')addWordWithAI()">
-        <div class="modalActions"><button id="addWordGenerateButton" onclick="addWordWithAI()">Generate &amp; Add</button><button class="secondary" onclick="cancelAddWord()">Cancel</button></div>
+        <div class="modalActions"><button id="addWordGenerateButton" onclick="addWordWithAI()">Generate &amp; Add</button></div>
         <p id="addWordStatus" class="addWordStatus"></p>
       </div>
       <div id="editAddButtonRow" class="modalActions"><button class="secondary" onclick="showAddWordInput()">Add Word</button></div>
@@ -488,6 +584,10 @@ function getCabinet(){
 }
 function setCabinet(list){
   try{localStorage.setItem(CABINET_KEY,JSON.stringify(list));}catch(e){}
+  // Cabinet changes must also reach the server for logged-in users.
+  // This is what makes renamed, edited, removed, and newly-added
+  // libraries appear on the user's other devices.
+  if(typeof syncAccountData==='function')syncAccountData();
 }
 
 function freshState(words,libraryId=null,reviewMode=false){
@@ -577,6 +677,8 @@ function recordMistake(id){
 
 function saveGlobalStatsOnly(){
   try{localStorage.setItem(STATS_KEY,JSON.stringify(globalStats));}catch(e){}
+  // Learning statistics are persistent account data too.
+  if(typeof syncAccountData==='function')syncAccountData();
 }
 
 function save(){
@@ -1223,57 +1325,272 @@ function openSettings(){openLayer('settingsDrawer');}
 function openLedgerFromDrawer(){openLayer('recordPopover');}
 function openAlmanacFromDrawer(){openLayer('almanacPopover');}
 
-/* ---------- account / guest mode ---------- */
-const ACCOUNT_KEY='theLexicon_accountMode_v1';
+/* ---------- account / authentication ---------- */
+const ACCOUNT_KEY='theLexicon_accountMode_v2';
 let accountMode=localStorage.getItem(ACCOUNT_KEY)||'';
 let accountUser=null;
-function setAccountMode(mode,user){accountMode=mode;accountUser=user||null;if(mode)localStorage.setItem(ACCOUNT_KEY,mode);else localStorage.removeItem(ACCOUNT_KEY);renderAccountBar();}
+let pendingAuthAction=null;
+let pendingRememberEmail=null;
+let registerEmailVerified=false;
+let loginMethod='password';
+let resetToken=new URLSearchParams(location.search).get('reset')||'';
+
+function setAccountMode(mode,user){
+  accountMode=mode;accountUser=user||null;
+  if(mode)localStorage.setItem(ACCOUNT_KEY,mode);else localStorage.removeItem(ACCOUNT_KEY);
+  renderAccountBar();
+}
 function renderAccountBar(){
   const el=document.getElementById('accountBar');if(!el)return;
-  if(accountMode==='account'&&accountUser)el.innerHTML=`<span class="accountStatus">${escapeHTML(accountUser.email||'Account')}</span><button class="accountButton" onclick="logoutAccount()">Log out</button>`;
-  else el.innerHTML='<button class="accountButton" onclick="openAccountChoice()">Log in / Register</button>';
+  if(accountMode==='account'&&accountUser){
+    el.innerHTML=`<span class="accountStatus">${escapeHTML(accountUser.email||'Account')}</span><button class="accountButton" onclick="askLogout()">Log out</button>`;
+  }else if(accountMode==='guest'){
+    el.innerHTML='<button class="accountButton" onclick="openAccountChoice()">Log in / Register</button>';
+  }else{
+    el.innerHTML='<button class="accountButton" onclick="openAccountChoice()">Log in / Register</button>';
+  }
 }
 function openAccountChoice(){showAuthChoice();openLayer('authModal');}
-function showAuthChoice(){document.getElementById('authChoiceView').classList.remove('hidden');document.getElementById('authFormView').classList.add('hidden');document.getElementById('guestNoticeView').classList.add('hidden');}
-function showAuthForm(mode){
-  document.getElementById('authChoiceView').classList.add('hidden');document.getElementById('guestNoticeView').classList.add('hidden');document.getElementById('authFormView').classList.remove('hidden');
-  const register=mode==='register';document.getElementById('authFormTitle').textContent=register?'Register':'Log in';document.getElementById('authFormIntro').textContent=register?'Create an account to keep your libraries and learning records across devices.':'Sign in to restore your libraries and learning records.';document.getElementById('authSubmitButton').textContent=register?'Register':'Log in';document.getElementById('authSubmitButton').dataset.mode=mode;document.getElementById('authPassword').autocomplete=register?'new-password':'current-password';document.getElementById('authError').textContent='';
-  setTimeout(()=>document.getElementById('authEmail').focus(),40);
+function hideAuthSteps(){
+  ['authStepEmail','registerVerifyStep','passwordRegisterStep','passwordLoginStep','codeLoginStep','resetRequestStep'].forEach(id=>document.getElementById(id)?.classList.add('hidden'));
+  document.getElementById('loginModeChooser')?.classList.add('hidden');
 }
-function showGuestNotice(){document.getElementById('authChoiceView').classList.add('hidden');document.getElementById('authFormView').classList.add('hidden');document.getElementById('guestNoticeView').classList.remove('hidden');}
-function confirmGuestMode(){setAccountMode('guest',null);closeAllLayers();loadState();showToast('Guest mode enabled. Data stays in this browser.');}
-async function submitAuth(){
-  const email=(document.getElementById('authEmail').value||'').trim().toLowerCase(),password=document.getElementById('authPassword').value||'',mode=document.getElementById('authSubmitButton').dataset.mode||'login',err=document.getElementById('authError'),btn=document.getElementById('authSubmitButton');
-  err.textContent='';if(!email||!password){err.textContent='Please enter your email and password.';return;}if(password.length<8){err.textContent='Password must be at least 8 characters.';return;}
-  btn.disabled=true;btn.textContent=mode==='register'?'Creating…':'Signing in…';
-  try{const r=await fetch(`/api/auth/${mode}`,{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({email,password})});const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data.error||'Unable to complete the request.');accountUser=data.user||{email};setAccountMode('account',accountUser);await loadRemoteData();closeAllLayers();showToast(mode==='register'?'Account created.':'Welcome back.');}
-  catch(e){err.textContent=e.message||'Unable to connect to the server.';}finally{btn.disabled=false;btn.textContent=mode==='register'?'Register':'Log in';}
+function clearAuthError(){document.getElementById('authError').textContent='';}
+function showAuthChoice(){
+  document.getElementById('authChoiceView').classList.remove('hidden');
+  document.getElementById('authFormView').classList.add('hidden');
+  document.getElementById('guestNoticeView').classList.add('hidden');
+  document.getElementById('resetPasswordView').classList.add('hidden');
+}
+function showAuthForm(mode){
+  document.getElementById('authChoiceView').classList.add('hidden');
+  document.getElementById('guestNoticeView').classList.add('hidden');
+  document.getElementById('resetPasswordView').classList.add('hidden');
+  document.getElementById('authFormView').classList.remove('hidden');
+  hideAuthSteps();clearAuthError();
+  const register=mode==='register';
+  registerEmailVerified=false;
+  document.getElementById('authFormTitle').textContent=register?'Register':'Log in';
+  document.getElementById('authFormIntro').textContent=register?'Verify your email first, then create a password.':'Choose a sign-in method.';
+  if(register){
+    document.getElementById('authStepEmail').classList.remove('hidden');
+    document.getElementById('registerEmailActions').classList.remove('hidden');
+    document.getElementById('authEmail').value='';
+    document.getElementById('authEmail').focus();
+  }else{
+    document.getElementById('loginModeChooser').classList.remove('hidden');
+    setLoginMethod(loginMethod);
+  }
+}
+function setLoginMethod(method){
+  loginMethod=method;
+  document.getElementById('passwordModeButton').classList.toggle('secondary',method!=='password');
+  document.getElementById('codeModeButton').classList.toggle('secondary',method!=='code');
+  document.getElementById('authStepEmail').classList.remove('hidden');
+  document.getElementById('loginCodeActions').classList.toggle('hidden',method!=='code');
+  document.getElementById('registerEmailActions').classList.add('hidden');
+  document.getElementById('passwordLoginStep').classList.toggle('hidden',method!=='password');
+  document.getElementById('codeLoginStep').classList.toggle('hidden',method!=='code');
+  document.getElementById('resetRequestStep').classList.add('hidden');
+  clearAuthError();
+}
+function showGuestNotice(){
+  document.getElementById('authChoiceView').classList.add('hidden');
+  document.getElementById('authFormView').classList.add('hidden');
+  document.getElementById('resetPasswordView').classList.add('hidden');
+  document.getElementById('guestNoticeView').classList.remove('hidden');
+}
+function confirmGuestMode(){
+  setAccountMode('guest',null);closeAllLayers();loadState();showToast('Guest mode enabled. Data stays in this browser.');
+}
+async function apiJSON(url,options={}){
+  const r=await fetch(url,{credentials:'include',...options});
+  const data=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error(data.error||'Unable to complete the request.');
+  return data;
+}
+function authBusy(id,busy,label){
+  const b=document.getElementById(id);if(!b)return;
+  b.disabled=busy;if(busy)b.textContent=label;
+}
+async function requestRegisterCode(){
+  const email=(document.getElementById('authEmail').value||'').trim().toLowerCase();
+  if(!email||!email.includes('@')){document.getElementById('authError').textContent='Please enter a valid email address.';return;}
+  clearAuthError();authBusy('sendRegisterCodeButton',true,'Sending…');
+  try{
+    await apiJSON('/api/auth/register/request-code',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email})});
+    document.getElementById('registerEmailActions').classList.add('hidden');
+    document.getElementById('authStepEmail').classList.remove('hidden');
+    document.getElementById('registerVerifyStep').classList.remove('hidden');
+    showToast('Verification code sent.');
+  }catch(e){document.getElementById('authError').textContent=e.message;}
+  finally{authBusy('sendRegisterCodeButton',false,'Send verification code');}
+}
+async function verifyRegisterEmail(){
+  const email=(document.getElementById('authEmail').value||'').trim().toLowerCase();
+  const code=(document.getElementById('registerCode').value||'').trim();
+  if(!code){document.getElementById('authError').textContent='Enter the verification code.';return;}
+  try{
+    await apiJSON('/api/auth/register/verify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,code})});
+    registerEmailVerified=true;
+    document.getElementById('authStepEmail').classList.add('hidden');
+    document.getElementById('registerVerifyStep').classList.add('hidden');
+    document.getElementById('passwordRegisterStep').classList.remove('hidden');
+    document.getElementById('authFormIntro').textContent='Your email is verified. Choose a password.';
+    document.getElementById('registerPassword').focus();
+  }catch(e){document.getElementById('authError').textContent=e.message;}
+}
+async function completeRegistration(){
+  if(!registerEmailVerified){document.getElementById('authError').textContent='Please verify your email first.';return;}
+  const email=(document.getElementById('authEmail').value||'').trim().toLowerCase();
+  const password=document.getElementById('registerPassword').value||'';
+  const confirm=document.getElementById('registerPasswordConfirm').value||'';
+  if(password.length<8){document.getElementById('authError').textContent='Password must be at least 8 characters.';return;}
+  if(password!==confirm){document.getElementById('authError').textContent='Passwords do not match.';return;}
+  try{
+    const data=await apiJSON('/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});
+    accountUser=data.user;setAccountMode('account',accountUser);pendingRememberEmail=email;
+    await loadRemoteData();closeAllLayers();openLayer('rememberModal');
+  }catch(e){document.getElementById('authError').textContent=e.message;}
+}
+async function submitPasswordLogin(){
+  const email=(document.getElementById('authEmail').value||'').trim().toLowerCase();
+  const password=document.getElementById('loginPassword').value||'';
+  if(!email||!password){document.getElementById('authError').textContent='Please enter your email and password.';return;}
+  try{
+    const data=await apiJSON('/api/auth/login/password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password,remember:false})});
+    accountUser=data.user;setAccountMode('account',accountUser);pendingAuthAction='login';pendingRememberEmail=email;
+    await loadRemoteData();closeAllLayers();openLayer('rememberModal');
+  }catch(e){document.getElementById('authError').textContent=e.message;}
+}
+async function requestLoginCode(){
+  const email=(document.getElementById('authEmail').value||'').trim().toLowerCase();
+  if(!email){document.getElementById('authError').textContent='Please enter your email address.';return;}
+  try{
+    await apiJSON('/api/auth/login/request-code',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email})});
+    document.getElementById('codeLoginStep').classList.remove('hidden');
+    showToast('Login code sent.');
+  }catch(e){document.getElementById('authError').textContent=e.message;}
+}
+async function submitCodeLogin(){
+  const email=(document.getElementById('authEmail').value||'').trim().toLowerCase();
+  const code=(document.getElementById('loginCode').value||'').trim();
+  if(!email||!code){document.getElementById('authError').textContent='Enter your email and code.';return;}
+  try{
+    const data=await apiJSON('/api/auth/login/code',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,code,remember:false})});
+    accountUser=data.user;setAccountMode('account',accountUser);pendingAuthAction='login';pendingRememberEmail=email;
+    await loadRemoteData();closeAllLayers();openLayer('rememberModal');
+  }catch(e){document.getElementById('authError').textContent=e.message;}
+}
+function showPasswordReset(){
+  document.getElementById('authChoiceView').classList.add('hidden');
+  document.getElementById('guestNoticeView').classList.add('hidden');
+  hideAuthSteps();clearAuthError();
+  document.getElementById('authFormTitle').textContent='Reset password';
+  document.getElementById('authFormIntro').textContent='We will email you a secure password-reset link.';
+  document.getElementById('authFormView').classList.remove('hidden');
+  document.getElementById('resetRequestStep').classList.remove('hidden');
+  document.getElementById('resetEmail').value=document.getElementById('authEmail').value||'';
+}
+async function requestPasswordReset(){
+  const email=(document.getElementById('resetEmail').value||'').trim().toLowerCase();
+  if(!email){document.getElementById('authError').textContent='Please enter your email address.';return;}
+  try{
+    await apiJSON('/api/auth/password-reset/request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email})});
+    document.getElementById('authError').textContent='If that account exists, a reset link has been sent.';
+  }catch(e){document.getElementById('authError').textContent=e.message;}
+}
+function openResetFromToken(){
+  if(!resetToken)return;
+  showAuthChoice();openLayer('authModal');
+  document.getElementById('authChoiceView').classList.add('hidden');
+  document.getElementById('authFormView').classList.add('hidden');
+  document.getElementById('resetPasswordView').classList.remove('hidden');
+}
+async function completePasswordReset(){
+  const p=document.getElementById('newResetPassword').value||'',c=document.getElementById('newResetPasswordConfirm').value||'',err=document.getElementById('resetPasswordError');
+  err.textContent='';
+  if(p.length<8){err.textContent='Password must be at least 8 characters.';return;}
+  if(p!==c){err.textContent='Passwords do not match.';return;}
+  try{
+    const data=await apiJSON('/api/auth/password-reset/complete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:resetToken,password:p})});
+    accountUser=data.user;setAccountMode('account',accountUser);await loadRemoteData();
+    history.replaceState({},'',location.pathname);resetToken='';closeAllLayers();showToast('Password updated.');
+  }catch(e){err.textContent=e.message;}
+}
+async function finishRememberChoice(remember){
+  try{
+    if(pendingRememberEmail){
+      await apiJSON('/api/auth/session-preference',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({remember})});
+    }
+  }catch(e){console.warn('Could not update session preference',e);}
+  pendingRememberEmail=null;pendingAuthAction=null;closeAllLayers();showToast(remember?'This device will be remembered.':'Signed in for this session.');
+}
+function askLogout(){
+  document.getElementById('logoutConfirmModal').classList.remove('hidden');
+  document.getElementById('logoutConfirmModal').setAttribute('aria-hidden','false');
+}
+async function confirmLogout(){
+  try{await apiJSON('/api/auth/logout',{method:'POST'});}catch(e){}
+  setAccountMode('guest',null);accountUser=null;loadState();closeAllLayers();showToast('You have been logged out.');
 }
 async function loadRemoteData(){
-  clearTimeout(syncTimer);
-  const r=await fetch('/api/data',{credentials:'include'});const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data.error||'Unable to load your data.');
-  if(data.cabinet) localStorage.setItem(CABINET_KEY,JSON.stringify(data.cabinet)); else localStorage.removeItem(CABINET_KEY);if(data.globalStats)localStorage.setItem(STATS_KEY,JSON.stringify(data.globalStats)); else localStorage.removeItem(STATS_KEY);if(data.currentState)localStorage.setItem(KEY,JSON.stringify(data.currentState)); else localStorage.removeItem(KEY);loadState();
+  const data=await apiJSON('/api/data');
+  lastServerUpdatedAt=data.updatedAt||null;
+  lastLocalMutationAt=0;
+  if(data.cabinet)localStorage.setItem(CABINET_KEY,JSON.stringify(data.cabinet));else localStorage.removeItem(CABINET_KEY);
+  if(data.globalStats)localStorage.setItem(STATS_KEY,JSON.stringify(data.globalStats));else localStorage.removeItem(STATS_KEY);
+  if(data.currentState)localStorage.setItem(KEY,JSON.stringify(data.currentState));else localStorage.removeItem(KEY);
+  loadState();
 }
 let syncTimer=null;
-let syncInFlight=Promise.resolve();
-function getAccountDataSnapshot(){return {cabinet:getCabinet(),globalStats:JSON.parse(JSON.stringify(globalStats)),currentState:state?JSON.parse(JSON.stringify(state)):null};}
-async function saveAccountDataNow(){
-  if(accountMode!=='account')return true;
-  clearTimeout(syncTimer);
-  const payload=getAccountDataSnapshot();
-  syncInFlight=syncInFlight.then(async()=>{
-    const r=await fetch('/api/data',{method:'PUT',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(payload)});
-    const data=await r.json().catch(()=>({}));
-    if(!r.ok)throw new Error(data.error||`Account sync failed (${r.status})`);
-  });
-  try{await syncInFlight;return true;}catch(e){console.warn('Account sync failed',e);return false;}
-}
-function syncAccountData(){
+let syncInFlight=false;
+let lastServerUpdatedAt=null;
+let lastLocalMutationAt=0;
+
+async function syncAccountData(){
   if(accountMode!=='account')return;
+  lastLocalMutationAt=Date.now();
   clearTimeout(syncTimer);
-  syncTimer=setTimeout(()=>{saveAccountDataNow();},350);
+  syncTimer=setTimeout(async()=>{
+    if(accountMode!=='account')return;
+    syncInFlight=true;
+    try{
+      const r=await fetch('/api/data',{
+        method:'PUT',
+        headers:{'Content-Type':'application/json'},
+        credentials:'include',
+        body:JSON.stringify({
+          cabinet:getCabinet(),
+          globalStats,
+          currentState:state
+        })
+      });
+      const data=await r.json().catch(()=>({}));
+      if(r.ok&&data.updatedAt)lastServerUpdatedAt=data.updatedAt;
+      if(!r.ok)console.warn('Account sync failed:',data.error||r.status);
+    }catch(e){console.warn('Account sync failed',e);}
+    finally{syncInFlight=false;}
+  },350);
 }
-async function logoutAccount(){try{await saveAccountDataNow();await fetch('/api/auth/logout',{method:'POST',credentials:'include'});}catch(e){}setAccountMode('guest',null);loadState();showToast('Logged out. Guest mode is active on this browser.');}
+
+// Pull newer account data periodically so an account opened on another
+// device is not stuck with stale localStorage until the user logs in again.
+let remotePollTimer=setInterval(async()=>{
+  if(accountMode!=='account'||!accountUser||syncInFlight||Date.now()-lastLocalMutationAt<1500)return;
+  try{
+    const r=await fetch('/api/data',{credentials:'include'});
+    if(!r.ok)return;
+    const data=await r.json();
+    if(!data.updatedAt||data.updatedAt===lastServerUpdatedAt)return;
+    lastServerUpdatedAt=data.updatedAt;
+    if(data.cabinet)localStorage.setItem(CABINET_KEY,JSON.stringify(data.cabinet));else localStorage.removeItem(CABINET_KEY);
+    if(data.globalStats)localStorage.setItem(STATS_KEY,JSON.stringify(data.globalStats));else localStorage.removeItem(STATS_KEY);
+    if(data.currentState)localStorage.setItem(KEY,JSON.stringify(data.currentState));else localStorage.removeItem(KEY);
+    loadState();
+    renderReviewBanner();
+  }catch(e){console.warn('Remote sync check failed',e);}
+},10000);
 
 /* ---------- Cabinet editing ---------- */
 let editingLibraryId=null,editingWords=[];
@@ -1282,29 +1599,38 @@ function renderEditWordList(){const el=document.getElementById('editWordList');i
 function removeEditedWord(i){if(editingWords.length<=1){showToast('A library must contain at least one word.');return;}editingWords.splice(i,1);renderEditWordList();}
 function showAddWordInput(){document.getElementById('editAddButtonRow').classList.add('hidden');document.getElementById('addWordPanel').classList.remove('hidden');document.getElementById('addWordInput').value='';document.getElementById('addWordStatus').textContent='';setTimeout(()=>document.getElementById('addWordInput').focus(),40);}
 function cancelAddWord(){document.getElementById('addWordPanel').classList.add('hidden');document.getElementById('editAddButtonRow').classList.remove('hidden');document.getElementById('addWordStatus').textContent='';}
-async function addWordWithAI(){const input=document.getElementById('addWordInput'),status=document.getElementById('addWordStatus'),btn=document.getElementById('addWordGenerateButton'),word=(input.value||'').trim();if(!word){input.focus();return;}if(editingWords.some(w=>normalizeWordKey(w.word)===normalizeWordKey(word))){status.textContent='That word is already in this volume.';return;}btn.disabled=true;status.textContent='Composing the word…';try{const r=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({words:[word]})});const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data.error||`Request failed (${r.status})`);if(!Array.isArray(data.words)||!data.words[0])throw new Error('No vocabulary was returned.');const w=normalizeWordRecord({...data.words[0],word});if(!w.word||!w.definition)throw new Error('The generated word did not contain a definition.');editingWords.push(w);renderEditWordList();input.value='';status.textContent='Added. You can add another word or save the changes.';}catch(e){status.textContent=e.message||'Unable to generate this word.';}finally{btn.disabled=false;}}
-async function saveEditedLibrary(){
+async function addWordWithAI(){const input=document.getElementById('addWordInput'),status=document.getElementById('addWordStatus'),btn=document.getElementById('addWordGenerateButton'),word=(input.value||'').trim();if(!word){input.focus();return;}if(editingWords.some(w=>normalizeWordKey(w.word)===normalizeWordKey(word))){status.textContent='That word is already in this volume.';return;}btn.disabled=true;status.textContent='Composing the word…';try{const r=await fetch('/api/generate-one',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({word})});const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data.error||`Request failed (${r.status})`);if(!Array.isArray(data.words)||!data.words[0])throw new Error('No vocabulary was returned.');const w=normalizeWordRecord({...data.words[0],word});if(!w.word||!w.definition)throw new Error('The generated word did not contain a definition.');editingWords.push(w);renderEditWordList();input.value='';status.textContent='Added. You can add another word or save the changes.';}catch(e){status.textContent=e.message||'Unable to generate this word.';}finally{btn.disabled=false;}}
+function saveEditedLibrary(){
   const cabinet=getCabinet();
   const lib=cabinet.find(x=>x.id===editingLibraryId);
   if(!lib)return;
   if(!editingWords.length){showToast('A library must contain at least one word.');return;}
-  const changed=JSON.stringify(lib.words.map(normalizeWordRecord))!==JSON.stringify(editingWords.map(normalizeWordRecord));
-  lib.words=editingWords.map(normalizeWordRecord);
+
+  const newWords=editingWords.map(normalizeWordRecord);
+  const oldWords=lib.words.map(normalizeWordRecord);
+  const changed=JSON.stringify(oldWords)!==JSON.stringify(newWords);
+
+  // IMPORTANT: update the active study state BEFORE saving the Cabinet.
+  // Otherwise save() -> syncActiveLibraryProgress() can copy the old
+  // state.words back into the edited library and erase newly-added words.
+  lib.words=newWords;
   lib.updatedAt=new Date().toISOString();
-  if(changed)lib.progress=null;
-  setCabinet(cabinet);
+  lib.progress=null;
+
   if(state?.libraryId===editingLibraryId){
-    state=freshState(lib.words,editingLibraryId,false);
+    state=freshState(newWords,editingLibraryId,false);
     beginRecognitionRound();
     loadRecognitionQuestion();
-    try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}
   }
-  if(accountMode==='account'){
-    const ok=await saveAccountDataNow();
-    if(!ok){showToast('Changes saved on this browser, but server sync failed. Please try Save Changes again.');return;}
+
+  setCabinet(cabinet);
+
+  if(state?.libraryId===editingLibraryId){
+    save();
   }else{
-    saveGlobalStatsOnly();
+    syncAccountData();
   }
+
   closeAllLayers();
   openCabinet();
   showToast(changed?'Changes saved. Study progress was reset for this volume.':'No changes were made.');
@@ -1377,9 +1703,36 @@ function render(){
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeAllLayers();});
 renderAccountBar();
 closeAllLayers();
-if(!accountMode){showAuthChoice();openLayer('authModal');}
-else if(accountMode==='account'){fetch('/api/auth/me',{credentials:'include'}).then(r=>r.ok?r.json():Promise.reject()).then(data=>{accountUser=data.user||null;renderAccountBar();return loadRemoteData();}).catch(()=>{setAccountMode('guest',null);loadState();});}
-else loadState();
+if(resetToken){openResetFromToken();}
+if(accountMode==='account'){
+  fetch('/api/auth/me',{credentials:'include'}).then(async r=>{
+    if(!r.ok){
+      const data=await r.json().catch(()=>({}));
+      throw new Error(data.error||'Your session is no longer active.');
+    }
+    return r.json();
+  }).then(data=>{
+    accountUser=data.user||null;
+    renderAccountBar();
+    return loadRemoteData();
+  }).catch(error=>{
+    // Do NOT silently turn an account into Guest mode when the session
+    // cookie is missing/expired. That made mobile browsers look as if
+    // the account could not log in. Keep the account choice visible.
+    accountUser=null;
+    accountMode='';
+    localStorage.removeItem(ACCOUNT_KEY);
+    renderAccountBar();
+    loadState();
+    showAuthChoice();
+    openLayer('authModal');
+    if(error?.message)document.getElementById('authError').textContent='Please log in again.';
+  });
+}else if(accountMode==='guest'){
+  loadState();
+}else{
+  showAuthChoice();openLayer('authModal');
+}
 
 </script>
 </body>
