@@ -302,7 +302,7 @@ function buildHTML({ startTime, endTime, stats, testMode }) {
           Your cabinet is waiting, and there are still words to discover.
         </div>
 
-        <a href="https://english-word-lab-production.up.railway.app"
+        <a href="https://lexicon-cx9.pages.dev"
           style="display:inline-block;padding:13px 25px;background:#292925;color:#f8f6f0;text-decoration:none;font:600 11px/1 Arial,sans-serif;letter-spacing:1.8px;text-transform:uppercase;">
           Enter The Lexicon
         </a>
