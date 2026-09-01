@@ -85,13 +85,21 @@ function buildHTML({ startTime, endTime, stats, testMode }) {
   const topRows = stats.topPractice.length
     ? stats.topPractice.map((item, index) => `
         <tr>
-          <td style="padding:9px 0;color:#777;font:14px Arial,sans-serif;width:34px;">${index + 1}</td>
-          <td style="padding:9px 0;color:#222;font:600 15px Arial,sans-serif;">${escapeHTML(item.word)}</td>
-          <td style="padding:9px 0;text-align:right;color:#777;font:14px Arial,sans-serif;">${formatNumber(item.count)} ${escapeHTML(plural(item.count, 'time'))}</td>
+          <td style="padding:11px 0;color:#a19d94;font:13px Arial,sans-serif;width:34px;vertical-align:middle;">
+            ${String(index + 1).padStart(2, '0')}
+          </td>
+          <td style="padding:11px 0;color:#292824;font:600 15px Georgia,serif;vertical-align:middle;">
+            ${escapeHTML(item.word)}
+          </td>
+          <td style="padding:11px 0;text-align:right;color:#8b877f;font:13px Arial,sans-serif;vertical-align:middle;">
+            ${formatNumber(item.count)} ${escapeHTML(plural(item.count, 'time'))}
+          </td>
         </tr>`).join('')
     : `
         <tr>
-          <td colspan="3" style="padding:12px 0;color:#777;font:14px Arial,sans-serif;">No practice activity recorded.</td>
+          <td colspan="3" style="padding:14px 0;color:#8b877f;font:14px/1.6 Arial,sans-serif;">
+            A quiet day of study. Your next word is waiting.
+          </td>
         </tr>`;
 
   return `<!doctype html>
@@ -99,74 +107,229 @@ function buildHTML({ startTime, endTime, stats, testMode }) {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>The Lexicon Daily Report</title>
+  <title>The Lexicon — Your Daily Learning</title>
 </head>
-<body style="margin:0;padding:0;background:#f4f1ea;">
-  <div style="width:100%;background:#f4f1ea;padding:32px 12px;box-sizing:border-box;">
-    <div style="max-width:620px;margin:0 auto;background:#fff;border:1px solid #ddd8ce;">
-      <div style="padding:28px 30px;background:#20201d;color:#fff;">
-        <div style="font:600 12px/1.2 Arial,sans-serif;letter-spacing:3px;">THE LEXICON</div>
-        <div style="margin-top:16px;font:400 28px/1.2 Georgia,serif;">Your daily learning report</div>
-        ${testMode ? '<div style="margin-top:10px;font:12px Arial,sans-serif;color:#ddd;">TEST EMAIL — this was sent only to the test address.</div>' : ''}
+
+<body style="margin:0;padding:0;background:#eeece6;">
+
+  <div style="width:100%;background:#eeece6;padding:36px 12px;box-sizing:border-box;">
+
+    <div style="max-width:640px;margin:0 auto;background:#fbfaf7;border:1px solid #d9d5cc;">
+
+      <!-- HEADER -->
+      <div style="padding:34px 38px 32px;background:#242421;color:#f8f6f0;">
+
+        <div style="font:600 11px/1.2 Arial,sans-serif;letter-spacing:4px;">
+          THE LEXICON
+        </div>
+
+        <div style="margin-top:24px;font:400 31px/1.2 Georgia,serif;">
+          Good morning, wordsmith.
+        </div>
+
+        <div style="margin-top:12px;max-width:450px;color:#d7d4cc;font:14px/1.7 Georgia,serif;">
+          A little note from your Lexicon, with a look back at the words
+          you spent time with yesterday.
+        </div>
+
+        ${testMode
+          ? '<div style="margin-top:18px;font:10px Arial,sans-serif;letter-spacing:1.5px;text-transform:uppercase;color:#aaa79f;">Test edition · sent only to the test address</div>'
+          : ''}
       </div>
 
-      <div style="padding:30px;">
-        <div style="font:14px/1.6 Arial,sans-serif;color:#777;">${escapeHTML(formatDate(startTime, REPORT_TIMEZONE))} — ${escapeHTML(formatDate(endTime, REPORT_TIMEZONE))}</div>
 
-        <div style="margin-top:24px;border-top:1px solid #e4e0d8;border-bottom:1px solid #e4e0d8;">
+      <!-- INTRO -->
+      <div style="padding:34px 38px 0;">
+
+        <div style="color:#77736b;font:13px/1.6 Arial,sans-serif;">
+          ${escapeHTML(formatDate(startTime, REPORT_TIMEZONE))}
+          &nbsp;&nbsp;—&nbsp;&nbsp;
+          ${escapeHTML(formatDate(endTime, REPORT_TIMEZONE))}
+        </div>
+
+        <div style="margin-top:24px;color:#292824;font:400 20px/1.55 Georgia,serif;">
+          Hello again.
+        </div>
+
+        <div style="margin-top:9px;color:#706c64;font:14px/1.8 Arial,sans-serif;">
+          Here is your little record of yesterday's journey through language.
+          No matter how many words you met, every encounter counts.
+        </div>
+
+      </div>
+
+
+      <!-- MAIN STATISTICS -->
+      <div style="padding:30px 38px 0;">
+
+        <div style="border-top:1px solid #dcd8cf;border-bottom:1px solid #dcd8cf;">
+
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;">
+
             <tr>
-              <td style="padding:18px 8px 18px 0;width:50%;vertical-align:top;">
-                <div style="font:30px Georgia,serif;color:#20201d;">${formatNumber(stats.practiceCount)}</div>
-                <div style="margin-top:5px;font:12px Arial,sans-serif;letter-spacing:1px;text-transform:uppercase;color:#777;">Words studied</div>
+
+              <td style="padding:22px 14px 20px 0;width:50%;vertical-align:top;border-bottom:1px solid #e5e1d9;">
+
+                <div style="font:400 31px/1 Georgia,serif;color:#292824;">
+                  ${formatNumber(stats.practiceCount)}
+                </div>
+
+                <div style="margin-top:8px;font:600 10px/1.3 Arial,sans-serif;letter-spacing:1.7px;text-transform:uppercase;color:#8b877f;">
+                  Words studied
+                </div>
+
               </td>
-              <td style="padding:18px 0 18px 8px;width:50%;vertical-align:top;">
-                <div style="font:30px Georgia,serif;color:#20201d;">${formatNumber(stats.uniqueWords)}</div>
-                <div style="margin-top:5px;font:12px Arial,sans-serif;letter-spacing:1px;text-transform:uppercase;color:#777;">Unique words</div>
+
+
+              <td style="padding:22px 0 20px 14px;width:50%;vertical-align:top;border-bottom:1px solid #e5e1d9;">
+
+                <div style="font:400 31px/1 Georgia,serif;color:#292824;">
+                  ${formatNumber(stats.uniqueWords)}
+                </div>
+
+                <div style="margin-top:8px;font:600 10px/1.3 Arial,sans-serif;letter-spacing:1.7px;text-transform:uppercase;color:#8b877f;">
+                  Unique words
+                </div>
+
               </td>
+
             </tr>
+
+
             <tr>
-              <td style="padding:0 8px 18px 0;width:50%;vertical-align:top;">
-                <div style="font:24px Georgia,serif;color:#20201d;">${formatNumber(stats.learnedCount)}</div>
-                <div style="margin-top:5px;font:12px Arial,sans-serif;letter-spacing:1px;text-transform:uppercase;color:#777;">Words learned</div>
+
+              <td style="padding:21px 14px 22px 0;width:50%;vertical-align:top;">
+
+                <div style="font:400 25px/1 Georgia,serif;color:#292824;">
+                  ${formatNumber(stats.learnedCount)}
+                </div>
+
+                <div style="margin-top:8px;font:600 10px/1.3 Arial,sans-serif;letter-spacing:1.7px;text-transform:uppercase;color:#8b877f;">
+                  Words learned
+                </div>
+
               </td>
-              <td style="padding:0 0 18px 8px;width:50%;vertical-align:top;">
-                <div style="font:24px Georgia,serif;color:#20201d;">${formatNumber(stats.spellingCount)}</div>
-                <div style="margin-top:5px;font:12px Arial,sans-serif;letter-spacing:1px;text-transform:uppercase;color:#777;">Words spelled</div>
+
+
+              <td style="padding:21px 0 22px 14px;width:50%;vertical-align:top;">
+
+                <div style="font:400 25px/1 Georgia,serif;color:#292824;">
+                  ${formatNumber(stats.spellingCount)}
+                </div>
+
+                <div style="margin-top:8px;font:600 10px/1.3 Arial,sans-serif;letter-spacing:1.7px;text-transform:uppercase;color:#8b877f;">
+                  Words spelled
+                </div>
+
               </td>
+
             </tr>
-            <tr>
-              <td colspan="2" style="padding:0 0 20px;">
-                <div style="font:24px Georgia,serif;color:#20201d;">${formatNumber(stats.mistakeCount)}</div>
-                <div style="margin-top:5px;font:12px Arial,sans-serif;letter-spacing:1px;text-transform:uppercase;color:#777;">Mistakes</div>
-              </td>
-            </tr>
+
           </table>
+
         </div>
 
-        <div style="margin-top:30px;">
-          <div style="font:600 12px Arial,sans-serif;letter-spacing:2px;text-transform:uppercase;color:#777;">Most practised words</div>
-          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:12px;border-collapse:collapse;">
-            ${topRows}
-          </table>
+      </div>
+
+
+      <!-- MISTAKES -->
+      <div style="padding:25px 38px 0;">
+
+        <div style="padding:19px 20px;background:#f1eee7;border-left:2px solid #353530;">
+
+          <div style="font:400 24px/1 Georgia,serif;color:#292824;">
+            ${formatNumber(stats.mistakeCount)}
+          </div>
+
+          <div style="margin-top:7px;font:600 10px/1.3 Arial,sans-serif;letter-spacing:1.7px;text-transform:uppercase;color:#8b877f;">
+            Mistakes made
+          </div>
+
+          <div style="margin-top:9px;color:#77736b;font:13px/1.65 Arial,sans-serif;">
+            Mistakes are part of remembering. They give tomorrow's practice
+            somewhere to begin.
+          </div>
+
         </div>
 
-        <div style="margin-top:28px;padding-top:20px;border-top:1px solid #e4e0d8;color:#777;font:13px/1.7 Arial,sans-serif;">
+      </div>
+
+
+      <!-- TOP WORDS -->
+      <div style="padding:34px 38px 0;">
+
+        <div style="font:600 10px/1.3 Arial,sans-serif;letter-spacing:2px;text-transform:uppercase;color:#8b877f;">
+          A few words from yesterday
+        </div>
+
+        <div style="margin-top:7px;color:#292824;font:400 19px/1.45 Georgia,serif;">
+          Your most practised words
+        </div>
+
+
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0"
+          style="margin-top:17px;border-collapse:collapse;border-top:1px solid #dedad2;">
+
+          ${topRows}
+
+        </table>
+
+      </div>
+
+
+      <!-- CLOSING NOTE -->
+      <div style="padding:31px 38px 0;">
+
+        <div style="border-top:1px solid #dedad2;padding-top:25px;color:#6f6b63;font:14px/1.85 Georgia,serif;">
+
           ${stats.practiceCount
-            ? `You studied ${formatNumber(stats.practiceCount)} ${escapeHTML(plural(stats.practiceCount, 'time'))} across ${formatNumber(stats.uniqueWords)} ${escapeHTML(plural(stats.uniqueWords, 'unique word'))} during this report window.`
-            : 'No study activity was recorded during this report window.'}
+            ? `You spent time with <strong style="color:#292824;font-weight:normal;">${formatNumber(stats.practiceCount)} ${escapeHTML(plural(stats.practiceCount, 'word'))}</strong> across <strong style="color:#292824;font-weight:normal;">${formatNumber(stats.uniqueWords)} ${escapeHTML(plural(stats.uniqueWords, 'unique word'))}</strong> during this little window of study.`
+            : 'There was no recorded study activity during this little window. That is quite all right. The Lexicon will be here when you are ready.'}
+
         </div>
+
       </div>
 
-      <div style="padding:20px 30px;background:#f8f6f1;color:#888;font:12px/1.6 Arial,sans-serif;">
-        The Lexicon · Automated daily learning report
+
+      <!-- WEBSITE CTA -->
+      <div style="padding:34px 38px 38px;text-align:center;">
+
+        <div style="margin-bottom:19px;color:#292824;font:400 20px/1.45 Georgia,serif;">
+          Shall we meet again?
+        </div>
+
+        <div style="margin-bottom:21px;color:#77736b;font:13px/1.7 Arial,sans-serif;">
+          Your cabinet is waiting, and there are still words to discover.
+        </div>
+
+        <a href="https://english-word-lab-production.up.railway.app"
+          style="display:inline-block;padding:13px 25px;background:#292925;color:#f8f6f0;text-decoration:none;font:600 11px/1 Arial,sans-serif;letter-spacing:1.8px;text-transform:uppercase;">
+          Enter The Lexicon
+        </a>
+
       </div>
+
+
+      <!-- FOOTER -->
+      <div style="padding:22px 38px;background:#e9e6de;border-top:1px solid #d9d5cc;">
+
+        <div style="color:#77736b;font:11px/1.6 Arial,sans-serif;letter-spacing:.3px;">
+          The Lexicon
+        </div>
+
+        <div style="margin-top:4px;color:#99958d;font:11px/1.6 Arial,sans-serif;">
+          A quiet place for words, memory, and practice.
+        </div>
+
+      </div>
+
     </div>
+
   </div>
+
 </body>
 </html>`;
 }
-
 async function sendMail(to, subject, text, html, idempotencyKey) {
   const headers = {
     Authorization: `Bearer ${RESEND_API_KEY}`,
