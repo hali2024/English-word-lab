@@ -8,6 +8,11 @@ const pgSession = require("connect-pg-simple")(session);
 
 const { Pool } = pg;
 const app = express();
+
+// Railway runs the Node.js app behind an HTTPS reverse proxy.
+// This is required so secure session cookies work correctly in production.
+app.set("trust proxy", 1);
+
 const PORT = process.env.PORT || 3000;
 
 // ============================================================
