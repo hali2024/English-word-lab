@@ -1748,6 +1748,51 @@ app.put(
 
 
 // ============================================================
+// FEEDBACK
+// ============================================================
+
+app.post(
+  '/api/feedback',
+  async (req, res) => {
+    try {
+      const message = String(req.body?.message || '').trim();
+
+      if (!message) {
+        return res.status(400).json({
+          error: 'Please enter your feedback.'
+        });
+      }
+
+      if (message.length > 5000) {
+        return res.status(400).json({
+          error: 'Feedback is too long.'
+        });
+      }
+
+      const recipient =
+        process.env.FEEDBACK_TO ||
+        'feedback@lexiconoftheworld.win';
+
+      await sendMail(
+        recipient,
+        'The Lexicon Feedback',
+        message,
+        `<div style=\"font-family:Arial,sans-serif;white-space:pre-wrap\">${message.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>`
+      );
+
+      res.json({ ok: true });
+    } catch (error) {
+      console.error('Feedback email error:', error);
+
+      res.status(500).json({
+        error: 'Unable to send feedback right now. Please try again later.'
+      });
+    }
+  }
+);
+
+
+// ============================================================
 // DeepSeek
 // ============================================================
 
