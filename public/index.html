@@ -195,13 +195,15 @@ textarea::placeholder{color:#a79f91}
 .editWordDefinition{display:block;color:var(--muted);font-size:10px;font-style:italic;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .editDelete{font-size:10px!important;padding:6px 9px!important;border-color:var(--line-dark)!important;color:var(--muted)!important;background:transparent!important}
 .editDelete:hover{color:var(--accent)!important;border-color:var(--accent)!important;background:rgba(113,52,59,.05)!important}
+.editAddToggle{position:relative;margin-top:16px;padding-top:16px;border-top:1px solid var(--line)}
 .editAddBox{position:relative;border-top:1px solid var(--line);margin-top:16px;padding-top:16px}
 .editAddBox h3{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#9a7b4e;margin:0 0 9px;font-weight:600}
-.editAddGrid{display:grid;grid-template-columns:1fr 1.5fr;gap:8px}
+.editAddGrid{display:grid;grid-template-columns:1fr;gap:8px}
 .editAddGrid input{width:100%;border:1px solid var(--line-dark);background:rgba(255,252,245,.45);padding:9px 10px;color:var(--ink);border-radius:2px}
 .editAddGrid input:focus{outline:none;border-color:var(--accent)}
 .editLibraryActions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
-@media(max-width:700px){.editAddGrid{grid-template-columns:1fr}.editWordList{max-height:42vh}}
+.editSaveActions{position:relative;display:flex;justify-content:flex-end;gap:8px;margin-top:16px;padding-top:16px;border-top:1px solid var(--line)}
+@media(max-width:700px){.editWordList{max-height:42vh}}
 .emptyState{position:relative;text-align:center;color:var(--muted);font-style:italic;padding:28px 10px}
 .ledgerGrid{position:relative;display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line)}
 .ledgerStat{background:rgba(255,252,245,.55);padding:20px 14px;text-align:center}
@@ -220,7 +222,7 @@ textarea::placeholder{color:#a79f91}
 .heatCell[data-over="100"]::after{content:"✦";position:absolute;inset:-3px -2px 0 0;color:#71343b;font-size:8px;line-height:11px;text-align:right}
 .heatLegendTitle{position:relative;text-align:right;font-size:10px;color:var(--muted);margin-top:8px}
 .heatScale{position:relative;display:grid;grid-template-columns:18px 10fr 20fr 30fr 40fr;gap:7px;align-items:start;margin-top:8px;padding-bottom:24px}
-.scaleSegment{height:22px;position:relative;flex:0 0 auto;border:1px solid rgba(74,55,39,.16);box-sizing:border-box}
+.scaleSegment{height:11px;position:relative;flex:0 0 auto;border:1px solid rgba(74,55,39,.16);box-sizing:border-box}
 .scaleSegment span{display:block;position:absolute;top:29px;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:8px;color:var(--muted)}
 .scaleSegment.s0{background:rgba(255,252,245,.78)}
 .scaleSegment.l1{background:#e8ddd0}
@@ -335,16 +337,22 @@ become"></textarea>
       <h2 class="modalTitle">Edit this volume</h2>
       <p id="editLibraryIntro" class="editLibraryIntro"></p>
       <div id="editLibraryWords" class="editWordList"></div>
-      <div class="editAddBox">
+      <div id="editAddToggle" class="editAddToggle">
+        <button class="secondary" type="button" onclick="showAddWordEditor()">Add Word</button>
+      </div>
+      <div id="editAddBox" class="editAddBox hidden">
         <h3>Add a word</h3>
         <div class="editAddGrid">
-          <input id="editWordInput" maxlength="120" placeholder="word">
-          <input id="editDefinitionInput" maxlength="500" placeholder="definition">
+          <input id="editWordInput" maxlength="120" placeholder="word" onkeydown="if(event.key==='Enter')addWordToEditingLibrary()">
         </div>
+        <p class="editLibraryIntro" style="margin:8px 0 0">Enter the word only. DeepSeek will supply the definition, examples, synonyms, antonyms, roots, and cognates automatically.</p>
         <div class="editLibraryActions">
-          <button class="secondary" type="button" onclick="addWordToEditingLibrary()">Add Word</button>
-          <button type="button" onclick="saveEditedLibrary()">Save Changes</button>
+          <button class="secondary" type="button" onclick="hideAddWordEditor()">Cancel</button>
+          <button type="button" id="editGenerateButton" onclick="addWordToEditingLibrary()">Generate &amp; Add</button>
         </div>
+      </div>
+      <div class="editSaveActions">
+        <button type="button" onclick="saveEditedLibrary()">Save Changes</button>
       </div>
     </div>
   </div>
@@ -1077,9 +1085,8 @@ function openEditLibrary(id){
   document.getElementById('editLibraryIntro').textContent=`${lib.name} · ${editingLibraryWords.length} word${editingLibraryWords.length===1?'':'s'}. Add or remove words, then save.`;
   renderEditLibraryWords();
   document.getElementById('editWordInput').value='';
-  document.getElementById('editDefinitionInput').value='';
+  hideAddWordEditor();
   openLayer('editLibraryModal');
-  setTimeout(()=>document.getElementById('editWordInput')?.focus(),40);
 }
 function renderEditLibraryWords(){
   const el=document.getElementById('editLibraryWords');if(!el)return;
@@ -1089,26 +1096,55 @@ function renderEditLibraryWords(){
     <button class="ghost editDelete" type="button" onclick="removeWordFromEditingLibrary(${i})">Delete</button>
   </div>`).join('');
 }
+function showAddWordEditor(){
+  document.getElementById('editAddToggle')?.classList.add('hidden');
+  document.getElementById('editAddBox')?.classList.remove('hidden');
+  setTimeout(()=>document.getElementById('editWordInput')?.focus(),40);
+}
+function hideAddWordEditor(){
+  document.getElementById('editAddBox')?.classList.add('hidden');
+  document.getElementById('editAddToggle')?.classList.remove('hidden');
+}
 function removeWordFromEditingLibrary(index){
   if(index<0||index>=editingLibraryWords.length)return;
+  if(editingLibraryWords.length===1){showToast('A volume must contain at least one word.');return;}
   editingLibraryWords.splice(index,1);
   renderEditLibraryWords();
   const lib=getCabinet().find(x=>x.id===editingLibraryId);
-  if(lib)document.getElementById('editLibraryIntro').textContent=`${lib.name} · ${editingLibraryWords.length} word${editingLibraryWords.length===1?'':'s'}. Add or remove words, then save.`;
+  if(lib)document.getElementById('editLibraryIntro').textContent=`${lib.name} · ${editingLibraryWords.length} words. Add or remove words, then save.`;
 }
-function addWordToEditingLibrary(){
-  const word=document.getElementById('editWordInput').value.trim();
-  const definition=document.getElementById('editDefinitionInput').value.trim();
-  if(!word||!definition){showToast('Please enter both a word and its definition.');return;}
+async function addWordToEditingLibrary(){
+  const input=document.getElementById('editWordInput');
+  const button=document.getElementById('editGenerateButton');
+  const word=input.value.trim();
+  if(!word){input.focus();return;}
   const key=normalizeWordKey(word);
   if(editingLibraryWords.some(w=>normalizeWordKey(w.word)===key)){showToast('That word is already in this volume.');return;}
-  editingLibraryWords.push(normalizeWordRecord({word,definition}));
-  document.getElementById('editWordInput').value='';
-  document.getElementById('editDefinitionInput').value='';
-  renderEditLibraryWords();
-  const lib=getCabinet().find(x=>x.id===editingLibraryId);
-  if(lib)document.getElementById('editLibraryIntro').textContent=`${lib.name} · ${editingLibraryWords.length} words. Add or remove words, then save.`;
-  document.getElementById('editWordInput').focus();
+  button.disabled=true;
+  button.textContent='Generating…';
+  try{
+    const response=await fetch('/api/generate',{
+      method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({words:[word]})
+    });
+    let data={};try{data=await response.json();}catch(e){throw new Error('Server returned an invalid response.');}
+    if(!response.ok)throw new Error(data.error||`Request failed (${response.status})`);
+    if(!Array.isArray(data.words)||!data.words.length)throw new Error('No vocabulary was returned.');
+    const generated=normalizeWordRecord({...data.words[0],word});
+    if(!generated.word||!generated.definition)throw new Error('DeepSeek did not return a definition for this word.');
+    editingLibraryWords.push(generated);
+    input.value='';
+    renderEditLibraryWords();
+    const lib=getCabinet().find(x=>x.id===editingLibraryId);
+    if(lib)document.getElementById('editLibraryIntro').textContent=`${lib.name} · ${editingLibraryWords.length} words. Add or remove words, then save.`;
+    hideAddWordEditor();
+    showToast(`“${word}” added.`);
+  }catch(error){
+    console.error('AI generation failed:',error);
+    showToast(error.message||'Could not generate this word.');
+  }finally{
+    button.disabled=false;
+    button.textContent='Generate & Add';
+  }
 }
 function saveEditedLibrary(){
   const cabinet=getCabinet(),lib=cabinet.find(x=>x.id===editingLibraryId);if(!lib)return;
@@ -1303,7 +1339,7 @@ function render(){
 
 document.addEventListener('keydown',e=>{
   if(e.key==='Escape')closeAllLayers();
-  if(e.key==='Enter'&&document.getElementById('editLibraryModal')&&!document.getElementById('editLibraryModal').classList.contains('hidden')&&document.activeElement?.id==='editDefinitionInput')addWordToEditingLibrary();
+  
 });
 closeAllLayers();
 loadState();
