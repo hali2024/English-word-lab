@@ -155,6 +155,8 @@ textarea::placeholder{color:#a79f91}
   border:1px solid rgba(74,55,39,.25);box-shadow:0 28px 80px rgba(52,38,24,.22);border-radius:2px;
 }
 .modalCard:before{content:"";position:absolute;inset:8px;border:1px solid rgba(170,138,91,.20);pointer-events:none}
+#profilePopover .modalCard{border:1px solid rgba(170,138,91,.20)}
+#profilePopover .modalCard:before{display:none}
 .modalTitle{position:relative;font-size:30px;font-weight:400;color:#54262c;margin:0 0 8px}
 .modalIntro{position:relative;color:var(--muted);font-size:12px;font-style:italic;margin:0 0 22px}
 .modalActions{position:relative;display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:20px}
@@ -256,15 +258,6 @@ textarea::placeholder{color:#a79f91}
 .rankWord{font-size:14px;color:var(--accent);overflow-wrap:anywhere}
 .rankCount{font-size:11px;color:var(--muted);font-style:italic;text-align:right;white-space:nowrap}
 .profileNote{position:relative;color:var(--muted);font-size:11px;font-style:italic;line-height:1.7;margin-top:9px}
-.poemCard{position:relative;margin-top:24px;padding:20px;background:rgba(230,218,197,.30);border-left:2px solid #aa8a5b}
-.poemHeader{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px}
-.poemHeader .poemTitle{margin:0}
-.poemComposeButton{background:transparent;color:var(--accent);border:0;padding:2px 4px;font-family:"Brush Script MT","Segoe Script",cursive;font-size:15px;font-style:italic;font-weight:400;letter-spacing:.03em;white-space:nowrap}
-.poemComposeButton:hover{background:transparent;color:#54262c;border:0;transform:none}
-.poemComposeButton:disabled{opacity:.55}
-.poemTitle{font-size:22px;color:#54262c;margin:0 0 6px;font-weight:400}
-.poemMeta{font-size:10px;color:var(--muted);font-style:italic;margin-bottom:15px}
-.poemText{white-space:pre-line;font-size:15px;line-height:1.85;color:var(--ink);font-style:italic}
 .profileLoading{position:relative;color:var(--muted);font-size:12px;font-style:italic;padding:12px 0}
 .actionModalText{position:relative;color:var(--muted);font-size:13px;line-height:1.75;margin:0}
 .actionModalWarning{position:relative;margin-top:13px;padding:12px 14px;border-left:2px solid #aa8a5b;background:rgba(230,218,197,.35);color:var(--muted);font-size:11px;line-height:1.7}
@@ -1507,42 +1500,9 @@ function renderProfile(){
   const practised=getRanking('practised',10),missed=getRanking('mistakes',10),allWords=new Set(Object.keys(globalStats.wordStats||{})),learned=new Set(globalStats.learnedWords||[]),spelled=new Set(globalStats.spelledWords||[]);
   const studyDays=new Set(Object.keys(globalStats.dailyWords||{}).filter(k=>Array.isArray(globalStats.dailyWords[k])&&globalStats.dailyWords[k].length));
   let currentStreak=0;const cursor=new Date();cursor.setHours(12,0,0,0);while(true){const k=dateKey(cursor);if(!studyDays.has(k))break;currentStreak++;cursor.setDate(cursor.getDate()-1);}
-  const bestDay=Object.entries(globalStats.daily||{}).sort((a,b)=>Number(b[1])-Number(a[1]))[0],poem=globalStats.weeklyPoem&&typeof globalStats.weeklyPoem==='object'?globalStats.weeklyPoem:null,dailyPoem=globalStats.dailyPoem&&typeof globalStats.dailyPoem==='object'?globalStats.dailyPoem:null,dailyPoemToday=dailyPoem&&dailyPoem.date===todayKey();
-  const dailyPoemButton=dailyPoemToday?'<button class="poemComposeButton" type="button" disabled>Verse Complete</button>':'<button class="poemComposeButton" type="button" onclick="composeDailyPoem()">Compose a Verse</button>';
-  return `<div class="profileSummary">Your learning record is built from the study activity already saved to this account or browser.</div><div class="profileGrid"><div class="profileStat"><div class="value">${allWords.size}</div><div class="name">Words Encountered</div></div><div class="profileStat"><div class="value">${learned.size}</div><div class="name">Words Learned</div></div><div class="profileStat"><div class="value">${spelled.size}</div><div class="name">Words Spelled</div></div><div class="profileStat"><div class="value">${globalStats.mistakes||0}</div><div class="name">Total Mistakes</div></div><div class="profileStat"><div class="value">${studyDays.size}</div><div class="name">Study Days</div></div><div class="profileStat"><div class="value">${currentStreak}</div><div class="name">Current Streak</div></div></div><div class="rankingSection"><div class="rankingTitle">Most Practised · Top 10</div>${renderRanking(practised,'Practice count')}</div><div class="rankingSection"><div class="rankingTitle">Most Missed · Top 10</div>${renderRanking(missed,'Mistake count')}</div>${bestDay?`<div class="profileNote">Best study day · ${escapeHTML(formatDate(bestDay[0]))} · ${Number(bestDay[1])} words studied.</div>`:''}<div id="weeklyPoemArea"><div class="poemCard"><div class="poemHeader"><div class="poemTitle">The Weekly Poem</div>${dailyPoemButton}</div>${poem&&poem.weekKey===getMondayKey()?`<div class="poemMeta">A poem composed from the previous week’s study record.</div><div class="poemText">${escapeHTML(poem.poem||'')}</div>`:`<div class="profileLoading">${accountMode==='account'?'Composing this week’s poem from last week’s study record…':'Weekly poems are available when you are signed in.'}</div>`}${dailyPoemToday?`<div class="poemMeta" style="margin-top:18px">A quiet verse from today’s most practised and most missed words.</div><div class="poemText">${escapeHTML(dailyPoem.poem||'')}</div>`:''}</div></div>`;
+  const bestDay=Object.entries(globalStats.daily||{}).sort((a,b)=>Number(b[1])-Number(a[1]))[0];
+  return `<div class="profileSummary">Your learning record is built from the study activity already saved to this account or browser.</div><div class="profileGrid"><div class="profileStat"><div class="value">${allWords.size}</div><div class="name">Words Encountered</div></div><div class="profileStat"><div class="value">${learned.size}</div><div class="name">Words Learned</div></div><div class="profileStat"><div class="value">${spelled.size}</div><div class="name">Words Spelled</div></div><div class="profileStat"><div class="value">${globalStats.mistakes||0}</div><div class="name">Total Mistakes</div></div><div class="profileStat"><div class="value">${studyDays.size}</div><div class="name">Study Days</div></div><div class="profileStat"><div class="value">${currentStreak}</div><div class="name">Current Streak</div></div></div><div class="rankingSection"><div class="rankingTitle">Most Practised · Top 10</div>${renderRanking(practised,'Practice count')}</div><div class="rankingSection"><div class="rankingTitle">Most Missed · Top 10</div>${renderRanking(missed,'Mistake count')}</div>${bestDay?`<div class="profileNote">Best study day · ${escapeHTML(formatDate(bestDay[0]))} · ${Number(bestDay[1])} words studied.</div>`:''}`;
 }
-function renderWeeklyPoem(poem){
-  const dailyPoem=globalStats.dailyPoem&&typeof globalStats.dailyPoem==='object'?globalStats.dailyPoem:null,dailyPoemToday=dailyPoem&&dailyPoem.date===todayKey();
-  const dailyButton=dailyPoemToday?'<button class="poemComposeButton" type="button" disabled>Verse Complete</button>':'<button class="poemComposeButton" type="button" onclick="composeDailyPoem()">Compose a Verse</button>';
-  return `<div class="poemCard"><div class="poemHeader"><div class="poemTitle">${escapeHTML(poem.title||'The Weekly Poem')}</div>${dailyButton}</div><div class="poemMeta">A poem composed from the previous week’s study record.</div><div class="poemText">${escapeHTML(poem.poem||'')}</div>${dailyPoemToday?`<div class="poemMeta" style="margin-top:18px">A quiet verse from today’s most practised and most missed words.</div><div class="poemText">${escapeHTML(dailyPoem.poem||'')}</div>`:''}</div>`;
-}
-async function ensureWeeklyPoem(){
-  const area=document.getElementById('weeklyPoemArea');if(!area||accountMode!=='account')return;const weekKey=getMondayKey(),existing=globalStats.weeklyPoem;if(existing&&existing.weekKey===weekKey){area.innerHTML=renderWeeklyPoem(existing);return;}
-  area.innerHTML=`<div class="poemCard"><div class="poemHeader"><div class="poemTitle">The Weekly Poem</div><button class="poemComposeButton" type="button" onclick="composeDailyPoem()">Compose a Verse</button></div><div class="profileLoading">Composing this week’s poem from last week’s ten most practised and ten most missed words…</div></div>`;
-  try{const response=await fetch('/api/profile/weekly-poem',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({weekKey,practised:getWeeklyRanking('practised',10).map(x=>x.word),mistakes:getWeeklyRanking('mistakes',10).map(x=>x.word)})});const data=await response.json().catch(()=>({}));if(!response.ok)throw new Error(data.error||'Unable to compose the weekly poem.');if(data.poem){globalStats.weeklyPoem=data.poem;saveGlobalStatsOnly();area.innerHTML=renderWeeklyPoem(data.poem);}else area.innerHTML=`<div class="poemCard"><div class="poemHeader"><div class="poemTitle">The Weekly Poem</div><button class="poemComposeButton" type="button" onclick="composeDailyPoem()">Compose a Verse</button></div><div class="profileLoading">No poem is available yet.</div></div>`;}catch(e){console.warn('Weekly poem failed:',e);area.innerHTML=`<div class="poemCard"><div class="poemHeader"><div class="poemTitle">The Weekly Poem</div><button class="poemComposeButton" type="button" onclick="composeDailyPoem()">Compose a Verse</button></div><div class="profileLoading">The poem could not be composed right now. Please return later this week.</div></div>`;}
-}
-async function composeDailyPoem(){
-  const area=document.getElementById('weeklyPoemArea');
-  if(accountMode!=='account'){showToast('Please sign in to compose today’s verse.');return;}
-  const today=todayKey(),existing=globalStats.dailyPoem;if(existing&&existing.date===today){if(area){const current=area.querySelector('.poemText');if(!current){document.getElementById('profileContent').innerHTML=renderProfile();}}return;}
-  const practised=getRanking('practised',10).map(x=>x.word),missed=getRanking('mistakes',10).map(x=>x.word);
-  if(!practised.length&&!missed.length){showToast('There are not enough study records to compose a verse yet.');return;}
-  if(area)area.innerHTML=`<div class="poemCard"><div class="poemHeader"><div class="poemTitle">The Weekly Poem</div><button class="poemComposeButton" type="button" disabled>Composing a Verse…</button></div><div class="profileLoading">A small verse is being composed from your most practised and most missed words…</div></div>`;
-  try{
-    const response=await fetch('/api/profile/weekly-poem',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({weekKey:today,practised,mistakes:missed,limit:200,daily:true})});
-    const data=await response.json().catch(()=>({}));
-    if(!response.ok)throw new Error(data.error||'Unable to compose today’s verse.');
-    if(!data.poem)throw new Error('No poem was returned.');
-    const poem={title:data.poem.title||'A Small Verse',poem:String(data.poem.poem||'').split(/\s+/).filter(Boolean).slice(0,200).join(' '),date:today};
-    globalStats.dailyPoem=poem;saveGlobalStatsOnly();
-    if(area){document.getElementById('profileContent').innerHTML=renderProfile();}
-  }catch(e){
-    console.warn('Daily poem failed:',e);
-    if(area){document.getElementById('profileContent').innerHTML=renderProfile();}
-    showToast(e.message||'Unable to compose today’s verse.');
-  }
-}
-
 async function sendFeedback(){
   const input=document.getElementById('feedbackText');
   const status=document.getElementById('feedbackStatus');
@@ -1573,7 +1533,7 @@ async function sendFeedback(){
 
 /* ---------- layers ---------- */
 const layerParents={};
-function openLayer(id,parentId=null){closeAllLayers();const el=document.getElementById(id);if(!el)return;if(parentId)layerParents[id]=parentId;el.classList.remove('hidden');el.setAttribute('aria-hidden','false');if(id==='recordPopover')document.getElementById('ledgerStats').innerHTML=renderLedger();if(id==='almanacPopover')document.getElementById('almanacContent').innerHTML=renderAlmanac();if(id==='profilePopover'){document.getElementById('profileContent').innerHTML=renderProfile();setTimeout(ensureWeeklyPoem,0);}if(id==='feedbackPopover'){document.getElementById('feedbackStatus').textContent='';}document.body.style.overflow='hidden';}
+function openLayer(id,parentId=null){closeAllLayers();const el=document.getElementById(id);if(!el)return;if(parentId)layerParents[id]=parentId;el.classList.remove('hidden');el.setAttribute('aria-hidden','false');if(id==='recordPopover')document.getElementById('ledgerStats').innerHTML=renderLedger();if(id==='almanacPopover')document.getElementById('almanacContent').innerHTML=renderAlmanac();if(id==='profilePopover'){document.getElementById('profileContent').innerHTML=renderProfile();}if(id==='feedbackPopover'){document.getElementById('feedbackStatus').textContent='';}document.body.style.overflow='hidden';}
 function closeLayer(event,id){if(event&&event.target!==event.currentTarget)return;if(id==='authModal')return;const el=document.getElementById(id);if(el){el.classList.add('hidden');el.setAttribute('aria-hidden','true');}document.body.style.overflow='';if(id==='cabinetActionModal'&&dictCheatingNoticeOpen){dictCheatingNoticeOpen=false;setTimeout(focusDictInput,50);}const parent=layerParents[id];if(parent&&document.getElementById(parent)){delete layerParents[id];openLayer(parent);}}
 function closeAllLayers(){document.querySelectorAll('.modalLayer,.drawerLayer').forEach(el=>{el.classList.add('hidden');el.setAttribute('aria-hidden','true');});document.body.style.overflow='';}
 function openSettings(){openLayer('settingsDrawer');}
