@@ -494,7 +494,7 @@ become"></textarea>
       <div id="editWordList" class="editList"></div>
       <div id="addWordPanel" class="addWordPanel hidden">
         <input id="addWordInput" class="addWordInput" type="text" autocomplete="off" placeholder="word" onkeydown="if(event.key==='Enter')addWordWithAI()">
-        <div class="modalActions"><button id="addWordGenerateButton" onclick="addWordWithAI()">Generate &amp; Add</button><button class="secondary" onclick="cancelAddWord()">Cancel</button></div>
+        <div class="modalActions"><button id="addWordGenerateButton" onclick="addWordWithAI()">Generate &amp; Add</button></div>
         <p id="addWordStatus" class="addWordStatus"></p>
       </div>
       <div id="editAddButtonRow" class="modalActions"><button class="secondary" onclick="showAddWordInput()">Add Word</button></div>
@@ -584,6 +584,10 @@ function getCabinet(){
 }
 function setCabinet(list){
   try{localStorage.setItem(CABINET_KEY,JSON.stringify(list));}catch(e){}
+  // Cabinet changes must also reach the server for logged-in users.
+  // This is what makes renamed, edited, removed, and newly-added
+  // libraries appear on the user's other devices.
+  if(typeof syncAccountData==='function')syncAccountData();
 }
 
 function freshState(words,libraryId=null,reviewMode=false){
@@ -673,6 +677,8 @@ function recordMistake(id){
 
 function saveGlobalStatsOnly(){
   try{localStorage.setItem(STATS_KEY,JSON.stringify(globalStats));}catch(e){}
+  // Learning statistics are persistent account data too.
+  if(typeof syncAccountData==='function')syncAccountData();
 }
 
 function save(){
@@ -1530,20 +1536,61 @@ async function confirmLogout(){
 }
 async function loadRemoteData(){
   const data=await apiJSON('/api/data');
+  lastServerUpdatedAt=data.updatedAt||null;
+  lastLocalMutationAt=0;
   if(data.cabinet)localStorage.setItem(CABINET_KEY,JSON.stringify(data.cabinet));else localStorage.removeItem(CABINET_KEY);
   if(data.globalStats)localStorage.setItem(STATS_KEY,JSON.stringify(data.globalStats));else localStorage.removeItem(STATS_KEY);
   if(data.currentState)localStorage.setItem(KEY,JSON.stringify(data.currentState));else localStorage.removeItem(KEY);
   loadState();
 }
 let syncTimer=null;
+let syncInFlight=false;
+let lastServerUpdatedAt=null;
+let lastLocalMutationAt=0;
+
 async function syncAccountData(){
   if(accountMode!=='account')return;
+  lastLocalMutationAt=Date.now();
   clearTimeout(syncTimer);
   syncTimer=setTimeout(async()=>{
-    try{await fetch('/api/data',{method:'PUT',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({cabinet:getCabinet(),globalStats,currentState:state})});}
-    catch(e){console.warn('Account sync failed',e);}
+    if(accountMode!=='account')return;
+    syncInFlight=true;
+    try{
+      const r=await fetch('/api/data',{
+        method:'PUT',
+        headers:{'Content-Type':'application/json'},
+        credentials:'include',
+        body:JSON.stringify({
+          cabinet:getCabinet(),
+          globalStats,
+          currentState:state
+        })
+      });
+      const data=await r.json().catch(()=>({}));
+      if(r.ok&&data.updatedAt)lastServerUpdatedAt=data.updatedAt;
+      if(!r.ok)console.warn('Account sync failed:',data.error||r.status);
+    }catch(e){console.warn('Account sync failed',e);}
+    finally{syncInFlight=false;}
   },350);
 }
+
+// Pull newer account data periodically so an account opened on another
+// device is not stuck with stale localStorage until the user logs in again.
+let remotePollTimer=setInterval(async()=>{
+  if(accountMode!=='account'||!accountUser||syncInFlight||Date.now()-lastLocalMutationAt<1500)return;
+  try{
+    const r=await fetch('/api/data',{credentials:'include'});
+    if(!r.ok)return;
+    const data=await r.json();
+    if(!data.updatedAt||data.updatedAt===lastServerUpdatedAt)return;
+    lastServerUpdatedAt=data.updatedAt;
+    if(data.cabinet)localStorage.setItem(CABINET_KEY,JSON.stringify(data.cabinet));else localStorage.removeItem(CABINET_KEY);
+    if(data.globalStats)localStorage.setItem(STATS_KEY,JSON.stringify(data.globalStats));else localStorage.removeItem(STATS_KEY);
+    if(data.currentState)localStorage.setItem(KEY,JSON.stringify(data.currentState));else localStorage.removeItem(KEY);
+    loadState();
+    renderReviewBanner();
+  }catch(e){console.warn('Remote sync check failed',e);}
+},10000);
 
 /* ---------- Cabinet editing ---------- */
 let editingLibraryId=null,editingWords=[];
@@ -1552,7 +1599,7 @@ function renderEditWordList(){const el=document.getElementById('editWordList');i
 function removeEditedWord(i){if(editingWords.length<=1){showToast('A library must contain at least one word.');return;}editingWords.splice(i,1);renderEditWordList();}
 function showAddWordInput(){document.getElementById('editAddButtonRow').classList.add('hidden');document.getElementById('addWordPanel').classList.remove('hidden');document.getElementById('addWordInput').value='';document.getElementById('addWordStatus').textContent='';setTimeout(()=>document.getElementById('addWordInput').focus(),40);}
 function cancelAddWord(){document.getElementById('addWordPanel').classList.add('hidden');document.getElementById('editAddButtonRow').classList.remove('hidden');document.getElementById('addWordStatus').textContent='';}
-async function addWordWithAI(){const input=document.getElementById('addWordInput'),status=document.getElementById('addWordStatus'),btn=document.getElementById('addWordGenerateButton'),word=(input.value||'').trim();if(!word){input.focus();return;}if(editingWords.some(w=>normalizeWordKey(w.word)===normalizeWordKey(word))){status.textContent='That word is already in this volume.';return;}btn.disabled=true;status.textContent='Composing the word…';try{const r=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({words:[word]})});const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data.error||`Request failed (${r.status})`);if(!Array.isArray(data.words)||!data.words[0])throw new Error('No vocabulary was returned.');const w=normalizeWordRecord({...data.words[0],word});if(!w.word||!w.definition)throw new Error('The generated word did not contain a definition.');editingWords.push(w);renderEditWordList();input.value='';status.textContent='Added. You can add another word or save the changes.';}catch(e){status.textContent=e.message||'Unable to generate this word.';}finally{btn.disabled=false;}}
+async function addWordWithAI(){const input=document.getElementById('addWordInput'),status=document.getElementById('addWordStatus'),btn=document.getElementById('addWordGenerateButton'),word=(input.value||'').trim();if(!word){input.focus();return;}if(editingWords.some(w=>normalizeWordKey(w.word)===normalizeWordKey(word))){status.textContent='That word is already in this volume.';return;}btn.disabled=true;status.textContent='Composing the word…';try{const r=await fetch('/api/generate-one',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({word})});const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data.error||`Request failed (${r.status})`);if(!Array.isArray(data.words)||!data.words[0])throw new Error('No vocabulary was returned.');const w=normalizeWordRecord({...data.words[0],word});if(!w.word||!w.definition)throw new Error('The generated word did not contain a definition.');editingWords.push(w);renderEditWordList();input.value='';status.textContent='Added. You can add another word or save the changes.';}catch(e){status.textContent=e.message||'Unable to generate this word.';}finally{btn.disabled=false;}}
 function saveEditedLibrary(){const lib=getCabinet().find(x=>x.id===editingLibraryId);if(!lib)return;if(!editingWords.length){showToast('A library must contain at least one word.');return;}const changed=JSON.stringify(lib.words.map(normalizeWordRecord))!==JSON.stringify(editingWords.map(normalizeWordRecord));lib.words=editingWords.map(normalizeWordRecord);lib.updatedAt=new Date().toISOString();if(changed)lib.progress=null;setCabinet(getCabinet());if(state?.libraryId===editingLibraryId){state=freshState(lib.words,editingLibraryId,false);beginRecognitionRound();loadRecognitionQuestion();save();}closeAllLayers();openCabinet();showToast(changed?'Changes saved. Study progress was reset for this volume.':'No changes were made.');}
 
 /* ---------- archive ---------- */
