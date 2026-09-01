@@ -315,7 +315,7 @@ textarea::placeholder{color:#a79f91}
 /* ---------- Live2D desktop pets ---------- */
 #lexiconLive2DPets{
   position:fixed;left:0;right:0;bottom:0;height:150px;
-  z-index:10;pointer-events:none;overflow:hidden;
+  z-index:3;pointer-events:none;overflow:hidden;
 }
 #lexiconLive2DPets .live2dPet{
   position:absolute;bottom:0;width:150px;height:150px;
@@ -325,8 +325,8 @@ textarea::placeholder{color:#a79f91}
 #lexiconLive2DPets .live2dPet canvas{
   display:block;width:100%;height:100%;pointer-events:none;
 }
-#lexiconLive2DPets .live2dPet.tororo{left:-170px;}
-#lexiconLive2DPets .live2dPet.hijiki{left:calc(100% + 20px);}
+#lexiconLive2DPets .live2dPet.tororo{left:0;}
+#lexiconLive2DPets .live2dPet.hijiki{left:0;}
 @media(max-width:700px){
   #lexiconLive2DPets{height:105px;}
   #lexiconLive2DPets .live2dPet{width:105px;height:105px;}
@@ -334,8 +334,8 @@ textarea::placeholder{color:#a79f91}
 </style>
 <!-- Live2D desktop pets: pet-only runtime dependencies -->
 <script src="https://cdn.jsdelivr.net/npm/pixi.js@6.5.10/dist/browser/pixi.min.js"></script>
-<script src="https://cdn.jsdelivr.net/gh/dylanNew/live2d/webgl/Live2D/lib/live2d.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/pixi-live2d-display@0.4.0/dist/index.min.js"></script>
+<script src="/live2d/core/live2dcubismcore.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pixi-live2d-display@0.4.0/dist/cubism4.min.js"></script>
 </head>
 <body>
 
@@ -2015,67 +2015,115 @@ if(accountMode==='account'){
   const hijikiEl=document.getElementById('hijikiPet');
   if(!petLayer||!tororoEl||!hijikiEl)return;
 
+  window.PIXI=window.PIXI||PIXI;
+
   const PETS={
-    tororo:{el:tororoEl,x:-170,direction:1,speed:.34,canvas:document.getElementById('tororoCanvas'),model:null},
-    hijiki:{el:hijikiEl,x:window.innerWidth+20,direction:-1,speed:.30,canvas:document.getElementById('hijikiCanvas'),model:null}
+    tororo:{
+      el:tororoEl,
+      x:-170,
+      direction:1,
+      speed:.34,
+      canvas:document.getElementById('tororoCanvas'),
+      model:null,
+      app:null
+    },
+    hijiki:{
+      el:hijikiEl,
+      x:window.innerWidth+20,
+      direction:-1,
+      speed:.30,
+      canvas:document.getElementById('hijikiCanvas'),
+      model:null,
+      app:null
+    }
   };
 
   function resizeCanvas(pet){
     if(!pet.canvas)return;
-    const rect=pet.el.getBoundingClientRect();
+    const width=pet.el.clientWidth||150;
+    const height=pet.el.clientHeight||150;
     const dpr=Math.min(window.devicePixelRatio||1,2);
-    pet.canvas.width=Math.max(1,Math.round(rect.width*dpr));
-    pet.canvas.height=Math.max(1,Math.round(rect.height*dpr));
-    pet.canvas.style.width=rect.width+'px';
-    pet.canvas.style.height=rect.height+'px';
+
+    pet.canvas.width=Math.max(1,Math.round(width*dpr));
+    pet.canvas.height=Math.max(1,Math.round(height*dpr));
+    pet.canvas.style.width=width+'px';
+    pet.canvas.style.height=height+'px';
+
+    if(pet.app){
+      pet.app.renderer.resize(width,height);
+      pet.app.renderer.resolution=dpr;
+    }
   }
 
   function fitModel(pet){
     const model=pet.model;
     if(!model)return;
-    const targetHeight=pet.el.clientHeight*.94;
+
+    model.anchor.set(.5,1);
+
+    const targetHeight=(pet.el.clientHeight||150)*.96;
     if(model.height>0){
       const scale=targetHeight/model.height;
       model.scale.set(scale);
     }
-    model.x=pet.el.clientWidth/2;
-    model.y=pet.el.clientHeight;
-    if(model.anchor)model.anchor.set(.5,1);
+
+    model.x=(pet.el.clientWidth||150)/2;
+    model.y=pet.el.clientHeight||150;
   }
 
   async function loadPet(pet,url){
     try{
       resizeCanvas(pet);
+
       const app=new PIXI.Application({
         view:pet.canvas,
-        width:pet.el.clientWidth,
-        height:pet.el.clientHeight,
+        width:pet.el.clientWidth||150,
+        height:pet.el.clientHeight||150,
         transparent:true,
+        backgroundAlpha:0,
         antialias:true,
         autoStart:true,
-        resolution:window.devicePixelRatio||1
+        resolution:Math.min(window.devicePixelRatio||1,2)
       });
+
       pet.app=app;
-      const model=await PIXI.live2d.Live2DModel.from(url,{autoInteract:false});
+
+      const model=await PIXI.live2d.Live2DModel.from(url,{
+        autoInteract:false
+      });
+
       pet.model=model;
       model.interactive=false;
       model.buttonMode=false;
+      model.eventMode='none';
+
       app.stage.addChild(model);
       fitModel(pet);
     }catch(error){
-      console.warn('Live2D pet could not be loaded:',error);
+      console.error('Live2D pet could not be loaded:',url,error);
       pet.el.style.display='none';
     }
   }
 
   function updatePet(pet){
     pet.x+=pet.speed*pet.direction;
+
     const width=pet.el.offsetWidth||150;
-    const minX=-width;
-    const maxX=window.innerWidth;
-    if(pet.direction>0&&pet.x>maxX+width){pet.x=minX;}
-    if(pet.direction<0&&pet.x<minX-width){pet.x=maxX+width;}
-    pet.el.style.transform=`translateX(${pet.x}px)`;
+    const screenWidth=window.innerWidth;
+
+    if(pet.direction>0 && pet.x>screenWidth+20){
+      pet.x=-width-20;
+    }
+
+    if(pet.direction<0 && pet.x<-width-20){
+      pet.x=screenWidth+20;
+    }
+
+    pet.el.style.transform='translateX('+pet.x+'px)';
+
+    if(pet.model){
+      pet.model.y=pet.el.clientHeight||150;
+    }
   }
 
   function animatePets(){
@@ -2087,21 +2135,23 @@ if(accountMode==='account'){
   window.addEventListener('resize',()=>{
     resizeCanvas(PETS.tororo);
     resizeCanvas(PETS.hijiki);
-    [PETS.tororo,PETS.hijiki].forEach(pet=>{
-      if(pet.app){
-        pet.app.renderer.resize(pet.el.clientWidth,pet.el.clientHeight);
-        fitModel(pet);
-      }
-    });
+
+    fitModel(PETS.tororo);
+    fitModel(PETS.hijiki);
+
+    if(PETS.tororo.x>window.innerWidth+20){
+      PETS.tororo.x=-170;
+    }
+
+    if(PETS.hijiki.x<-170){
+      PETS.hijiki.x=window.innerWidth+20;
+    }
   });
 
-  /* The models are the Tororo and Hijiki Live2D sample cats.
-     Their wrapper is pointer-events:none, so they cannot be dragged or block controls. */
-  loadPet(PETS.tororo,'https://unpkg.com/live2d-widget-model-tororo@1.0.5/assets/tororo.model.json');
-  loadPet(PETS.hijiki,'https://unpkg.com/live2d-widget-model-hijiki@1.0.5/assets/hijiki.model.json');
-  animatePets();
-})();
+  loadPet(PETS.tororo,'/live2d/tororo/tororo.model3.json');
+  loadPet(PETS.hijiki,'/live2d/hijiki/hijiki.model3.json');
 
-</script>
+  animatePets();
+})();</script>
 </body>
 </html>
