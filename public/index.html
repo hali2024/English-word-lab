@@ -333,9 +333,11 @@ textarea::placeholder{color:#a79f91}
 }
 </style>
 <!-- Live2D desktop pets: pet-only runtime dependencies -->
-<script src="https://cdn.jsdelivr.net/npm/pixi.js@6.5.10/dist/browser/pixi.min.js"></script>
+<!-- Live2D desktop pets -->
+<script src="https://cdn.jsdelivr.net/npm/pixi.js@4.6.1/dist/pixi.min.js"></script>
 <script src="/live2d/core/live2dcubismcore.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/pixi-live2d-display@0.4.0/dist/cubism4.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/live2dy@1.0.2/live2dcubismframework.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/live2dy@1.0.2/live2dcubismpixi.js"></script>
 </head>
 <body>
 
@@ -2153,5 +2155,140 @@ if(accountMode==='account'){
 
   animatePets();
 })();</script>
+</body>
+</html><script>
+/* ---------- Live2D desktop pets ---------- */
+(function(){
+  'use strict';
+
+  const PETS = [
+    {
+      id: 'tororoPet',
+      name: 'tororo',
+      model: '/live2d/tororo/tororo.model3.json',
+      direction: 1
+    },
+    {
+      id: 'hijikiPet',
+      name: 'hijiki',
+      model: '/live2d/hijiki/hijiki.model3.json',
+      direction: -1
+    }
+  ];
+
+  const root = document.getElementById('lexiconLive2DPets');
+  if (!root || !window.PIXI || !window.LIVE2DCUBISMPIXI) return;
+
+  function initPet(petInfo){
+    const host = document.getElementById(petInfo.id);
+    if (!host) return;
+
+    const canvas = host.querySelector('canvas');
+    if (!canvas) return;
+
+    let app;
+    try {
+      app = new PIXI.Application({
+        view: canvas,
+        width: 150,
+        height: 150,
+        transparent: true,
+        antialias: true,
+        autoStart: true,
+        resolution: Math.min(window.devicePixelRatio || 1, 2)
+      });
+    } catch(e) {
+      host.style.display = 'none';
+      return;
+    }
+
+    host.style.pointerEvents = 'none';
+    canvas.style.pointerEvents = 'none';
+
+    const loader = new PIXI.loaders.Loader();
+
+    loader.add('model', petInfo.model);
+    loader.load(function(loader, resources){
+      try {
+        const resource = resources.model;
+        if (!resource || !resource.data) throw new Error('Live2D model resource missing');
+
+        const model = LIVE2DCUBISMPIXI.Model._create(resource.data);
+        if (!model) throw new Error('Live2D model creation failed');
+
+        model.interactive = false;
+        model.interactiveChildren = false;
+        model.buttonMode = false;
+        model.hitArea = null;
+
+        if (model.masks) {
+          model.masks.forEach(function(mask){
+            mask.interactive = false;
+            mask.interactiveChildren = false;
+          });
+        }
+
+        app.stage.addChild(model);
+
+        function resizeModel(){
+          const w = 150;
+          const h = 150;
+          const mw = model.getBounds().width || 1;
+          const mh = model.getBounds().height || 1;
+          const scale = Math.min((w * 0.92) / mw, (h * 0.98) / mh);
+          model.scale.set(scale);
+          model.x = w * 0.5;
+          model.y = h;
+          model.pivot.set(
+            (model.getLocalBounds().x + model.getLocalBounds().width * 0.5),
+            (model.getLocalBounds().y + model.getLocalBounds().height)
+          );
+        }
+
+        resizeModel();
+
+        window.addEventListener('resize', resizeModel, {passive:true});
+
+        const idle = model.motionManager &&
+          model.motionManager.definitions &&
+          model.motionManager.definitions['Idle'];
+
+        if (model.motionManager) {
+          try {
+            model.motionManager.startMotion('Idle', 0, 3);
+          } catch(e) {}
+        }
+
+        let x = petInfo.direction > 0
+          ? -host.offsetWidth
+          : window.innerWidth;
+
+        function tick(delta){
+          const speed = 0.45 * delta;
+          x += petInfo.direction * speed;
+
+          const width = host.offsetWidth || 150;
+          if (petInfo.direction > 0 && x > window.innerWidth + width) {
+            x = -width;
+          } else if (petInfo.direction < 0 && x < -width) {
+            x = window.innerWidth;
+          }
+
+          host.style.transform = 'translate3d(' + x + 'px,0,0)';
+        }
+
+        app.ticker.add(tick);
+        host.__live2dApp = app;
+      } catch(e) {
+        host.style.display = 'none';
+        try { app.destroy(true, {children:true, texture:true, baseTexture:true}); } catch(_) {}
+      }
+    });
+  }
+
+  // The pets are decorative and never capture clicks.
+  PETS.forEach(initPet);
+})();
+</script>
 </body>
 </html>
