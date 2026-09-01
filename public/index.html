@@ -51,7 +51,7 @@ button.ghost{background:transparent;color:var(--muted);border-color:transparent;
 button.ghost:hover{background:transparent;color:var(--accent);border-color:transparent}
 button:disabled{opacity:.45;cursor:default;transform:none}
 .app{width:min(900px,calc(100% - 36px));margin:auto;padding:42px 0 68px;position:relative;z-index:1}
-.top{text-align:center;padding:0;margin-bottom:25px;position:relative}
+.top{text-align:center;padding:76px 0 0;margin-bottom:25px;position:relative}
 h1{font-size:clamp(44px,7vw,72px);font-weight:400;letter-spacing:.01em;line-height:1;color:var(--accent);margin:0}
 .sub{color:var(--muted);font-size:15px;margin-top:12px;letter-spacing:.02em;font-style:italic}
 .top:after{content:"✦";display:block;color:#aa8a5b;font-size:14px;margin:19px auto 0}
@@ -74,7 +74,7 @@ textarea{
 textarea:focus{border-color:var(--accent);box-shadow:none}
 textarea::placeholder{color:#a79f91}
 .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
-.homeTools{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:6px 0 22px}
+.homeTools{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin:0;z-index:5}
 .utilityButton{
   border:1px solid rgba(113,52,59,.28);background:rgba(251,247,237,.5);color:var(--accent);
   padding:8px 13px;border-radius:2px;font-size:11px;letter-spacing:.08em;font-weight:400;
@@ -174,7 +174,7 @@ textarea::placeholder{color:#a79f91}
 .drawerIntro{position:relative;color:var(--muted);font-size:12px;font-style:italic;margin:0 0 24px}
 .drawerSection{position:relative;border-top:1px solid var(--line);padding-top:17px;margin-top:17px}
 .drawerSection button{display:block;width:100%;text-align:left;margin:7px 0;background:transparent;color:var(--ink);border-color:var(--line-dark)}
-.drawerSection button:hover{background:rgba(113,52,59,.06);color:var(--accent);border-color:var(--line-dark)}\n.drawerHelp{position:relative;margin-top:30px;padding-top:17px;border-top:1px solid var(--line)}\n.drawerHelp > button{display:block;width:100%;text-align:left;margin:7px 0;background:transparent;color:var(--ink);border-color:var(--line-dark)}\n.drawerHelp > button:hover{background:rgba(113,52,59,.06);color:var(--accent);border-color:var(--line-dark)}\n.helpSubmenu{display:grid;gap:7px;margin-top:7px;padding-left:10px}\n.helpSubmenu button{width:100%;text-align:left;background:rgba(255,252,245,.28);color:var(--muted);border-color:var(--line);font-size:11px;padding:9px 11px}\n.helpSubmenu button:hover{background:rgba(113,52,59,.06);color:var(--accent);border-color:var(--line-dark)}\n.manualSection{position:relative;margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}\n.manualSection h3{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#9a7b4e;font-weight:600;margin:0 0 8px}\n.manualSection p,.manualSection li{font-size:12px;line-height:1.75;color:var(--ink)}\n.manualSection ul{padding-left:19px;margin:7px 0 0}\n.feedbackIntro{position:relative;color:var(--muted);font-size:12px;line-height:1.7}\n.feedbackBox{position:relative;width:100%;min-height:170px;padding:14px;border:1px solid var(--line-dark);background:rgba(255,252,245,.55);color:var(--ink);resize:vertical;outline:none;font-size:14px;line-height:1.7}\n.feedbackBox:focus{border-color:var(--accent)}
+.drawerSection button:hover{background:rgba(113,52,59,.06);color:var(--accent);border-color:var(--line-dark)}\n.manualSection{position:relative;margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}\n.manualSection h3{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#9a7b4e;font-weight:600;margin:0 0 8px}\n.manualSection p,.manualSection li{font-size:12px;line-height:1.75;color:var(--ink)}\n.manualSection ul{padding-left:19px;margin:7px 0 0}\n.feedbackIntro{position:relative;color:var(--muted);font-size:12px;line-height:1.7}\n.feedbackBox{position:relative;width:100%;min-height:170px;padding:14px;border:1px solid var(--line-dark);background:rgba(255,252,245,.55);color:var(--ink);resize:vertical;outline:none;font-size:14px;line-height:1.7}\n.feedbackBox:focus{border-color:var(--accent)}
 .cabinetList{position:relative;display:grid;gap:10px}
 .cabinetItem{border-top:1px solid var(--line);padding:14px 0}
 .cabinetHead{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}
@@ -214,7 +214,7 @@ textarea::placeholder{color:#a79f91}
 }
 
 /* Account / authentication */
-.accountBar{position:absolute;top:10px;right:0;display:flex;align-items:flex-end;gap:8px;z-index:4}\n.studyToolsButton{position:absolute;top:46px;right:0;z-index:4;font-size:10px;padding:7px 10px;background:transparent;color:var(--accent);border-color:rgba(113,52,59,.35)}\n.studyToolsButton:hover{background:rgba(113,52,59,.07);color:var(--accent);border-color:var(--accent)}
+.accountBar{position:absolute;top:38px;right:0;display:flex;align-items:flex-end;gap:8px;z-index:4}\n.studyToolsButton{position:absolute;top:46px;right:0;z-index:4;font-size:10px;padding:7px 10px;background:transparent;color:var(--accent);border-color:rgba(113,52,59,.35)}\n.studyToolsButton:hover{background:rgba(113,52,59,.07);color:var(--accent);border-color:var(--accent)}
 .accountButton{font-size:10px;padding:7px 10px;background:transparent;color:var(--accent);border-color:rgba(113,52,59,.35)}
 .accountButton:hover{background:rgba(113,52,59,.07);color:var(--accent);border-color:var(--accent)}
 .accountStatus{font-size:10px;color:var(--muted);font-style:italic}
@@ -298,7 +298,7 @@ textarea::placeholder{color:#a79f91}
   .ledgerGrid{grid-template-columns:1fr}
   .modalCard{padding:26px 19px}
   .drawerCard{width:min(390px,calc(92vw - 38px));padding-left:22px;padding-right:22px}
-  .accountBar{right:0;top:4px}
+  .accountBar{right:0;top:38px}
   .accountStatus{display:none}
 }
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
@@ -309,6 +309,10 @@ textarea::placeholder{color:#a79f91}
 
 <div class="app">
   <div class="top">
+    <div class="homeTools">
+      <button class="utilityButton" type="button" onclick="openCabinet()">The Cabinet</button>
+      <button class="utilityButton" type="button" onclick="openSettings()">Study Tools</button>
+    </div>
     <div class="accountBar" id="accountBar"></div>
     <h1>The Lexicon</h1>
     <div class="sub">A private study of language</div>
@@ -316,10 +320,6 @@ textarea::placeholder{color:#a79f91}
 
   <div id="homeArea">
     <div id="reviewBanner" class="reviewBanner hidden"></div>
-    <div class="homeTools">
-      <button class="utilityButton" type="button" onclick="openCabinet()">The Cabinet</button>
-      <button class="utilityButton" type="button" onclick="openSettings()">The Study</button>
-    </div>
 
     <div id="importArea">
       <section id="importPanel" class="panel">
@@ -545,12 +545,9 @@ become"></textarea>
         <input id="restoreFile" class="hidden" type="file" accept=".json,application/json" onchange="restoreArchive(event)">
       </div>
 
-      <div class="drawerHelp">
-        <button type="button" onclick="document.getElementById('helpSubmenu').classList.toggle('hidden')">Help</button>
-        <div id="helpSubmenu" class="helpSubmenu hidden">
-          <button type="button" onclick="openLayer('manualPopover','settingsDrawer')">User Manual</button>
-          <button type="button" onclick="openLayer('feedbackPopover','settingsDrawer')">Email Feedback</button>
-        </div>
+      <div class="drawerSection">
+        <button type="button" onclick="openLayer('manualPopover','settingsDrawer')">User Manual</button>
+        <button type="button" onclick="openLayer('feedbackPopover','settingsDrawer')">Email Feedback</button>
       </div>
     </aside>
   </div>
@@ -684,10 +681,10 @@ become"></textarea>
     <div class="modalCard" onclick="event.stopPropagation()">
       <h2 class="modalTitle">Email Feedback</h2>
       <p class="modalIntro">Found a problem or have an idea? Write your feedback below.</p>
-      <p class="feedbackIntro">When you click Send Feedback, your email application will open with the message prepared for the developer. Replace the recipient address below with your actual developer email if it has not already been configured.</p>
       <textarea id="feedbackText" class="feedbackBox" maxlength="5000" placeholder="Tell the developer what happened, what you expected, or what you would like to improve."></textarea>
+      <p id="feedbackStatus" class="addWordStatus"></p>
       <div class="modalActions">
-        <button type="button" onclick="(function(){const body=(document.getElementById('feedbackText').value||'').trim();if(!body){document.getElementById('feedbackText').focus();return;}window.location.href='mailto:feedback@lexiconoftheworld.win?subject=The%20Lexicon%20Feedback&body='+encodeURIComponent(body);})()">Send Feedback</button>
+        <button id="sendFeedbackButton" type="button" onclick="sendFeedback()">Send Feedback</button>
       </div>
     </div>
   </div>
@@ -1501,9 +1498,37 @@ async function ensureWeeklyPoem(){
   try{const response=await fetch('/api/profile/weekly-poem',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({weekKey,practised:getWeeklyRanking('practised',10).map(x=>x.word),mistakes:getWeeklyRanking('mistakes',10).map(x=>x.word)})});const data=await response.json().catch(()=>({}));if(!response.ok)throw new Error(data.error||'Unable to compose the weekly poem.');if(data.poem){globalStats.weeklyPoem=data.poem;saveGlobalStatsOnly();area.innerHTML=renderWeeklyPoem(data.poem);}else area.innerHTML=`<div class="poemCard"><div class="poemTitle">The Weekly Poem</div><div class="profileLoading">No poem is available yet.</div></div>`;}catch(e){console.warn('Weekly poem failed:',e);area.innerHTML=`<div class="poemCard"><div class="poemTitle">The Weekly Poem</div><div class="profileLoading">The poem could not be composed right now. Please return later this week.</div></div>`;}
 }
 
+async function sendFeedback(){
+  const input=document.getElementById('feedbackText');
+  const status=document.getElementById('feedbackStatus');
+  const button=document.getElementById('sendFeedbackButton');
+  const message=(input.value||'').trim();
+  if(!message){input.focus();return;}
+  button.disabled=true;
+  status.textContent='Sending…';
+  try{
+    await apiJSON('/api/feedback',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({message})
+    });
+    input.value='';
+    status.textContent='Feedback sent. Thank you.';
+    showToast('Feedback sent.');
+    setTimeout(()=>{
+      const el=document.getElementById('feedbackPopover');
+      if(el&&!el.classList.contains('hidden'))closeLayer(null,'feedbackPopover');
+    },900);
+  }catch(e){
+    status.textContent=e.message||'Unable to send feedback right now. Please try again later.';
+  }finally{
+    button.disabled=false;
+  }
+}
+
 /* ---------- layers ---------- */
 const layerParents={};
-function openLayer(id,parentId=null){closeAllLayers();const el=document.getElementById(id);if(!el)return;if(parentId)layerParents[id]=parentId;el.classList.remove('hidden');el.setAttribute('aria-hidden','false');if(id==='recordPopover')document.getElementById('ledgerStats').innerHTML=renderLedger();if(id==='almanacPopover')document.getElementById('almanacContent').innerHTML=renderAlmanac();if(id==='profilePopover'){document.getElementById('profileContent').innerHTML=renderProfile();setTimeout(ensureWeeklyPoem,0);}document.body.style.overflow='hidden';}
+function openLayer(id,parentId=null){closeAllLayers();const el=document.getElementById(id);if(!el)return;if(parentId)layerParents[id]=parentId;el.classList.remove('hidden');el.setAttribute('aria-hidden','false');if(id==='recordPopover')document.getElementById('ledgerStats').innerHTML=renderLedger();if(id==='almanacPopover')document.getElementById('almanacContent').innerHTML=renderAlmanac();if(id==='profilePopover'){document.getElementById('profileContent').innerHTML=renderProfile();setTimeout(ensureWeeklyPoem,0);}if(id==='feedbackPopover'){document.getElementById('feedbackStatus').textContent='';}document.body.style.overflow='hidden';}
 function closeLayer(event,id){if(event&&event.target!==event.currentTarget)return;if(id==='authModal')return;const el=document.getElementById(id);if(el){el.classList.add('hidden');el.setAttribute('aria-hidden','true');}document.body.style.overflow='';if(id==='cabinetActionModal'&&dictCheatingNoticeOpen){dictCheatingNoticeOpen=false;setTimeout(focusDictInput,50);}const parent=layerParents[id];if(parent&&document.getElementById(parent)){delete layerParents[id];openLayer(parent);}}
 function closeAllLayers(){document.querySelectorAll('.modalLayer,.drawerLayer').forEach(el=>{el.classList.add('hidden');el.setAttribute('aria-hidden','true');});document.body.style.overflow='';}
 function openSettings(){openLayer('settingsDrawer');}
@@ -1746,30 +1771,38 @@ let syncInFlight=false;
 let lastServerUpdatedAt=null;
 let lastLocalMutationAt=0;
 
-async function syncAccountData(){
+async function syncAccountDataNow(){
+  if(accountMode!=='account')return true;
+  clearTimeout(syncTimer);
+  syncInFlight=true;
+  try{
+    const r=await fetch('/api/data',{
+      method:'PUT',
+      headers:{'Content-Type':'application/json'},
+      credentials:'include',
+      body:JSON.stringify({
+        cabinet:getCabinet(),
+        globalStats,
+        currentState:state
+      })
+    });
+    const data=await r.json().catch(()=>({}));
+    if(r.ok&&data.updatedAt){lastServerUpdatedAt=data.updatedAt;return true;}
+    console.warn('Account sync failed:',data.error||r.status);
+    return false;
+  }catch(e){
+    console.warn('Account sync failed',e);
+    return false;
+  }finally{
+    syncInFlight=false;
+  }
+}
+
+function syncAccountData(){
   if(accountMode!=='account')return;
   lastLocalMutationAt=Date.now();
   clearTimeout(syncTimer);
-  syncTimer=setTimeout(async()=>{
-    if(accountMode!=='account')return;
-    syncInFlight=true;
-    try{
-      const r=await fetch('/api/data',{
-        method:'PUT',
-        headers:{'Content-Type':'application/json'},
-        credentials:'include',
-        body:JSON.stringify({
-          cabinet:getCabinet(),
-          globalStats,
-          currentState:state
-        })
-      });
-      const data=await r.json().catch(()=>({}));
-      if(r.ok&&data.updatedAt)lastServerUpdatedAt=data.updatedAt;
-      if(!r.ok)console.warn('Account sync failed:',data.error||r.status);
-    }catch(e){console.warn('Account sync failed',e);}
-    finally{syncInFlight=false;}
-  },350);
+  syncTimer=setTimeout(()=>{syncAccountDataNow();},350);
 }
 
 // Pull newer account data periodically so an account opened on another
@@ -1798,7 +1831,40 @@ function removeEditedWord(i){if(editingWords.length<=1){showToast('A library mus
 function showAddWordInput(){document.getElementById('editAddButtonRow').classList.add('hidden');document.getElementById('addWordPanel').classList.remove('hidden');document.getElementById('addWordInput').value='';document.getElementById('addWordStatus').textContent='';setTimeout(()=>document.getElementById('addWordInput').focus(),40);}
 function cancelAddWord(){document.getElementById('addWordPanel').classList.add('hidden');document.getElementById('editAddButtonRow').classList.remove('hidden');document.getElementById('addWordStatus').textContent='';}
 async function addWordWithAI(){const input=document.getElementById('addWordInput'),status=document.getElementById('addWordStatus'),btn=document.getElementById('addWordGenerateButton'),word=(input.value||'').trim();if(!word){input.focus();return;}if(editingWords.some(w=>normalizeWordKey(w.word)===normalizeWordKey(word))){status.textContent='That word is already in this volume.';return;}btn.disabled=true;status.textContent='Composing the word…';try{const r=await fetch('/api/generate-one',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({word})});const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data.error||`Request failed (${r.status})`);if(!Array.isArray(data.words)||!data.words[0])throw new Error('No vocabulary was returned.');const w=normalizeWordRecord({...data.words[0],word});if(!w.word||!w.definition)throw new Error('The generated word did not contain a definition.');editingWords.push(w);renderEditWordList();input.value='';status.textContent='Added. You can add another word or save the changes.';}catch(e){status.textContent=e.message||'Unable to generate this word.';}finally{btn.disabled=false;}}
-function saveEditedLibrary(){const lib=getCabinet().find(x=>x.id===editingLibraryId);if(!lib)return;if(!editingWords.length){showToast('A library must contain at least one word.');return;}const changed=JSON.stringify(lib.words.map(normalizeWordRecord))!==JSON.stringify(editingWords.map(normalizeWordRecord));lib.words=editingWords.map(normalizeWordRecord);lib.updatedAt=new Date().toISOString();if(changed)lib.progress=null;setCabinet(getCabinet());if(state?.libraryId===editingLibraryId){state=freshState(lib.words,editingLibraryId,false);beginRecognitionRound();loadRecognitionQuestion();save();}closeAllLayers();openCabinet();showToast(changed?'Changes saved. Study progress was reset for this volume.':'No changes were made.');}
+async function saveEditedLibrary(){
+  const cabinet=getCabinet();
+  const lib=cabinet.find(x=>x.id===editingLibraryId);
+  if(!lib)return;
+  if(!editingWords.length){showToast('A library must contain at least one word.');return;}
+
+  const normalizedWords=editingWords.map(normalizeWordRecord);
+  const changed=JSON.stringify(lib.words.map(normalizeWordRecord))!==JSON.stringify(normalizedWords);
+  lib.words=normalizedWords;
+  lib.updatedAt=new Date().toISOString();
+  if(changed)lib.progress=null;
+  setCabinet(cabinet);
+
+  if(state?.libraryId===editingLibraryId){
+    state=freshState(lib.words,editingLibraryId,false);
+    beginRecognitionRound();
+    loadRecognitionQuestion();
+    try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}
+  }
+
+  let synced=true;
+  if(accountMode==='account'){
+    lastLocalMutationAt=Date.now();
+    synced=await syncAccountDataNow();
+  }
+
+  closeAllLayers();
+  openCabinet();
+  if(changed){
+    showToast(synced?'Changes saved. Study progress was reset for this volume.':'Changes saved locally, but server sync failed. Please try again.');
+  }else{
+    showToast('No changes were made.');
+  }
+}
 
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeAllLayers();});
 renderAccountBar();
