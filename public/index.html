@@ -51,7 +51,7 @@ button.ghost{background:transparent;color:var(--muted);border-color:transparent;
 button.ghost:hover{background:transparent;color:var(--accent);border-color:transparent}
 button:disabled{opacity:.45;cursor:default;transform:none}
 .app{width:min(900px,calc(100% - 36px));margin:auto;padding:42px 0 68px;position:relative;z-index:1}
-.top{text-align:center;padding:0;margin-bottom:25px}
+.top{text-align:center;padding:0;margin-bottom:25px;position:relative}
 h1{font-size:clamp(44px,7vw,72px);font-weight:400;letter-spacing:.01em;line-height:1;color:var(--accent);margin:0}
 .sub{color:var(--muted);font-size:15px;margin-top:12px;letter-spacing:.02em;font-style:italic}
 .top:after{content:"✦";display:block;color:#aa8a5b;font-size:14px;margin:19px auto 0}
@@ -174,7 +174,7 @@ textarea::placeholder{color:#a79f91}
 .drawerIntro{position:relative;color:var(--muted);font-size:12px;font-style:italic;margin:0 0 24px}
 .drawerSection{position:relative;border-top:1px solid var(--line);padding-top:17px;margin-top:17px}
 .drawerSection button{display:block;width:100%;text-align:left;margin:7px 0;background:transparent;color:var(--ink);border-color:var(--line-dark)}
-.drawerSection button:hover{background:rgba(113,52,59,.06);color:var(--accent);border-color:var(--line-dark)}
+.drawerSection button:hover{background:rgba(113,52,59,.06);color:var(--accent);border-color:var(--line-dark)}\n.drawerHelp{position:relative;margin-top:30px;padding-top:17px;border-top:1px solid var(--line)}\n.drawerHelp > button{display:block;width:100%;text-align:left;margin:7px 0;background:transparent;color:var(--ink);border-color:var(--line-dark)}\n.drawerHelp > button:hover{background:rgba(113,52,59,.06);color:var(--accent);border-color:var(--line-dark)}\n.helpSubmenu{display:grid;gap:7px;margin-top:7px;padding-left:10px}\n.helpSubmenu button{width:100%;text-align:left;background:rgba(255,252,245,.28);color:var(--muted);border-color:var(--line);font-size:11px;padding:9px 11px}\n.helpSubmenu button:hover{background:rgba(113,52,59,.06);color:var(--accent);border-color:var(--line-dark)}\n.manualSection{position:relative;margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}\n.manualSection h3{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#9a7b4e;font-weight:600;margin:0 0 8px}\n.manualSection p,.manualSection li{font-size:12px;line-height:1.75;color:var(--ink)}\n.manualSection ul{padding-left:19px;margin:7px 0 0}\n.feedbackIntro{position:relative;color:var(--muted);font-size:12px;line-height:1.7}\n.feedbackBox{position:relative;width:100%;min-height:170px;padding:14px;border:1px solid var(--line-dark);background:rgba(255,252,245,.55);color:var(--ink);resize:vertical;outline:none;font-size:14px;line-height:1.7}\n.feedbackBox:focus{border-color:var(--accent)}
 .cabinetList{position:relative;display:grid;gap:10px}
 .cabinetItem{border-top:1px solid var(--line);padding:14px 0}
 .cabinetHead{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}
@@ -214,7 +214,7 @@ textarea::placeholder{color:#a79f91}
 }
 
 /* Account / authentication */
-.accountBar{position:absolute;top:10px;right:0;display:flex;align-items:center;gap:8px;z-index:4}
+.accountBar{position:absolute;top:10px;right:0;display:flex;align-items:flex-end;gap:8px;z-index:4}\n.studyToolsButton{position:absolute;top:46px;right:0;z-index:4;font-size:10px;padding:7px 10px;background:transparent;color:var(--accent);border-color:rgba(113,52,59,.35)}\n.studyToolsButton:hover{background:rgba(113,52,59,.07);color:var(--accent);border-color:var(--accent)}
 .accountButton{font-size:10px;padding:7px 10px;background:transparent;color:var(--accent);border-color:rgba(113,52,59,.35)}
 .accountButton:hover{background:rgba(113,52,59,.07);color:var(--accent);border-color:var(--accent)}
 .accountStatus{font-size:10px;color:var(--muted);font-style:italic}
@@ -544,6 +544,14 @@ become"></textarea>
         <button type="button" onclick="openArchiveInfo('restore')">Restore Archive</button>
         <input id="restoreFile" class="hidden" type="file" accept=".json,application/json" onchange="restoreArchive(event)">
       </div>
+
+      <div class="drawerHelp">
+        <button type="button" onclick="document.getElementById('helpSubmenu').classList.toggle('hidden')">Help</button>
+        <div id="helpSubmenu" class="helpSubmenu hidden">
+          <button type="button" onclick="openLayer('manualPopover','settingsDrawer')">User Manual</button>
+          <button type="button" onclick="openLayer('feedbackPopover','settingsDrawer')">Email Feedback</button>
+        </div>
+      </div>
     </aside>
   </div>
 
@@ -591,6 +599,96 @@ become"></textarea>
       <p id="archiveInfoText" class="actionModalText"></p>
       <div id="archiveInfoWarning" class="actionModalWarning hidden"></div>
       <div class="modalActions"><button id="archiveInfoConfirmButton" onclick="confirmArchiveInfo()">Confirm</button></div>
+    </div>
+  </div>
+
+  <!-- User Manual -->
+  <div id="manualPopover" class="modalLayer hidden" aria-hidden="true" onclick="closeLayer(event,'manualPopover')">
+    <div class="modalCard" onclick="event.stopPropagation()">
+      <h2 class="modalTitle">User Manual</h2>
+      <p class="modalIntro">A detailed guide to The Lexicon, including the small interactions that may not be obvious at first.</p>
+
+      <div class="manualSection">
+        <h3>Getting started</h3>
+        <p>Enter English words in The Word Studio and choose Compose Library, or load a CSV library. You can keep a library in The Cabinet for later study or use it only for the current session.</p>
+      </div>
+
+      <div class="manualSection">
+        <h3>Study flow</h3>
+        <ul>
+          <li><b>Recognition:</b> read the word and choose the definition that matches it. Incorrect words return in another round.</li>
+          <li><b>Spelling:</b> listen to the pronunciation and type the word yourself. A word answered incorrectly returns to the end of the queue.</li>
+          <li><b>Detail cards:</b> after an answer, use Continue to move to the next word.</li>
+          <li><b>Replay:</b> use the speaker or Replay button whenever you want to hear the pronunciation again.</li>
+        </ul>
+      </div>
+
+      <div class="manualSection">
+        <h3>Cabinet</h3>
+        <ul>
+          <li><b>Open</b> resumes a saved volume and its progress.</li>
+          <li><b>View</b> reveals the words currently stored in that volume.</li>
+          <li><b>Edit</b> lets you add or remove words. Click Save Changes when finished.</li>
+          <li><b>Rename</b> changes only the volume name.</li>
+          <li><b>Clear Progress</b> keeps the words but resets that volume's study progress.</li>
+          <li><b>Remove</b> deletes the saved volume from the Cabinet.</li>
+          <li>For Cabinet action cards, clicking the space outside the card returns you to the Cabinet page rather than the home page.</li>
+        </ul>
+      </div>
+
+      <div class="manualSection">
+        <h3>Closing cards and panels</h3>
+        <p>Most cards can be closed by clicking the area outside the card. This returns you to the immediately previous page or panel. You do not need a separate Cancel button for these cards.</p>
+      </div>
+
+      <div class="manualSection">
+        <h3>Spelling test rules</h3>
+        <ul>
+          <li>Paste and drag-and-drop text are not allowed.</li>
+          <li>Predictive IME composition or selecting a completed suggestion is treated as cheating because it can provide the whole spelling without typing it.</li>
+          <li>Voice input is allowed. The purpose is to prevent predictive text from supplying an answer, not to prevent accessibility tools.</li>
+          <li>If an unsupported input method is detected, a gentle reminder will appear and you can continue after dismissing it.</li>
+        </ul>
+      </div>
+
+      <div class="manualSection">
+        <h3>Study Tools</h3>
+        <ul>
+          <li><b>Profile:</b> shows learning statistics, including the top 10 most-practised and most-missed words, plus the weekly poem when available.</li>
+          <li><b>The Ledger:</b> summarizes long-term learning, spelling, and mistake counts.</li>
+          <li><b>The Almanac:</b> shows the yearly activity heatmap. Hover over a square to see its date and count.</li>
+          <li><b>Export Archive:</b> creates a JSON backup of your local Lexicon data.</li>
+          <li><b>Restore Archive:</b> replaces the current local records with data from a previously exported archive.</li>
+        </ul>
+      </div>
+
+      <div class="manualSection">
+        <h3>Account and guest mode</h3>
+        <ul>
+          <li>A registered account stores your Cabinet and learning records on the server so they can be restored on another device after signing in.</li>
+          <li>Guest mode keeps data only in the current browser. Changing browser or device, or clearing browser storage, will not carry guest data over.</li>
+          <li>If you choose to remember a signed-in device, only use that option on a private device you control.</li>
+          <li>Log out requires confirmation to reduce accidental sign-outs.</li>
+        </ul>
+      </div>
+
+      <div class="manualSection">
+        <h3>Important backup note</h3>
+        <p>Export an archive periodically if the data is important to you. A backup is especially useful before restoring an older archive.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Email Feedback -->
+  <div id="feedbackPopover" class="modalLayer hidden" aria-hidden="true" onclick="closeLayer(event,'feedbackPopover')">
+    <div class="modalCard" onclick="event.stopPropagation()">
+      <h2 class="modalTitle">Email Feedback</h2>
+      <p class="modalIntro">Found a problem or have an idea? Write your feedback below.</p>
+      <p class="feedbackIntro">When you click Send Feedback, your email application will open with the message prepared for the developer. Replace the recipient address below with your actual developer email if it has not already been configured.</p>
+      <textarea id="feedbackText" class="feedbackBox" maxlength="5000" placeholder="Tell the developer what happened, what you expected, or what you would like to improve."></textarea>
+      <div class="modalActions">
+        <button type="button" onclick="(function(){const body=(document.getElementById('feedbackText').value||'').trim();if(!body){document.getElementById('feedbackText').focus();return;}window.location.href='mailto:feedback@lexiconoftheworld.win?subject=The%20Lexicon%20Feedback&body='+encodeURIComponent(body);})()">Send Feedback</button>
+      </div>
     </div>
   </div>
 
