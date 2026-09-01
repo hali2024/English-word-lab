@@ -1,0 +1,1200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Lexicon</title>
+<style>
+
+:root{
+  --paper:#f3ecdd;--paper-deep:#e6dac5;--ink:#2b2723;--muted:#75695c;
+  --line:rgba(74,55,39,.20);--line-dark:rgba(74,55,39,.38);
+  --accent:#71343b;--accent-soft:#eee1dc;--navy:#4d5860;
+  --good:#71343b;--good-bg:#eee1dc;--bad:#5e5148;--bad-bg:#e9e1d5;
+  --white:#fbf7ed;--shadow:0 24px 65px rgba(52,38,24,.13);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;min-height:100vh;color:var(--ink);
+  background:
+    radial-gradient(circle at 14% 9%,rgba(255,255,255,.55),transparent 25rem),
+    radial-gradient(circle at 88% 72%,rgba(255,255,255,.28),transparent 28rem),
+    linear-gradient(135deg,#ded2bf,#d6c9b5 50%,#e2d7c5);
+  font-family:Georgia,"Times New Roman",serif;
+  -webkit-font-smoothing:antialiased;
+}
+body:before{
+  content:"";position:fixed;inset:0;pointer-events:none;opacity:.16;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.045'/%3E%3C/svg%3E");
+  mix-blend-mode:multiply;z-index:20;
+}
+body:after{
+  content:"";position:fixed;inset:0;pointer-events:none;opacity:.12;
+  background:repeating-linear-gradient(0deg,rgba(50,35,20,.08) 0,rgba(50,35,20,.08) 1px,transparent 1px,transparent 4px);
+  z-index:30;
+}
+::selection{background:var(--ink);color:var(--paper)}
+button,input,textarea{font:inherit}
+button{
+  border:1px solid var(--accent);border-radius:2px;padding:11px 17px;
+  font-size:13px;font-weight:500;letter-spacing:.04em;cursor:pointer;
+  background:var(--accent);color:var(--paper);
+  transition:transform .18s ease,background .18s ease,color .18s ease,border-color .18s ease;
+}
+button:hover{transform:translateY(-1px);background:#54262c;border-color:#54262c}
+button:active{transform:translateY(0)}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+button.secondary{background:transparent;color:var(--accent);border-color:rgba(113,52,59,.4)}
+button.secondary:hover{background:rgba(113,52,59,.07);color:var(--accent);border-color:var(--accent)}
+button.ghost{background:transparent;color:var(--muted);border-color:transparent;padding:8px 4px;font-weight:500}
+button.ghost:hover{background:transparent;color:var(--accent);border-color:transparent}
+button:disabled{opacity:.45;cursor:default;transform:none}
+.app{width:min(900px,calc(100% - 36px));margin:auto;padding:42px 0 68px;position:relative;z-index:1}
+.top{text-align:center;padding:0;margin-bottom:25px}
+h1{font-size:clamp(44px,7vw,72px);font-weight:400;letter-spacing:.01em;line-height:1;color:var(--accent);margin:0}
+.sub{color:var(--muted);font-size:15px;margin-top:12px;letter-spacing:.02em;font-style:italic}
+.top:after{content:"✦";display:block;color:#aa8a5b;font-size:14px;margin:19px auto 0}
+.hidden{display:none!important}
+.panel,.quiz,.detail,.interstitial{
+  position:relative;background:linear-gradient(rgba(255,255,255,.22),rgba(255,255,255,.06)),rgba(251,247,237,.82);
+  border:1px solid var(--line);border-radius:2px;box-shadow:var(--shadow);
+  padding:32px;margin-bottom:18px;
+}
+.panel:before,.quiz:before,.detail:before,.interstitial:before{
+  content:"";position:absolute;inset:8px;border:1px solid rgba(170,138,91,.20);pointer-events:none;
+}
+.panel h2{font-size:27px;font-weight:400;color:#54262c;letter-spacing:.01em;margin:0 0 7px}
+.hint{font-size:13px;color:var(--muted);line-height:1.7}
+textarea{
+  width:100%;min-height:170px;border:1px solid var(--line-dark);border-radius:2px;
+  padding:18px;resize:vertical;color:var(--ink);background:rgba(255,252,245,.55);
+  font-family:Georgia,"Times New Roman",serif;font-size:15px;line-height:1.7;outline:none;
+}
+textarea:focus{border-color:var(--accent);box-shadow:none}
+textarea::placeholder{color:#a79f91}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.homeTools{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:6px 0 22px}
+.utilityButton{
+  border:1px solid rgba(113,52,59,.28);background:rgba(251,247,237,.5);color:var(--accent);
+  padding:8px 13px;border-radius:2px;font-size:11px;letter-spacing:.08em;font-weight:400;
+}
+.utilityButton:hover{background:rgba(113,52,59,.07);color:var(--accent);border-color:rgba(113,52,59,.5);transform:none}
+.reviewBanner{
+  position:relative;display:flex;align-items:center;justify-content:space-between;gap:20px;
+  padding:17px 20px;margin:0 0 22px;border-top:1px solid var(--line-dark);
+  border-bottom:1px solid var(--line-dark);background:rgba(251,247,237,.38);
+}
+.reviewBanner .reviewText{font-size:14px;color:var(--ink)}
+.reviewBanner .reviewText em{color:var(--accent)}
+.reviewBanner button{white-space:nowrap;padding:9px 13px;font-size:11px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin-bottom:22px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.stat{text-align:left;background:rgba(243,236,221,.65);border:0;border-right:1px solid var(--line);padding:16px 18px}
+.stat:last-child{border-right:0}
+.num{font-size:31px;color:var(--accent);font-weight:400;line-height:1}
+.label{font-size:10px;color:var(--muted);margin-top:7px;letter-spacing:.17em;text-transform:uppercase}
+.progress{height:2px;background:var(--paper-deep);overflow:hidden;margin:2px 0 22px}
+.bar{height:100%;background:var(--accent);width:0;transition:width .3s ease}
+.mode{font-size:10px;text-transform:uppercase;letter-spacing:.18em;color:var(--accent);font-weight:600;display:flex;align-items:center;justify-content:space-between}
+.mode small{color:var(--muted);text-transform:none;letter-spacing:0;font-weight:500;font-size:10px;font-style:italic}
+.wordRow{display:flex;align-items:center;gap:14px;margin:22px 0 8px}
+.word{font-size:clamp(50px,8vw,82px);font-weight:400;color:#54262c;letter-spacing:-.02em;line-height:.95}
+.speaker{width:42px;height:42px;border-radius:50%;background:transparent;color:var(--accent);border-color:rgba(113,52,59,.4);font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0}
+.speaker:hover{background:var(--accent);color:var(--paper);border-color:var(--accent)}
+.prompt{display:none}
+.options{border-top:1px solid var(--line)}
+.option{
+  width:100%;font-family:Georgia,"Times New Roman",serif;font-weight:400;font-size:15px;
+  background:transparent;color:var(--ink);border:0;border-bottom:1px solid var(--line);
+  border-radius:0;text-align:left;padding:18px 10px;line-height:1.55;position:relative;
+}
+.option:before{content:"";display:inline-block;width:0;height:1px;background:var(--accent);vertical-align:middle;margin-right:0;transition:width .18s,margin-right .18s}
+.option:hover:not(:disabled){background:rgba(165,72,54,.035);border-color:var(--line-dark);transform:none}
+.option:hover:not(:disabled):before{width:18px;margin-right:10px}
+.option.correct,.option.wrong{background:transparent;color:var(--ink);border-color:var(--line)}
+.option.correct:before,.option.wrong:before{width:18px;margin-right:10px;background:var(--accent)}
+.banner{
+  font-family:Georgia,"Times New Roman",serif;background:transparent!important;border:0;
+  border-bottom:1px solid var(--line);border-radius:0;padding:2px 0 15px;color:var(--accent)!important;
+  font-size:18px;font-weight:400;font-style:italic;margin-bottom:18px;
+}
+.banner.bad{color:var(--muted)!important}.banner .icon{display:none}
+.block{margin-top:24px;padding-top:18px;border-top:1px solid var(--line)}
+.block h3{font-size:10px;text-transform:uppercase;letter-spacing:.18em;color:#9a7b4e;margin:0 0 10px;font-weight:600}
+.definition{font-size:21px;font-weight:400;line-height:1.5}
+.examples{display:grid;gap:12px}
+.example{font-size:14px;line-height:1.7;color:var(--muted);font-style:italic;padding-left:15px;border-left:1px solid var(--accent)}
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chip{background:transparent;color:var(--accent);border:1px solid var(--line-dark);padding:6px 10px;border-radius:99px;font-size:11px;font-weight:400}
+.chip.empty{border:0;color:var(--muted);font-weight:500;font-style:italic;padding-left:0}
+.rootText{font-size:13px;line-height:1.75;color:var(--ink);background:rgba(230,218,197,.40);padding:14px;border-left:2px solid var(--accent)}
+.dictBox{display:flex;flex-direction:column;align-items:center;text-align:center;padding:18px 0 8px}
+.dictBox .speaker{width:68px;height:68px;font-size:26px;margin-bottom:18px}
+.dictInput{width:100%;max-width:360px;text-align:center;font-size:21px;line-height:1.3;padding:14px;border-radius:2px;border:1px solid var(--line-dark);background:transparent;letter-spacing:.04em;color:var(--ink)}
+.dictInput:focus{outline:none;border-color:var(--accent);box-shadow:none}
+.dictInput.correct{border-color:var(--good);background:var(--good-bg);color:var(--good)}
+.dictInput.wrong{border-color:var(--bad);background:var(--bad-bg);color:var(--bad)}
+.centerRow{display:flex;justify-content:center;gap:10px;margin-top:18px;flex-wrap:wrap}
+.interstitial{text-align:center;padding:52px 30px}
+.bigEmoji{display:none}
+.interstitial h2{margin:6px 0 10px;font-size:36px;font-weight:400;color:#54262c}
+.interstitial p{color:var(--muted);font-size:13px;line-height:1.7;margin:0 0 14px}
+.results{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);max-width:560px;margin:28px auto 12px;border:1px solid var(--line)}
+.result{background:rgba(255,252,245,.55);padding:20px}
+.result .value{font-size:42px;font-weight:400;color:var(--accent)}
+.result .name{font-size:10px;letter-spacing:.18em;color:var(--muted);text-transform:uppercase;margin-top:7px}
+.result .note{font-size:12px;color:var(--muted);font-style:italic;margin-top:6px}
+.footer{font-size:10px;letter-spacing:.12em;color:var(--muted);text-align:center;margin-top:28px}
+.modalLayer,.drawerLayer{
+  position:fixed;inset:0;z-index:100;display:flex;align-items:flex-start;justify-content:center;
+  padding:80px 16px 28px;background:rgba(43,39,35,.16);backdrop-filter:blur(3px);
+}
+.modalCard{
+  position:relative;width:min(720px,100%);max-height:min(82vh,760px);overflow:auto;
+  padding:32px;background:linear-gradient(rgba(255,255,255,.22),rgba(255,255,255,.06)),#f3ecdd;
+  border:1px solid rgba(74,55,39,.25);box-shadow:0 28px 80px rgba(52,38,24,.22);border-radius:2px;
+}
+.modalCard:before{content:"";position:absolute;inset:8px;border:1px solid rgba(170,138,91,.20);pointer-events:none}
+.modalTitle{position:relative;font-size:30px;font-weight:400;color:#54262c;margin:0 0 8px}
+.modalIntro{position:relative;color:var(--muted);font-size:12px;font-style:italic;margin:0 0 22px}
+.modalActions{position:relative;display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:20px}
+.choiceButton{min-width:90px}
+.choiceButton.no{background:transparent;color:var(--muted);border-color:var(--line-dark)}
+.choiceButton.no:hover{background:rgba(74,55,39,.06);color:var(--ink);border-color:var(--line-dark)}
+.nameInput{position:relative;width:100%;padding:14px 15px;border:1px solid var(--line-dark);background:rgba(255,252,245,.55);color:var(--ink);outline:none;font-size:16px}
+.nameInput:focus{border-color:var(--accent)}
+.modalRule{position:relative;border:0;border-top:1px solid var(--line);margin:20px 0}
+.drawerLayer{justify-content:flex-end;align-items:stretch;padding:0;background:rgba(43,39,35,.12)}
+.drawerCard{
+  position:relative;width:min(390px,92vw);height:100%;overflow:auto;padding:42px 28px 30px;
+  background:#f3ecdd;border-left:1px solid rgba(74,55,39,.22);box-shadow:-22px 0 70px rgba(52,38,24,.18);
+}
+.drawerCard:before{content:"";position:absolute;inset:10px;border:1px solid rgba(170,138,91,.18);pointer-events:none}
+.drawerTitle{position:relative;font-size:30px;font-weight:400;color:#54262c;margin:0 0 6px}
+.drawerIntro{position:relative;color:var(--muted);font-size:12px;font-style:italic;margin:0 0 24px}
+.drawerSection{position:relative;border-top:1px solid var(--line);padding-top:17px;margin-top:17px}
+.drawerSection button{display:block;width:100%;text-align:left;margin:7px 0;background:transparent;color:var(--ink);border-color:var(--line-dark)}
+.drawerSection button:hover{background:rgba(113,52,59,.06);color:var(--accent);border-color:var(--line-dark)}
+.cabinetList{position:relative;display:grid;gap:10px}
+.cabinetItem{border-top:1px solid var(--line);padding:14px 0}
+.cabinetHead{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}
+.cabinetName{font-size:19px;color:#54262c}
+.cabinetMeta{font-size:11px;color:var(--muted);font-style:italic;margin-top:5px}
+.cabinetActions{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.cabinetActions button{font-size:10px;padding:7px 9px}
+.cabinetDetail{position:relative;margin-top:18px;padding-top:18px;border-top:1px solid var(--line)}
+.cabinetDetail h3{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#9a7b4e;font-weight:600}
+.wordList{display:flex;flex-wrap:wrap;gap:6px}
+.wordPill{padding:6px 9px;border:1px solid var(--line-dark);color:var(--accent);font-size:11px;background:rgba(255,252,245,.35)}
+.emptyState{position:relative;text-align:center;color:var(--muted);font-style:italic;padding:28px 10px}
+.ledgerGrid{position:relative;display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line)}
+.ledgerStat{background:rgba(255,252,245,.55);padding:20px 14px;text-align:center}
+.ledgerStat .value{font-size:36px;color:var(--accent)}
+.ledgerStat .name{margin-top:7px;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.familiarity{font-size:12px;color:var(--muted);font-style:italic;margin:16px 0 -2px}
+.familiarity span{color:var(--accent)}
+.heatmapWrap{overflow-x:auto;padding:2px 2px 8px}
+.heatmap{display:grid;grid-template-columns:repeat(53,11px);grid-template-rows:repeat(7,11px);grid-auto-flow:column;gap:3px;width:max-content;margin:auto}
+.heatCell{position:relative;width:11px;height:11px;border:1px solid rgba(74,55,39,.16);background:rgba(255,252,245,.55);cursor:default}
+.heatCell[data-level="1"]{background:#e8ddd0}
+.heatCell[data-level="2"]{background:#d7c5b5}
+.heatCell[data-level="3"]{background:#bca392}
+.heatCell[data-level="4"]{background:#8e6d61}
+.heatCell[data-level="5"]{background:#71343b}
+.heatCell[data-over="100"]::after{content:"✦";position:absolute;inset:-3px -2px 0 0;color:#71343b;font-size:8px;line-height:11px;text-align:right}
+.heatLegendTitle{position:relative;text-align:right;font-size:10px;color:var(--muted);margin-top:8px}
+.heatLegendBoxes{position:relative;display:flex;justify-content:flex-end;gap:5px;margin-top:8px}
+.heatLegendBoxes .heatCell{flex:0 0 11px;cursor:default}
+.heatScale{position:relative;display:flex;justify-content:flex-end;align-items:flex-start;gap:0;margin-top:8px}
+.scaleSegment{height:5px;border-top:2px solid var(--line-dark);border-left:1px solid var(--line-dark);position:relative}
+.scaleSegment:last-child{border-right:1px solid var(--line-dark)}
+.scaleSegment span{display:block;position:absolute;top:7px;right:0;white-space:nowrap;font-size:8px;color:var(--muted)}
+.scaleSegment.l1{width:13%}.scaleSegment.l2{width:23%}.scaleSegment.l3{width:31%}.scaleSegment.l4{width:33%}
+.heatLegendNote{position:relative;font-size:9px;color:var(--muted);font-style:italic;text-align:right;margin-top:22px}
+.heatDate{position:relative;margin-top:14px;font-size:11px;color:var(--muted);text-align:right}
+.toast{
+  position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:150;
+  background:#54262c;color:var(--paper);padding:10px 16px;border-radius:2px;font-size:11px;
+  box-shadow:0 12px 30px rgba(52,38,24,.2)
+}
+@media(max-width:700px){
+  .app{width:min(100% - 24px,900px);padding:28px 0 52px}
+  .panel,.quiz,.detail,.interstitial{padding:23px 18px}
+  .word{font-size:48px}
+  .stats{grid-template-columns:1fr}
+  .stat{border-right:0;border-bottom:1px solid var(--line)}
+  .stat:last-child{border-bottom:0}
+  .results{grid-template-columns:1fr}
+  .reviewBanner{align-items:flex-start;flex-direction:column}
+  .ledgerGrid{grid-template-columns:1fr}
+  .modalCard{padding:26px 19px}
+}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="top">
+    <h1>The Lexicon</h1>
+    <div class="sub">A private study of language</div>
+  </div>
+
+  <div id="homeArea">
+    <div id="reviewBanner" class="reviewBanner hidden"></div>
+    <div class="homeTools">
+      <button class="utilityButton" type="button" onclick="openCabinet()">The Cabinet</button>
+      <button class="utilityButton" type="button" onclick="openSettings()">The Study</button>
+    </div>
+
+    <div id="importArea">
+      <section id="importPanel" class="panel">
+        <h2>The Word Studio</h2>
+        <p class="hint">Enter the words you wish to study.</p>
+        <textarea id="aiWordsInput" style="min-height:130px;font-family:inherit" placeholder="seek
+find
+become"></textarea>
+        <div class="row">
+          <button id="generateAIButton" onclick="generateWithAI()">Compose Library</button>
+        </div>
+        <p id="aiStatus" class="hint" style="margin-bottom:0"></p>
+      </section>
+
+      <section class="panel">
+        <h2>From a CSV</h2>
+        <p class="hint">Paste your CSV here</p>
+        <textarea id="csvInput" placeholder="word,definition,example1,example2,example3,synonyms,antonyms,root_analysis,cognates
+"></textarea>
+        <div class="row">
+          <button onclick="loadCSV()">Load Library</button>
+          <button class="secondary" onclick="downloadTemplate()">Download CSV Template</button>
+          <button class="ghost" onclick="clearLibrary()">Clear Library & Progress</button>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <div id="appArea" class="hidden">
+    <div class="stats" id="statsRow"></div>
+    <div id="stage"></div>
+  </div>
+
+  <div class="footer">The Lexicon · Developed by H.H</div>
+
+  <!-- Save choice -->
+  <div id="saveChoiceModal" class="modalLayer hidden" aria-hidden="true" onclick="closeLayer(event,'saveChoiceModal')">
+    <div class="modalCard" onclick="event.stopPropagation()">
+      <h2 class="modalTitle">Keep this volume?</h2>
+      <p class="modalIntro">This library may be placed in The Cabinet for later study.</p>
+      <div class="modalActions">
+        <button class="choiceButton" onclick="chooseSaveLibrary(true)">Keep it</button>
+        <button class="choiceButton no" onclick="chooseSaveLibrary(false)">Only for now</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Name library -->
+  <div id="nameLibraryModal" class="modalLayer hidden" aria-hidden="true" onclick="closeLayer(event,'nameLibraryModal')">
+    <div class="modalCard" onclick="event.stopPropagation()">
+      <h2 class="modalTitle">Give it a name</h2>
+      <p class="modalIntro">A quiet name for this collection.</p>
+      <input id="libraryNameInput" class="nameInput" maxlength="80" placeholder="A name for this library" onkeydown="if(event.key==='Enter')confirmLibraryName()">
+      <div class="modalActions">
+        <button onclick="confirmLibraryName()">Place in The Cabinet</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cabinet -->
+  <div id="cabinetModal" class="modalLayer hidden" aria-hidden="true" onclick="closeLayer(event,'cabinetModal')">
+    <div class="modalCard" onclick="event.stopPropagation()">
+      <h2 class="modalTitle">The Cabinet</h2>
+      <p class="modalIntro">Volumes kept for another day.</p>
+      <div id="cabinetContent"></div>
+    </div>
+  </div>
+
+  <!-- Settings drawer -->
+  <div id="settingsDrawer" class="drawerLayer hidden" aria-hidden="true" onclick="closeLayer(event,'settingsDrawer')">
+    <aside class="drawerCard" onclick="event.stopPropagation()">
+      <h2 class="drawerTitle">The Study</h2>
+      <p class="drawerIntro">Records, almanac, and the archive.</p>
+
+      <div class="drawerSection">
+        <button type="button" onclick="openLedgerFromDrawer()">The Ledger</button>
+        <button type="button" onclick="openAlmanacFromDrawer()">The Almanac</button>
+      </div>
+
+      <div class="drawerSection">
+        <button type="button" onclick="exportArchive()">Export Archive</button>
+        <button type="button" onclick="document.getElementById('restoreFile').click()">Restore Archive</button>
+        <input id="restoreFile" class="hidden" type="file" accept=".json,application/json" onchange="restoreArchive(event)">
+      </div>
+    </aside>
+  </div>
+
+  <!-- Ledger -->
+  <div id="recordPopover" class="modalLayer hidden" aria-hidden="true" onclick="closeLayer(event,'recordPopover')">
+    <div class="modalCard" onclick="event.stopPropagation()">
+      <h2 class="modalTitle">The Ledger</h2>
+      <div id="ledgerStats"></div>
+    </div>
+  </div>
+
+  <!-- Almanac -->
+  <div id="almanacPopover" class="modalLayer hidden" aria-hidden="true" onclick="closeLayer(event,'almanacPopover')">
+    <div class="modalCard" onclick="event.stopPropagation()">
+      <h2 class="modalTitle">The Almanac</h2>
+      <div id="almanacContent"></div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+</div>
+
+<script>
+
+const KEY='englishWordLab_v2';
+const STATS_KEY='englishWordLab_stats_v1';
+const CABINET_KEY='theLexicon_cabinet_v1';
+const REVIEW_KEY='theLexicon_dailyReview_v1';
+const TTS_SUPPORTED='speechSynthesis' in window;
+
+let state=null;
+let pendingLibraryWords=null;
+let pendingLibrarySource='';
+let globalStats=emptyPersistentStats();
+
+function emptyPersistentStats(){
+  return {
+    learnedWords:[],
+    spelledWords:[],
+    mistakes:0,
+    daily:{},
+    dailyWords:{},
+    wordStats:{},
+    dailyReview:{}
+  };
+}
+
+function normalizeWordKey(word){return String(word||'').trim().toLowerCase();}
+function escapeHTML(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));}
+function shuffle(a){a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function uniq(a){return [...new Set(a)];}
+function todayKey(){return dateKey(new Date());}
+function dateKey(d){const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');return `${y}-${m}-${day}`;}
+function formatDate(key){
+  const d=new Date(`${key}T12:00:00`);
+  return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+}
+
+function getCabinet(){
+  try{
+    const x=JSON.parse(localStorage.getItem(CABINET_KEY)||'[]');
+    return Array.isArray(x)?x:[];
+  }catch(e){return [];}
+}
+function setCabinet(list){
+  try{localStorage.setItem(CABINET_KEY,JSON.stringify(list));}catch(e){}
+}
+
+function freshState(words,libraryId=null,reviewMode=false){
+  return {
+    words,
+    phase:'recognition',
+    screen:'question',
+    activeIds:words.map((_,i)=>i),
+    roundQueue:[],
+    roundPos:0,
+    wrongThisRound:[],
+    roundNumber:1,
+    masteredIds:[],
+    dictQueue:[],
+    current:null,
+    locked:false,
+    libraryId,
+    reviewMode,
+    stats:{
+      recAttempts:0,recCorrect:0,dictAttempts:0,dictCorrect:0,
+      learnedWords:globalStats.learnedWords,
+      spelledWords:globalStats.spelledWords,
+      mistakes:globalStats.mistakes,
+      daily:globalStats.daily
+    }
+  };
+}
+
+function recordStudyActivity(amount=1){
+  const key=todayKey();
+  if(!globalStats.daily)globalStats.daily={};
+  globalStats.daily[key]=(globalStats.daily[key]||0)+amount;
+  if(state?.stats)state.stats.daily=globalStats.daily;
+}
+
+function ensureWordStats(wordKey){
+  if(!globalStats.wordStats||typeof globalStats.wordStats!=='object')globalStats.wordStats={};
+  if(!globalStats.wordStats[wordKey]){
+    globalStats.wordStats[wordKey]={firstEncountered:todayKey(),practised:0,mistakes:0,lastMissed:null};
+  }
+  return globalStats.wordStats[wordKey];
+}
+
+function recordWordEncounter(id){
+  const wordKey=normalizeWordKey(state?.words?.[id]?.word);
+  if(!wordKey)return;
+  const ws=ensureWordStats(wordKey);
+  ws.practised=(ws.practised||0)+1;
+  if(!ws.firstEncountered)ws.firstEncountered=todayKey();
+  saveGlobalStatsOnly();
+}
+
+function recordLearnedWord(id){
+  const wordKey=normalizeWordKey(state?.words?.[id]?.word);
+  if(!wordKey)return;
+  if(!Array.isArray(globalStats.learnedWords))globalStats.learnedWords=[];
+  if(!globalStats.learnedWords.includes(wordKey))globalStats.learnedWords.push(wordKey);
+
+  const day=todayKey();
+  if(!globalStats.dailyWords||typeof globalStats.dailyWords!=='object')globalStats.dailyWords={};
+  if(!Array.isArray(globalStats.dailyWords[day]))globalStats.dailyWords[day]=[];
+  if(!globalStats.dailyWords[day].includes(wordKey)){
+    globalStats.dailyWords[day].push(wordKey);
+    globalStats.daily[day]=globalStats.dailyWords[day].length;
+  }
+  saveGlobalStatsOnly();
+}
+
+function recordSpelledWord(id){
+  const wordKey=normalizeWordKey(state?.words?.[id]?.word);
+  if(!wordKey)return;
+  if(!Array.isArray(globalStats.spelledWords))globalStats.spelledWords=[];
+  if(!globalStats.spelledWords.includes(wordKey))globalStats.spelledWords.push(wordKey);
+  saveGlobalStatsOnly();
+}
+
+function recordMistake(id){
+  globalStats.mistakes=(globalStats.mistakes||0)+1;
+  const wordKey=normalizeWordKey(state?.words?.[id]?.word);
+  if(wordKey){
+    const ws=ensureWordStats(wordKey);
+    ws.mistakes=(ws.mistakes||0)+1;
+    ws.lastMissed=todayKey();
+  }
+  saveGlobalStatsOnly();
+}
+
+function saveGlobalStatsOnly(){
+  try{localStorage.setItem(STATS_KEY,JSON.stringify(globalStats));}catch(e){}
+}
+
+function save(){
+  try{
+    if(state)localStorage.setItem(KEY,JSON.stringify(state));
+    saveGlobalStatsOnly();
+    syncActiveLibraryProgress();
+  }catch(e){}
+}
+
+function syncActiveLibraryProgress(){
+  if(!state?.libraryId)return;
+  const cabinet=getCabinet();
+  const idx=cabinet.findIndex(x=>x.id===state.libraryId);
+  if(idx<0)return;
+  cabinet[idx].words=state.words;
+  cabinet[idx].progress=JSON.parse(JSON.stringify(state));
+  cabinet[idx].updatedAt=new Date().toISOString();
+  setCabinet(cabinet);
+}
+
+function loadPersistentStats(legacyState){
+  let parsed=null;
+  try{parsed=JSON.parse(localStorage.getItem(STATS_KEY)||'null');}catch(e){}
+  if(parsed&&typeof parsed==='object'){
+    globalStats={
+      learnedWords:Array.isArray(parsed.learnedWords)?parsed.learnedWords.map(normalizeWordKey).filter(Boolean):[],
+      spelledWords:Array.isArray(parsed.spelledWords)?parsed.spelledWords.map(normalizeWordKey).filter(Boolean):[],
+      mistakes:typeof parsed.mistakes==='number'?parsed.mistakes:0,
+      daily:parsed.daily&&typeof parsed.daily==='object'?parsed.daily:{},
+      dailyWords:parsed.dailyWords&&typeof parsed.dailyWords==='object'?parsed.dailyWords:{},
+      wordStats:parsed.wordStats&&typeof parsed.wordStats==='object'?parsed.wordStats:{},
+      dailyReview:parsed.dailyReview&&typeof parsed.dailyReview==='object'?parsed.dailyReview:{}
+    };
+    return;
+  }
+
+  const legacy=legacyState?.stats;
+  if(legacy){
+    const words=Array.isArray(legacyState.words)?legacyState.words:[];
+    const convert=value=>{
+      if(typeof value==='number'&&words[value])return normalizeWordKey(words[value].word);
+      return normalizeWordKey(value);
+    };
+    globalStats={
+      learnedWords:Array.isArray(legacy.learnedWords)?legacy.learnedWords.map(convert).filter(Boolean):[],
+      spelledWords:Array.isArray(legacy.spelledWords)?legacy.spelledWords.map(convert).filter(Boolean):[],
+      mistakes:typeof legacy.mistakes==='number'?legacy.mistakes:0,
+      daily:legacy.daily&&typeof legacy.daily==='object'?legacy.daily:{},
+      dailyWords:{},wordStats:{},dailyReview:{}
+    };
+  }else globalStats=emptyPersistentStats();
+  saveGlobalStatsOnly();
+}
+
+function loadState(){
+  let x=null;
+  try{x=JSON.parse(localStorage.getItem(KEY)||'null');}catch(e){}
+  loadPersistentStats(x);
+
+  if(x&&Array.isArray(x.words)&&x.words.length){
+    state=x;
+    state.libraryId=state.libraryId||null;
+    state.reviewMode=!!state.reviewMode;
+    state.words=state.words.map(normalizeWordRecord);
+    if(!state.stats)state.stats={};
+    state.stats.recAttempts=typeof state.stats.recAttempts==='number'?state.stats.recAttempts:0;
+    state.stats.recCorrect=typeof state.stats.recCorrect==='number'?state.stats.recCorrect:0;
+    state.stats.dictAttempts=typeof state.stats.dictAttempts==='number'?state.stats.dictAttempts:0;
+    state.stats.dictCorrect=typeof state.stats.dictCorrect==='number'?state.stats.dictCorrect:0;
+    state.stats.learnedWords=globalStats.learnedWords;
+    state.stats.spelledWords=globalStats.spelledWords;
+    state.stats.mistakes=globalStats.mistakes;
+    state.stats.daily=globalStats.daily;
+    showStudyView();
+    render();
+  }else showHome();
+  renderReviewBanner();
+}
+
+function normalizeWordRecord(w){
+  const examples=Array.isArray(w?.examples)?w.examples.map(String).map(x=>x.trim()).filter(Boolean).slice(0,3):(w?.example?[String(w.example).trim()]:[]);
+  return {
+    word:String(w?.word||'').trim(),
+    definition:String(w?.definition||'').trim(),
+    example:examples[0]||'',
+    examples,
+    synonyms:Array.isArray(w?.synonyms)?w.synonyms.map(String).map(x=>x.trim()).filter(Boolean):[],
+    antonyms:Array.isArray(w?.antonyms)?w.antonyms.map(String).map(x=>x.trim()).filter(Boolean):[],
+    root:String(w?.root||'').trim(),
+    cognates:Array.isArray(w?.cognates)?w.cognates.map(String).map(x=>x.trim()).filter(Boolean):[]
+  };
+}
+
+/* ---------- home / import ---------- */
+function showHome(){
+  state=null;
+  document.getElementById('homeArea').classList.remove('hidden');
+  document.getElementById('importArea').classList.remove('hidden');
+  document.getElementById('appArea').classList.add('hidden');
+  renderReviewBanner();
+}
+function showStudyView(){
+  document.getElementById('homeArea').classList.add('hidden');
+  document.getElementById('appArea').classList.remove('hidden');
+}
+function resetImportFields(){
+  document.getElementById('aiWordsInput').value='';
+  document.getElementById('csvInput').value='';
+  document.getElementById('aiStatus').textContent='';
+  document.getElementById('generateAIButton').disabled=false;
+}
+
+function parseCSV(text){
+  const rows=[];let row=[],cell='',q=false;
+  for(let i=0;i<text.length;i++){
+    let c=text[i],n=text[i+1];
+    if(c=='"'){if(q&&n=='"'){cell+='"';i++;}else q=!q;}
+    else if(c==','&&!q){row.push(cell.trim());cell='';}
+    else if((c=='\n'||c=='\r')&&!q){if(c=='\r'&&n=='\n')i++;row.push(cell.trim());cell='';if(row.some(Boolean))rows.push(row);row=[];}
+    else cell+=c;
+  }
+  row.push(cell.trim());if(row.some(Boolean))rows.push(row);
+  if(!rows.length)return [];
+  const header=rows[0].map(x=>x.toLowerCase().trim());
+  const idx=name=>header.indexOf(name);
+  let wi=idx('word'),di=idx('definition'),ei=idx('example'),e1=idx('example1'),e2=idx('example2'),e3=idx('example3'),exs=idx('examples'),
+      si=idx('synonyms'),ai=idx('antonyms'),ri=idx('root_analysis')>=0?idx('root_analysis'):idx('root'),ci=idx('cognates');
+  let dataRows;
+  const hasHeader=wi>=0&&di>=0;
+  if(!hasHeader){wi=0;di=1;ei=2;si=3;ai=4;ri=5;ci=6;dataRows=rows;}
+  else dataRows=rows.slice(1);
+  const splitMulti=s=>s?s.split(';').map(x=>x.trim()).filter(Boolean):[];
+  return dataRows.map(r=>{
+    let examples=[];
+    if(e1>=0||e2>=0||e3>=0)[e1,e2,e3].forEach(i=>{if(i>=0&&(r[i]||'').trim())examples.push((r[i]||'').trim());});
+    else if(exs>=0)examples=splitMulti(r[exs]||'');
+    else if(ei>=0&&(r[ei]||'').trim())examples=[(r[ei]||'').trim()];
+    return normalizeWordRecord({
+      word:(r[wi]||'').trim(),definition:(r[di]||'').trim(),
+      examples,example:examples[0]||'',
+      synonyms:si>=0?splitMulti(r[si]):[],
+      antonyms:ai>=0?splitMulti(r[ai]):[],
+      root:ri>=0?(r[ri]||'').trim():'',
+      cognates:ci>=0?splitMulti(r[ci]):[]
+    });
+  }).filter(x=>x.word&&x.definition);
+}
+
+function beginNewLibrary(words,source){
+  pendingLibraryWords=words.map(normalizeWordRecord);
+  pendingLibrarySource=source;
+  openLayer('saveChoiceModal');
+}
+
+function chooseSaveLibrary(shouldSave){
+  closeAllLayers();
+  if(shouldSave){
+    document.getElementById('libraryNameInput').value='';
+    openLayer('nameLibraryModal');
+    setTimeout(()=>document.getElementById('libraryNameInput').focus(),40);
+  }else{
+    startLibrary(pendingLibraryWords,null,false);
+    pendingLibraryWords=null;
+    pendingLibrarySource='';
+  }
+}
+
+function confirmLibraryName(){
+  const input=document.getElementById('libraryNameInput');
+  const name=(input.value||'').trim();
+  if(!name){input.focus();return;}
+  const library={
+    id:'lib_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,8),
+    name,
+    words:pendingLibraryWords.map(normalizeWordRecord),
+    progress:null,
+    createdAt:new Date().toISOString(),
+    updatedAt:new Date().toISOString()
+  };
+  const cabinet=getCabinet();
+  cabinet.push(library);
+  setCabinet(cabinet);
+  closeAllLayers();
+  startLibrary(library.words,library.id,false);
+  pendingLibraryWords=null;
+  pendingLibrarySource='';
+}
+
+function startLibrary(words,libraryId=null,reviewMode=false,existingProgress=null){
+  if(existingProgress){
+    state=existingProgress;
+    state.words=state.words.map(normalizeWordRecord);
+    state.libraryId=libraryId;
+    state.reviewMode=reviewMode;
+  }else{
+    state=freshState(words.map(normalizeWordRecord),libraryId,reviewMode);
+    beginRecognitionRound();
+    loadRecognitionQuestion();
+  }
+  showStudyView();
+  save();
+  render();
+}
+
+function loadCSV(){
+  const words=parseCSV(document.getElementById('csvInput').value);
+  if(!words.length){showToast('No valid words found.');return;}
+  beginNewLibrary(words,'csv');
+}
+
+async function generateWithAI(){
+  const input=document.getElementById('aiWordsInput');
+  const button=document.getElementById('generateAIButton');
+  const status=document.getElementById('aiStatus');
+
+  // Each line/comma-separated item is one complete word.
+  const words=[...new Set(input.value.split(/[\n,，;；]+/).map(x=>x.trim()).filter(Boolean))];
+  if(!words.length){status.textContent='Please enter at least one English word.';return;}
+  if(words.length>50){status.textContent='Please enter no more than 50 words at a time.';return;}
+
+  button.disabled=true;
+  status.textContent=`Composing ${words.length} word${words.length===1?'':'s'}…`;
+  try{
+    const response=await fetch('/api/generate',{
+      method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({words})
+    });
+    let data={};try{data=await response.json();}catch(e){throw new Error('Server returned an invalid response.');}
+    if(!response.ok)throw new Error(data.error||`Request failed (${response.status})`);
+    if(!Array.isArray(data.words)||!data.words.length)throw new Error('No vocabulary was returned.');
+
+    if(data.words.length!==words.length)throw new Error('The generated library did not contain the expected number of words.');
+
+    const normalized=data.words.map((w,i)=>normalizeWordRecord({...w,word:words[i]})).filter(w=>w.word&&w.definition);
+    if(normalized.length!==words.length)throw new Error('Some words were returned without definitions.');
+
+    status.textContent='';
+    beginNewLibrary(normalized,'ai');
+  }catch(error){
+    console.error('AI generation failed:',error);
+    status.textContent=error.message;
+  }finally{
+    button.disabled=false;
+  }
+}
+
+function importNewLibrary(){
+  closeAllLayers();
+  localStorage.removeItem(KEY);
+  state=null;
+  showHome();
+  resetImportFields();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function clearLibrary(){
+  if(confirm('Clear the current library and all long-term records?')){
+    localStorage.removeItem(KEY);
+    localStorage.removeItem(STATS_KEY);
+    localStorage.removeItem(CABINET_KEY);
+    globalStats=emptyPersistentStats();
+    state=null;
+    location.reload();
+  }
+}
+
+function downloadTemplate(){
+  const text=`word,definition,example1,example2,example3,synonyms,antonyms,root_analysis,cognates
+meticulous,very careful about small details,She is meticulous about her work.,His meticulous notes revealed every small error.,A meticulous eye can turn routine work into craft.,careful;thorough;precise,careless;sloppy,"From Latin meticulosus, meaning fearful or overly cautious, from metus meaning fear; developed into the sense of being extremely careful",meticulousness;meticulously
+`;
+  const blob=new Blob([text],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='word_library_template.csv';a.click();URL.revokeObjectURL(a.href);
+}
+
+/* ---------- speech ---------- */
+let speechVoices=[];
+function loadSpeechVoices(){if(!TTS_SUPPORTED)return;speechVoices=window.speechSynthesis.getVoices();}
+if(TTS_SUPPORTED){loadSpeechVoices();window.speechSynthesis.onvoiceschanged=loadSpeechVoices;}
+function speak(text){
+  if(!TTS_SUPPORTED||!text)return;
+  try{
+    const synth=window.speechSynthesis;synth.cancel();
+    const u=new SpeechSynthesisUtterance(String(text));
+    const voices=speechVoices.length?speechVoices:synth.getVoices();
+    const englishVoice=voices.find(v=>/^en-US$/i.test(v.lang))||voices.find(v=>/^en-/i.test(v.lang))||voices.find(v=>/English/i.test(v.name));
+    if(englishVoice){u.voice=englishVoice;u.lang=englishVoice.lang;}else u.lang='en-US';
+    u.rate=.92;u.pitch=1;u.volume=1;synth.speak(u);
+  }catch(e){console.warn('Speech synthesis failed:',e);}
+}
+function safeJSString(s){return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\r?\n/g,' ');}
+function speakerBtn(word){
+  if(!TTS_SUPPORTED)return '';
+  return `<button type="button" class="speaker" title="Play pronunciation" onclick="event.stopPropagation();speak('${safeJSString(word)}')"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round"><path d="M4 9v6h4l5 4V5L8 9H4"></path><path d="M16 9.5c1 .8 1.5 1.6 1.5 2.5s-.5 1.7-1.5 2.5"></path><path d="M18.5 7c1.7 1.4 2.5 3 2.5 5s-.8 3.6-2.5 5"></path></svg></button>`;
+}
+
+/* ---------- recognition ---------- */
+function beginRecognitionRound(){
+  state.roundQueue=shuffle(state.activeIds);
+  state.roundPos=0;
+  state.wrongThisRound=[];
+}
+function buildDefinitionOptions(id){
+  const correct=state.words[id];
+  const pool=state.words.map((w,i)=>({w,i}))
+    .filter(o=>o.i!==id&&o.w.definition&&o.w.definition!==correct.definition)
+    .map(o=>o.w.definition);
+  const fallbackDefinitions=[
+    "A situation in which something is clearly understood or recognized.",
+    "To move or develop gradually toward a particular condition or result.",
+    "A person or thing that is especially useful or valuable for a purpose.",
+    "Marked by a strong desire to achieve a particular aim.",
+    "The act of making something easier to understand or use.",
+    "A quality of being calm, careful, and thoughtful in difficult circumstances.",
+    "To examine something closely in order to understand it better.",
+    "A change that causes something to become different from its previous state.",
+    "Able to continue for a long time without becoming weaker or less effective.",
+    "A particular way of thinking about or understanding something."
+  ];
+  const candidates=shuffle(uniq([...pool,...fallbackDefinitions.filter(d=>d!==correct.definition)]));
+  return shuffle([{text:correct.definition,isCorrect:true},...candidates.slice(0,3).map(text=>({text,isCorrect:false}))]);
+}
+function loadRecognitionQuestion(){
+  const id=state.roundQueue[state.roundPos];
+  state.current={id,options:buildDefinitionOptions(id),answered:false,selected:null,correct:null};
+  state.locked=false;state.screen='question';
+}
+function renderQuestionScreen(){
+  const w=state.words[state.current.id];
+  recordWordEncounter(state.current.id);
+  const roundNote=state.roundNumber>1?`<small>Round ${state.roundNumber} · Reviewing ${state.roundQueue.length} words</small>`:`<small>${state.words.length} words total</small>`;
+  const optsHtml=state.current.options.map((o,i)=>`<button type="button" class="option" onclick="selectAnswer(${i})">${String.fromCharCode(65+i)}. ${escapeHTML(o.text)}</button>`).join('');
+  setTimeout(()=>speak(w.word),150);
+  return `<section class="quiz">
+    <div class="mode">Recognition ${roundNote}</div>
+    <div class="progress"><div class="bar" style="width:${state.roundQueue.length?state.roundPos/state.roundQueue.length*100:0}%"></div></div>
+    <div class="wordRow"><div class="word">${escapeHTML(w.word)}</div>${speakerBtn(w.word)}</div>
+    <div class="options">${optsHtml}</div>
+  </section>`;
+}
+function selectAnswer(i){
+  if(state.locked)return;
+  state.locked=true;
+  const opt=state.current.options[i];
+  state.current.answered=true;state.current.selected=i;state.current.correct=opt.isCorrect;
+  state.stats.recAttempts++;
+  if(opt.isCorrect){
+    state.stats.recCorrect++;
+    state.masteredIds=uniq([...state.masteredIds,state.current.id]);
+    recordLearnedWord(state.current.id);
+  }else{
+    state.wrongThisRound.push(state.current.id);
+    recordMistake(state.current.id);
+  }
+  state.screen='detail';save();render();
+}
+function renderDetailScreen(){
+  const w=state.words[state.current.id],correct=state.current.correct;
+  const banner=correct?`<div class="banner good">Well remembered.</div>`:`<div class="banner bad">Worth another look.</div>`;
+  const chips=arr=>arr&&arr.length?`<div class="chips">${arr.map(x=>`<span class="chip">${escapeHTML(x)}</span>`).join('')}</div>`:`<div class="chips"><span class="chip empty">None recorded</span></div>`;
+  const examples=w.examples&&w.examples.length?w.examples:(w.example?[w.example]:[]);
+  return `<section class="detail">
+    ${banner}
+    <div class="wordRow">${speakerBtn(w.word)}<div class="word" style="font-size:31px">${escapeHTML(w.word)}</div></div>
+    ${renderFamiliarity(w.word)}
+    <div class="block"><h3>Definition</h3><div class="definition">${escapeHTML(w.definition)}</div></div>
+    ${examples.length?`<div class="block"><h3>Examples</h3><div class="examples">${examples.slice(0,3).map(x=>`<div class="example">${escapeHTML(x)}</div>`).join('')}</div></div>`:''}
+    <div class="block"><h3>Synonyms</h3>${chips(w.synonyms)}</div>
+    <div class="block"><h3>Antonyms</h3>${chips(w.antonyms)}</div>
+    <div class="block"><h3>Root Analysis</h3><div class="rootText">${w.root?escapeHTML(w.root):'None recorded'}</div></div>
+    <div class="block"><h3>Cognates</h3>${chips(w.cognates)}</div>
+    <div class="centerRow"><button onclick="continueFromDetail()">Continue</button></div>
+  </section>`;
+}
+function continueFromDetail(){
+  state.locked=false;state.roundPos++;
+  if(state.roundPos<state.roundQueue.length)loadRecognitionQuestion();
+  else if(state.wrongThisRound.length===0)state.screen='phaseTransition';
+  else{state.activeIds=uniq(state.wrongThisRound);state.screen='roundTransition';}
+  save();render();
+}
+function renderRoundTransition(){
+  return `<section class="interstitial">
+    <h2>Round ${state.roundNumber} Complete</h2>
+    <p>${state.masteredIds.length} words are securely remembered. <b>${state.activeIds.length}</b> remain for another reading.</p>
+    <div class="centerRow"><button onclick="advanceRound()">Begin Round ${state.roundNumber+1}</button></div>
+  </section>`;
+}
+function advanceRound(){state.roundNumber++;beginRecognitionRound();loadRecognitionQuestion();save();render();}
+function renderPhaseTransition(){
+  return `<section class="interstitial">
+    <h2>Recognition Complete</h2>
+    <p>Every word has been remembered in the latest round. The spelling test follows.</p>
+    <div class="centerRow"><button onclick="startDictationPhase()">Begin Spelling Test</button></div>
+  </section>`;
+}
+
+/* ---------- dictation ---------- */
+function startDictationPhase(){state.phase='dictation';state.dictQueue=shuffle(state.words.map((_,i)=>i));loadDictQuestion();save();render();}
+function loadDictQuestion(){
+  if(state.dictQueue.length===0){state.phase='done';state.screen='complete';if(state.reviewMode)completeDailyReview();return;}
+  const id=state.dictQueue[0];state.current={id,checked:false,correct:null,inputVal:''};state.locked=false;state.screen='dictQuestion';
+}
+function renderDictQuestionScreen(){
+  const w=state.words[state.current.id],remaining=uniq(state.dictQueue).length;
+  recordWordEncounter(state.current.id);
+  setTimeout(()=>speak(w.word),150);
+  return `<section class="quiz">
+    <div class="mode">Spelling <small>${remaining} remaining</small></div>
+    <div class="dictBox">
+      <button type="button" class="speaker" title="Play pronunciation" onclick="speak('${safeJSString(w.word)}')"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round"><path d="M4 9v6h4l5 4V5L8 9H4"></path><path d="M16 9.5c1 .8 1.5 1.6 1.5 2.5s-.5 1.7-1.5 2.5"></path><path d="M18.5 7c1.7 1.4 2.5 3 2.5 5s-.8 3.6-2.5 5"></path></svg></button>
+      <input class="dictInput" id="dictInput" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Write what you hear" onkeydown="if(event.key==='Enter')checkDictation()">
+      <div class="centerRow"><button class="secondary" type="button" onclick="speak('${safeJSString(w.word)}')">Replay</button><button type="button" onclick="checkDictation()">Submit</button></div>
+    </div>
+  </section>`;
+}
+function focusDictInput(){const el=document.getElementById('dictInput');if(el)el.focus();}
+function checkDictation(){
+  if(state.locked)return;
+  const el=document.getElementById('dictInput'),val=(el?el.value:'').trim();
+  if(!val)return;
+  state.locked=true;
+  const w=state.words[state.current.id],correct=val.toLowerCase()===w.word.toLowerCase();
+  state.stats.dictAttempts++;
+  if(correct){state.stats.dictCorrect++;recordSpelledWord(state.current.id);}else recordMistake(state.current.id);
+  state.current.checked=true;state.current.correct=correct;state.current.inputVal=val;
+  state.dictQueue.shift();if(!correct)state.dictQueue.push(state.current.id);
+  state.screen='dictFeedback';save();render();
+}
+function renderDictFeedbackScreen(){
+  const w=state.words[state.current.id],correct=state.current.correct;
+  const banner=correct?`<div class="banner good">Well spelled.</div>`:`<div class="banner bad">Not yet. The word returns to the end of the queue.</div>`;
+  return `<section class="detail">${banner}
+    <div class="wordRow">${speakerBtn(w.word)}<div class="word" style="font-size:30px">${escapeHTML(w.word)}</div></div>
+    ${renderFamiliarity(w.word)}
+    <div class="block"><h3>Your Spelling</h3><div class="definition" style="color:${correct?'var(--good)':'var(--bad)'}">${escapeHTML(state.current.inputVal)}</div></div>
+    <div class="block"><h3>Definition</h3><div class="definition">${escapeHTML(w.definition)}</div></div>
+    <div class="centerRow"><button onclick="continueDictation()">Continue</button></div>
+  </section>`;
+}
+function continueDictation(){loadDictQuestion();save();render();}
+
+/* ---------- familiarity ---------- */
+function renderFamiliarity(word){
+  const ws=globalStats.wordStats?.[normalizeWordKey(word)];
+  if(!ws)return '';
+  return `<div class="familiarity">
+    First encountered · <span>${formatDate(ws.firstEncountered||todayKey())}</span>
+    &nbsp;&nbsp; Practised · <span>${ws.practised||0} time${(ws.practised||0)===1?'':'s'}</span>
+    &nbsp;&nbsp; Mistakes · <span>${ws.mistakes||0}</span>
+    ${ws.lastMissed?`&nbsp;&nbsp; Last missed · <span>${formatDate(ws.lastMissed)}</span>`:''}
+  </div>`;
+}
+
+/* ---------- complete ---------- */
+function renderComplete(){
+  const rec=state.stats.recAttempts?Math.round(state.stats.recCorrect/state.stats.recAttempts*100):0;
+  const dict=state.stats.dictAttempts?Math.round(state.stats.dictCorrect/state.stats.dictAttempts*100):0;
+  return `<section class="interstitial">
+    <h2>Complete</h2>
+    <p>You have finished this study of ${state.words.length} words.</p>
+    <div class="results">
+      <div class="result"><div class="value">${rec}%</div><div class="name">Recognition</div><div class="note">${state.roundNumber} round${state.roundNumber===1?'':'s'}</div></div>
+      <div class="result"><div class="value">${dict}%</div><div class="name">Spelling</div><div class="note">${state.stats.dictAttempts} attempts</div></div>
+    </div>
+    <div class="centerRow">
+      <button onclick="restartSameLibrary()">Study Again</button>
+      <button class="secondary" onclick="importNewLibrary()">Import New Library</button>
+    </div>
+  </section>`;
+}
+function restartSameLibrary(){
+  const words=state.words,libraryId=state.libraryId,reviewMode=state.reviewMode;
+  state=freshState(words,libraryId,reviewMode);beginRecognitionRound();loadRecognitionQuestion();save();render();
+}
+
+/* ---------- daily review ---------- */
+function reviewCandidates(){
+  const cabinet=getCabinet(),seen=new Set(),candidates=[];
+  cabinet.forEach(lib=>{
+    lib.words.forEach(w=>{
+      const key=normalizeWordKey(w.word),ws=globalStats.wordStats?.[key];
+      if(seen.has(key))return;
+      if(ws&&(ws.mistakes||0)>0) {seen.add(key);candidates.push(normalizeWordRecord(w));return;}
+      if(ws&&ws.lastMissed){seen.add(key);candidates.push(normalizeWordRecord(w));}
+    });
+  });
+  return candidates.slice(0,12);
+}
+function renderReviewBanner(){
+  const el=document.getElementById('reviewBanner');if(!el)return;
+  const day=todayKey(),completed=globalStats.dailyReview?.[day];
+  const candidates=reviewCandidates();
+  if(completed||!candidates.length){el.classList.add('hidden');el.innerHTML='';return;}
+  el.innerHTML=`<div class="reviewText"><em>Today's Review</em><br><span>${candidates.length} familiar word${candidates.length===1?'':'s'} await another visit.</span></div><button onclick="startDailyReview()">Begin Review</button>`;
+  el.classList.remove('hidden');
+}
+function startDailyReview(){
+  const words=reviewCandidates();if(!words.length){renderReviewBanner();return;}
+  closeAllLayers();
+  startLibrary(words,null,true);
+}
+function completeDailyReview(){
+  if(!globalStats.dailyReview)globalStats.dailyReview={};
+  globalStats.dailyReview[todayKey()]=true;
+  saveGlobalStatsOnly();
+}
+
+/* ---------- Cabinet ---------- */
+function openCabinet(){
+  renderCabinet();
+  openLayer('cabinetModal');
+}
+function libraryProgress(lib){
+  const p=lib.progress;
+  if(!p)return {percent:0,status:'Not yet opened.'};
+  if(p.phase==='done'||p.screen==='complete')return {percent:100,status:'Complete.'};
+  const total=p.words?.length||lib.words?.length||0;
+  const mastered=p.masteredIds?.length||0;
+  return {percent:total?Math.round(mastered/total*100):0,status:`${mastered} of ${total} remembered.`};
+}
+function renderCabinet(){
+  const el=document.getElementById('cabinetContent'),cabinet=getCabinet();
+  if(!cabinet.length){el.innerHTML='<div class="emptyState">The Cabinet is empty.</div>';return;}
+  el.innerHTML=`<div class="cabinetList">${cabinet.map(lib=>{
+    const p=libraryProgress(lib);
+    return `<div class="cabinetItem">
+      <div class="cabinetHead"><div><div class="cabinetName">${escapeHTML(lib.name)}</div><div class="cabinetMeta">${lib.words.length} words · ${p.percent}% · ${escapeHTML(p.status)}</div></div></div>
+      <div class="cabinetActions">
+        <button onclick="openCabinetLibrary('${lib.id}')">Open</button>
+        <button class="secondary" onclick="showCabinetDetail('${lib.id}')">View</button>
+        <button class="secondary" onclick="renameLibrary('${lib.id}')">Rename</button>
+        <button class="secondary" onclick="clearLibraryProgress('${lib.id}')">Clear Progress</button>
+        <button class="ghost" onclick="deleteLibrary('${lib.id}')">Remove</button>
+      </div>
+      <div id="cabinetDetail_${lib.id}" class="cabinetDetail hidden"></div>
+    </div>`;
+  }).join('')}</div>`;
+}
+function showCabinetDetail(id){
+  const lib=getCabinet().find(x=>x.id===id);if(!lib)return;
+  const el=document.getElementById('cabinetDetail_'+id);if(!el)return;
+  el.innerHTML=`<h3>Words</h3><div class="wordList">${lib.words.map(w=>`<span class="wordPill">${escapeHTML(w.word)}</span>`).join('')}</div>`;
+  el.classList.toggle('hidden');
+}
+function openCabinetLibrary(id){
+  const lib=getCabinet().find(x=>x.id===id);if(!lib)return;
+  closeAllLayers();
+  if(lib.progress&&lib.progress.words?.length)startLibrary(lib.words,id,false,lib.progress);
+  else startLibrary(lib.words,id,false,null);
+}
+function renameLibrary(id){
+  const cabinet=getCabinet(),lib=cabinet.find(x=>x.id===id);if(!lib)return;
+  const name=prompt('Rename this library:',lib.name);
+  if(name===null)return;
+  const clean=name.trim();if(!clean)return;
+  lib.name=clean;lib.updatedAt=new Date().toISOString();setCabinet(cabinet);renderCabinet();
+}
+function clearLibraryProgress(id){
+  const cabinet=getCabinet(),lib=cabinet.find(x=>x.id===id);if(!lib)return;
+  if(!confirm(`Clear progress for "${lib.name}" and begin again?`))return;
+  lib.progress=null;lib.updatedAt=new Date().toISOString();setCabinet(cabinet);
+  if(state?.libraryId===id){
+    state=freshState(lib.words,id,false);beginRecognitionRound();loadRecognitionQuestion();save();closeAllLayers();render();
+  }else renderCabinet();
+}
+function deleteLibrary(id){
+  const cabinet=getCabinet(),lib=cabinet.find(x=>x.id===id);if(!lib)return;
+  if(!confirm(`Remove "${lib.name}" from The Cabinet?`))return;
+  setCabinet(cabinet.filter(x=>x.id!==id));
+  if(state?.libraryId===id){localStorage.removeItem(KEY);state=null;showHome();}
+  renderCabinet();
+}
+
+/* ---------- Ledger / Almanac ---------- */
+function renderLedger(){
+  const learned=new Set(globalStats.learnedWords||[]).size;
+  const spelled=new Set(globalStats.spelledWords||[]).size;
+  const mistakes=globalStats.mistakes||0;
+  return `<div class="ledgerGrid">
+    <div class="ledgerStat"><div class="value">${learned}</div><div class="name">Words Learned</div></div>
+    <div class="ledgerStat"><div class="value">${spelled}</div><div class="name">Words Spelled</div></div>
+    <div class="ledgerStat"><div class="value">${mistakes}</div><div class="name">Mistakes</div></div>
+  </div>`;
+}
+function renderAlmanac(){
+  const daily=globalStats.daily||{},dailyWords=globalStats.dailyWords||{};
+  const start=new Date();start.setHours(0,0,0,0);
+  const end=new Date(start);end.setFullYear(end.getFullYear()+1);
+  const days=[],cursor=new Date(start);
+  while(cursor<=end){
+    const key=dateKey(cursor),count=Array.isArray(dailyWords[key])?dailyWords[key].length:Number(daily[key]||0);
+    days.push({key,count});cursor.setDate(cursor.getDate()+1);
+  }
+  const cells=days.map(c=>{
+    const level=c.count===0?0:c.count<=10?1:c.count<=30?2:c.count<=60?3:c.count<=100?4:5;
+    return `<div class="heatCell" data-level="${level}" data-over="${c.count>100?'100':''}" title="${escapeHTML(formatDate(c.key))} · ${c.count} words studied"></div>`;
+  }).join('');
+  return `<div>
+    <p class="modalIntro">A year's record, beginning today.</p>
+    <div class="heatmapWrap"><div class="heatmap">${cells}</div></div>
+    <div class="heatLegendTitle">Words studied in one day</div>
+    <div class="heatLegendBoxes">
+      <div class="heatCell" data-level="0" title="0"></div>
+      <div class="heatCell" data-level="1" title="1–10"></div>
+      <div class="heatCell" data-level="2" title="11–30"></div>
+      <div class="heatCell" data-level="3" title="31–60"></div>
+      <div class="heatCell" data-level="4" title="61–100"></div>
+    </div>
+    <div class="heatScale">
+      <div class="scaleSegment l1"><span>1–10</span></div>
+      <div class="scaleSegment l2"><span>11–30</span></div>
+      <div class="scaleSegment l3"><span>31–60</span></div>
+      <div class="scaleSegment l4"><span>61–100</span></div>
+    </div>
+    <div class="heatLegendNote">✦ marks a day above 100 words.</div>
+    <div class="heatDate">${dateKey(start)} — ${dateKey(end)}</div>
+  </div>`;
+}
+
+/* ---------- layers ---------- */
+function openLayer(id){
+  closeAllLayers();
+  const el=document.getElementById(id);if(!el)return;
+  el.classList.remove('hidden');el.setAttribute('aria-hidden','false');
+  if(id==='recordPopover')document.getElementById('ledgerStats').innerHTML=renderLedger();
+  if(id==='almanacPopover')document.getElementById('almanacContent').innerHTML=renderAlmanac();
+  document.body.style.overflow='hidden';
+}
+function closeLayer(event,id){
+  if(event&&event.target!==event.currentTarget)return;
+  const el=document.getElementById(id);if(el){el.classList.add('hidden');el.setAttribute('aria-hidden','true');}
+  document.body.style.overflow='';
+}
+function closeAllLayers(){
+  document.querySelectorAll('.modalLayer,.drawerLayer').forEach(el=>{el.classList.add('hidden');el.setAttribute('aria-hidden','true');});
+  document.body.style.overflow='';
+}
+function openSettings(){openLayer('settingsDrawer');}
+function openLedgerFromDrawer(){openLayer('recordPopover');}
+function openAlmanacFromDrawer(){openLayer('almanacPopover');}
+
+/* ---------- archive ---------- */
+function exportArchive(){
+  const archive={
+    version:1,
+    exportedAt:new Date().toISOString(),
+    cabinet:getCabinet(),
+    globalStats,
+    currentState:state
+  };
+  const blob=new Blob([JSON.stringify(archive,null,2)],{type:'application/json;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download=`the-lexicon-archive-${todayKey()}.json`;a.click();URL.revokeObjectURL(a.href);
+  closeAllLayers();
+}
+function restoreArchive(event){
+  const file=event.target.files?.[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=()=>{
+    try{
+      const archive=JSON.parse(reader.result);
+      if(!archive||!Array.isArray(archive.cabinet)||!archive.globalStats)throw new Error('Invalid archive.');
+      if(!confirm('Restore this archive? Existing Cabinet records and statistics will be replaced.'))return;
+      localStorage.setItem(CABINET_KEY,JSON.stringify(archive.cabinet));
+      localStorage.setItem(STATS_KEY,JSON.stringify(archive.globalStats));
+      if(archive.currentState)localStorage.setItem(KEY,JSON.stringify(archive.currentState));else localStorage.removeItem(KEY);
+      closeAllLayers();loadState();showToast('Archive restored.');
+    }catch(e){showToast('This archive could not be restored.');console.error(e);}
+    event.target.value='';
+  };
+  reader.readAsText(file);
+}
+
+/* ---------- toast / stats / dispatcher ---------- */
+function showToast(message){
+  const el=document.getElementById('toast');el.textContent=message;el.classList.remove('hidden');
+  clearTimeout(showToast.timer);showToast.timer=setTimeout(()=>el.classList.add('hidden'),2200);
+}
+function renderStats(){
+  const total=state.words.length;let v2=0,l2='Mastered',v3='0%',l3='Accuracy';
+  if(state.phase==='recognition'){
+    v2=state.masteredIds.length;v3=state.stats.recAttempts?Math.round(state.stats.recCorrect/state.stats.recAttempts*100)+'%':'0%';
+  }else if(state.phase==='dictation'){
+    l2='Completed';v2=total-uniq(state.dictQueue).length;v3=state.stats.dictAttempts?Math.round(state.stats.dictCorrect/state.stats.dictAttempts*100)+'%':'0%';
+  }else{v2=total;v3='100%';}
+  return `<div class="stat"><div class="num">${total}</div><div class="label">Total Words</div></div>
+    <div class="stat"><div class="num">${v2}</div><div class="label">${l2}</div></div>
+    <div class="stat"><div class="num">${v3}</div><div class="label">${l3}</div></div>`;
+}
+function render(){
+  if(!state){renderReviewBanner();return;}
+  document.getElementById('statsRow').innerHTML=renderStats();
+  const stage=document.getElementById('stage');
+  switch(state.screen){
+    case 'question':stage.innerHTML=renderQuestionScreen();break;
+    case 'detail':stage.innerHTML=renderDetailScreen();break;
+    case 'roundTransition':stage.innerHTML=renderRoundTransition();break;
+    case 'phaseTransition':stage.innerHTML=renderPhaseTransition();break;
+    case 'dictQuestion':stage.innerHTML=renderDictQuestionScreen();focusDictInput();break;
+    case 'dictFeedback':stage.innerHTML=renderDictFeedbackScreen();break;
+    case 'complete':stage.innerHTML=renderComplete();break;
+    default:stage.innerHTML='';
+  }
+}
+
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeAllLayers();});
+closeAllLayers();
+loadState();
+
+</script>
+</body>
+</html>
