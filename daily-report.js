@@ -553,7 +553,9 @@ async function main() {
           ? 'The Lexicon — Daily Learning Report (TEST)'
           : 'The Lexicon — Your Daily Learning Report';
 
-        const idempotencyKey = `lexicon-daily-report-test-v2-${window.report_date}-${user.id}`;
+        const idempotencyKey = TEST_MODE
+  ? `lexicon-daily-report-test-${Date.now()}-${user.id}`
+  : `lexicon-daily-report-${window.report_date}-${user.id}`;
         const response = await sendMail(
           recipient,
           subject,
