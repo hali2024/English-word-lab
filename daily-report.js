@@ -1,4 +1,5 @@
 const { Pool } = require('pg');
+const crypto = require('crypto');
 
 const DATABASE_URL = process.env.DATABASE_URL || '';
 const REPORT_TIMEZONE = process.env.REPORT_TIMEZONE || 'Asia/Tokyo';
@@ -330,26 +331,35 @@ function buildHTML({ startTime, endTime, stats, testMode }) {
 </body>
 </html>`;
 }
+
 async function sendMail(to, subject, text, html, idempotencyKey) {
+  const payload = {
+    from: REPORT_FROM,
+    to: [to],
+    subject,
+    text,
+    html
+  };
+
+  const payloadHash = crypto
+    .createHash('sha256')
+    .update(JSON.stringify(payload))
+    .digest('hex')
+    .slice(0, 32);
+
   const headers = {
     Authorization: `Bearer ${RESEND_API_KEY}`,
     'Content-Type': 'application/json'
   };
 
   if (idempotencyKey) {
-    headers['Idempotency-Key'] = idempotencyKey;
+    headers['Idempotency-Key'] = `${idempotencyKey}-${payloadHash}`;
   }
 
   const response = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers,
-    body: JSON.stringify({
-      from: REPORT_FROM,
-      to: [to],
-      subject,
-      text,
-      html
-    })
+    body: JSON.stringify(payload)
   });
 
   if (!response.ok) {
@@ -368,6 +378,7 @@ async function getReportWindow() {
         NOW() AS end_time,
         (NOW() AT TIME ZONE $1)::date AS report_date
     `, [REPORT_TIMEZONE]);
+
     return result.rows[0];
   }
 
@@ -400,6 +411,7 @@ async function getUsers() {
       FROM users
       WHERE email=$1
     `, [TEST_EMAIL]);
+
     return result.rows;
   }
 
@@ -409,6 +421,7 @@ async function getUsers() {
     WHERE email_verified=TRUE
     ORDER BY id
   `);
+
   return result.rows;
 }
 
@@ -438,19 +451,32 @@ async function getStats(userId, startTime, endTime) {
 
     if (row.event_type === 'practice') {
       practiceCount += count;
+
       if (row.word) {
         practiceByWord.set(row.word, count);
         uniqueWords.add(row.word);
       }
+
     } else if (row.event_type === 'learned') {
       learnedCount += count;
-      if (row.word) uniqueWords.add(row.word);
+
+      if (row.word) {
+        uniqueWords.add(row.word);
+      }
+
     } else if (row.event_type === 'spelling') {
       spellingCount += count;
-      if (row.word) uniqueWords.add(row.word);
+
+      if (row.word) {
+        uniqueWords.add(row.word);
+      }
+
     } else if (row.event_type === 'mistake') {
       mistakeCount += count;
-      if (row.word) uniqueWords.add(row.word);
+
+      if (row.word) {
+        uniqueWords.add(row.word);
+      }
     }
   }
 
@@ -513,12 +539,19 @@ async function main() {
     const window = await getReportWindow();
     const users = await getUsers();
 
+    console.log(`Mode: ${TEST_MODE ? 'TEST' : 'PRODUCTION'}`);
+    console.log(`Test email configured: ${Boolean(TEST_EMAIL)}`);
+    console.log(`Report date: ${window.report_date}`);
+
     if (!users.length) {
       console.log('No matching users found.');
       return;
     }
 
-    console.log(`Report window: ${window.start_time.toISOString()} -> ${window.end_time.toISOString()}`);
+    console.log(
+      `Report window: ${window.start_time.toISOString()} -> ${window.end_time.toISOString()}`
+    );
+
     console.log(`Timezone: ${REPORT_TIMEZONE}`);
     console.log(`Users selected: ${users.length}`);
 
@@ -527,20 +560,30 @@ async function main() {
 
       if (!TEST_MODE) {
         claimed = await claimReport(user.id, window.report_date);
+
         if (!claimed) {
-          console.log(`Skipping ${user.email}: report already sent/claimed for ${window.report_date}.`);
+          console.log(
+            `Skipping ${user.email}: report already sent/claimed for ${window.report_date}.`
+          );
           continue;
         }
       }
 
       const recipient = TEST_EMAIL || user.email;
-      const stats = await getStats(user.id, window.start_time, window.end_time);
+
+      const stats = await getStats(
+        user.id,
+        window.start_time,
+        window.end_time
+      );
+
       const text = buildTextEmail({
         email: recipient,
         startTime: window.start_time,
         endTime: window.end_time,
         stats
       });
+
       const html = buildHTML({
         startTime: window.start_time,
         endTime: window.end_time,
@@ -554,8 +597,13 @@ async function main() {
           : 'The Lexicon — Your Daily Learning Report';
 
         const idempotencyKey = TEST_MODE
-  ? `lexicon-daily-report-test-${Date.now()}-${user.id}`
-  : `lexicon-daily-report-${window.report_date}-${user.id}`;
+          ? `lexicon-daily-report-test-${Date.now()}-${user.id}`
+          : `lexicon-daily-report-${window.report_date}-${user.id}`;
+
+        console.log(
+          `Sending ${recipient}: report_date=${window.report_date}, user_id=${user.id}`
+        );
+
         const response = await sendMail(
           recipient,
           subject,
@@ -565,13 +613,16 @@ async function main() {
         );
 
         console.log(`Sent ${recipient}:`, response);
+
       } catch (error) {
         if (claimed) {
           await releaseReportClaim(user.id, window.report_date);
         }
+
         throw error;
       }
     }
+
   } finally {
     await pool.end();
   }
