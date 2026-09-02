@@ -311,45 +311,9 @@ textarea::placeholder{color:#a79f91}
   bottom:28px;
   align-items:flex-end;
 }
-
-/* ---------- Live2D desktop pets ---------- */
-#lexiconLive2DPets{
-  position:fixed;left:0;right:0;bottom:0;height:150px;
-  z-index:3;pointer-events:none;overflow:hidden;
-}
-#lexiconLive2DPets .live2dPet{
-  position:absolute;bottom:0;width:150px;height:150px;
-  pointer-events:none;user-select:none;-webkit-user-select:none;
-  will-change:transform;
-}
-#lexiconLive2DPets .live2dPet canvas{
-  display:block;width:100%;height:100%;pointer-events:none;
-}
-#lexiconLive2DPets .live2dPet.tororo{left:0;}
-#lexiconLive2DPets .live2dPet.hijiki{left:0;}
-@media(max-width:700px){
-  #lexiconLive2DPets{height:105px;}
-  #lexiconLive2DPets .live2dPet{width:105px;height:105px;}
-}
 </style>
-<!-- Live2D desktop pets: pet-only runtime dependencies -->
-<!-- Live2D desktop pets -->
-<script src="https://cdn.jsdelivr.net/npm/pixi.js@4.6.1/dist/pixi.min.js"></script>
-<script src="/live2d/core/live2dcubismcore.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/live2dy@1.0.2/live2dcubismframework.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/live2dy@1.0.2/live2dcubismpixi.js"></script>
 </head>
 <body>
-
-<!-- Live2D desktop pets -->
-<div id="lexiconLive2DPets" aria-hidden="true">
-  <div id="tororoPet" class="live2dPet tororo">
-    <canvas id="tororoCanvas"></canvas>
-  </div>
-  <div id="hijikiPet" class="live2dPet hijiki">
-    <canvas id="hijikiCanvas"></canvas>
-  </div>
-</div>
 
 <div class="app">
   <div class="top">
@@ -2008,287 +1972,451 @@ if(accountMode==='account'){
   showAuthChoice();openLayer('authModal');
 }
 
+</script>
 
+<style id="lexicon-pet-addon">
+#lexicon-pet-wrap{
+  position:fixed;
+  right:10px;
+  bottom:8px;
+  width:104px;
+  height:112px;
+  z-index:90;
+  pointer-events:none;
+}
+#lexicon-pet-wrap .lexicon-pet-hit{
+  position:absolute;
+  right:0;
+  bottom:0;
+  width:96px;
+  height:104px;
+  pointer-events:auto;
+  cursor:pointer;
+}
+#lexicon-pet-food{
+  position:absolute;
+  right:78px;
+  bottom:8px;
+  z-index:91;
+  min-width:34px;
+  height:30px;
+  padding:2px 6px;
+  border:0;
+  background:transparent;
+  color:#71343b;
+  font:18px/26px Georgia,"Times New Roman",serif;
+  cursor:pointer;
+  opacity:.92;
+  pointer-events:auto;
+}
+#lexicon-pet-food:hover{transform:translateY(-1px);background:transparent}
+#lexicon-pet-food .lexicon-fish-count{
+  display:inline-block;
+  min-width:15px;
+  margin-left:2px;
+  font-size:10px;
+  vertical-align:top;
+}
+#lexicon-pet-bubble{
+  position:fixed;
+  right:18px;
+  bottom:112px;
+  width:min(190px,42vw);
+  min-height:30px;
+  padding:8px 10px;
+  box-sizing:border-box;
+  background:rgba(251,247,237,.96);
+  border:1px solid rgba(113,52,59,.28);
+  color:#54262c;
+  border-radius:8px;
+  box-shadow:0 8px 24px rgba(52,38,24,.13);
+  font:12px/1.45 Georgia,"Times New Roman",serif;
+  text-align:center;
+  z-index:92;
+  opacity:0;
+  transform:translateY(4px);
+  transition:opacity .22s ease,transform .22s ease;
+  pointer-events:none;
+}
+#lexicon-pet-bubble.show{opacity:1;transform:translateY(0)}
+#lexicon-pet-toast{
+  position:fixed;
+  left:50%;
+  bottom:24px;
+  transform:translateX(-50%);
+  z-index:151;
+  padding:8px 13px;
+  border:1px solid rgba(113,52,59,.24);
+  background:rgba(251,247,237,.96);
+  color:#54262c;
+  font:11px/1.4 Georgia,"Times New Roman",serif;
+  box-shadow:0 8px 22px rgba(52,38,24,.12);
+  opacity:0;
+  transition:opacity .2s ease;
+  pointer-events:none;
+}
+#lexicon-pet-toast.show{opacity:1}
+@media(max-width:600px){
+  #lexicon-pet-wrap{right:4px;bottom:3px;width:78px;height:86px}
+  #lexicon-pet-wrap .lexicon-pet-hit{width:72px;height:80px}
+  #lexicon-pet-food{right:55px;bottom:4px;font-size:15px}
+  #lexicon-pet-bubble{right:8px;bottom:82px;width:160px;font-size:11px}
+}
+</style>
 
-/* ---------- Lexicon Live2D Pet Movement ---------- */
-(function(){
-  const petLayer=document.getElementById('lexiconLive2DPets');
-  const tororoEl=document.getElementById('tororoPet');
-  const hijikiEl=document.getElementById('hijikiPet');
-  if(!petLayer||!tororoEl||!hijikiEl)return;
-
-  window.PIXI=window.PIXI||PIXI;
-
-  const PETS={
-    tororo:{
-      el:tororoEl,
-      x:-170,
-      direction:1,
-      speed:.34,
-      canvas:document.getElementById('tororoCanvas'),
-      model:null,
-      app:null
-    },
-    hijiki:{
-      el:hijikiEl,
-      x:window.innerWidth+20,
-      direction:-1,
-      speed:.30,
-      canvas:document.getElementById('hijikiCanvas'),
-      model:null,
-      app:null
-    }
-  };
-
-  function resizeCanvas(pet){
-    if(!pet.canvas)return;
-    const width=pet.el.clientWidth||150;
-    const height=pet.el.clientHeight||150;
-    const dpr=Math.min(window.devicePixelRatio||1,2);
-
-    pet.canvas.width=Math.max(1,Math.round(width*dpr));
-    pet.canvas.height=Math.max(1,Math.round(height*dpr));
-    pet.canvas.style.width=width+'px';
-    pet.canvas.style.height=height+'px';
-
-    if(pet.app){
-      pet.app.renderer.resize(width,height);
-      pet.app.renderer.resolution=dpr;
-    }
-  }
-
-  function fitModel(pet){
-    const model=pet.model;
-    if(!model)return;
-
-    model.anchor.set(.5,1);
-
-    const targetHeight=(pet.el.clientHeight||150)*.96;
-    if(model.height>0){
-      const scale=targetHeight/model.height;
-      model.scale.set(scale);
-    }
-
-    model.x=(pet.el.clientWidth||150)/2;
-    model.y=pet.el.clientHeight||150;
-  }
-
-  async function loadPet(pet,url){
-    try{
-      resizeCanvas(pet);
-
-      const app=new PIXI.Application({
-        view:pet.canvas,
-        width:pet.el.clientWidth||150,
-        height:pet.el.clientHeight||150,
-        transparent:true,
-        backgroundAlpha:0,
-        antialias:true,
-        autoStart:true,
-        resolution:Math.min(window.devicePixelRatio||1,2)
-      });
-
-      pet.app=app;
-
-      const model=await PIXI.live2d.Live2DModel.from(url,{
-        autoInteract:false
-      });
-
-      pet.model=model;
-      model.interactive=false;
-      model.buttonMode=false;
-      model.eventMode='none';
-
-      app.stage.addChild(model);
-      fitModel(pet);
-    }catch(error){
-      console.error('Live2D pet could not be loaded:',url,error);
-      pet.el.style.display='none';
-    }
-  }
-
-  function updatePet(pet){
-    pet.x+=pet.speed*pet.direction;
-
-    const width=pet.el.offsetWidth||150;
-    const screenWidth=window.innerWidth;
-
-    if(pet.direction>0 && pet.x>screenWidth+20){
-      pet.x=-width-20;
-    }
-
-    if(pet.direction<0 && pet.x<-width-20){
-      pet.x=screenWidth+20;
-    }
-
-    pet.el.style.transform='translateX('+pet.x+'px)';
-
-    if(pet.model){
-      pet.model.y=pet.el.clientHeight||150;
-    }
-  }
-
-  function animatePets(){
-    updatePet(PETS.tororo);
-    updatePet(PETS.hijiki);
-    requestAnimationFrame(animatePets);
-  }
-
-  window.addEventListener('resize',()=>{
-    resizeCanvas(PETS.tororo);
-    resizeCanvas(PETS.hijiki);
-
-    fitModel(PETS.tororo);
-    fitModel(PETS.hijiki);
-
-    if(PETS.tororo.x>window.innerWidth+20){
-      PETS.tororo.x=-170;
-    }
-
-    if(PETS.hijiki.x<-170){
-      PETS.hijiki.x=window.innerWidth+20;
-    }
-  });
-
-  loadPet(PETS.tororo,'/live2d/tororo/tororo.model3.json');
-  loadPet(PETS.hijiki,'/live2d/hijiki/hijiki.model3.json');
-
-  animatePets();
-})();</script>
-</body>
-</html><script>
-/* ---------- Live2D desktop pets ---------- */
+<script>
 (function(){
   'use strict';
 
-  const PETS = [
+  /* =========================================================
+     THE LEXICON — additive desktop-pet extension
+     This block is intentionally self-contained. It does not
+     replace or edit the original application's functions.
+     ========================================================= */
+
+  const PET_KEY = 'theLexicon_pet_addon_v1';
+  const FISH_KEY = 'theLexicon_pet_fish_v1';
+  const STEP_KEY = 'theLexicon_pet_practice_steps_v1';
+
+  const pets = [
     {
-      id: 'tororoPet',
-      name: 'tororo',
-      model: '/live2d/tororo/tororo.model3.json',
-      direction: 1
+      id:'tororo',
+      name:'Tororo',
+      model:'https://cdn.jsdelivr.net/npm/live2d-widget-model-tororo@1.0.5/assets/tororo.model.json',
+      hello:[
+        "Oh. You're here.",
+        "I suppose I can stay for a while.",
+        "Don't get the wrong idea. I was already here."
+      ],
+      poke:[
+        "Hey. Watch the poking.",
+        "Tch. That's enough.",
+        "You really like bothering me, huh?",
+        "I am not blushing. Obviously.",
+        "One more poke and I'm leaving."
+      ],
+      feed:[
+        "Hmph. This fish is acceptable.",
+        "You got this for me? ...Thanks.",
+        "Not bad. Bring another one later."
+      ],
+      idle:[
+        "Keep studying. I'll be watching.",
+        "Five words, then you may feed me.",
+        "Don't expect praise just because you studied."
+      ]
     },
     {
-      id: 'hijikiPet',
-      name: 'hijiki',
-      model: '/live2d/hijiki/hijiki.model3.json',
-      direction: -1
+      id:'hijika',
+      name:'Hijika',
+      model:'https://cdn.jsdelivr.net/npm/live2d-widget-model-hijiki@1.0.5/assets/hijiki.model.json',
+      hello:[
+        "You're here.",
+        "I noticed.",
+        "Proceed with your study."
+      ],
+      poke:[
+        "Stop.",
+        "Why are you poking me?",
+        "I am not a toy.",
+        "Enough.",
+        "Your persistence is noted."
+      ],
+      feed:[
+        "Accepted.",
+        "This fish is fine.",
+        "Thank you. That will do."
+      ],
+      idle:[
+        "Continue your practice.",
+        "Five completed words earn one fish.",
+        "I am still here."
+      ]
     }
   ];
 
-  const root = document.getElementById('lexiconLive2DPets');
-  if (!root || !window.PIXI || !window.LIVE2DCUBISMPIXI) return;
+  let pet = pets[Math.floor(Math.random()*pets.length)];
+  let fish = parseInt(localStorage.getItem(FISH_KEY)||'0',10);
+  let practiceSteps = parseInt(localStorage.getItem(STEP_KEY)||'0',10);
+  let bubbleTimer = 0;
+  let idleTimer = 0;
+  let toastTimer = 0;
+  let fedLock = false;
 
-  function initPet(petInfo){
-    const host = document.getElementById(petInfo.id);
-    if (!host) return;
+  function makeUI(){
+    if(document.getElementById('lexicon-pet-wrap')) return;
 
-    const canvas = host.querySelector('canvas');
-    if (!canvas) return;
+    const wrap=document.createElement('div');
+    wrap.id='lexicon-pet-wrap';
 
-    let app;
-    try {
-      app = new PIXI.Application({
-        view: canvas,
-        width: 150,
-        height: 150,
-        transparent: true,
-        antialias: true,
-        autoStart: true,
-        resolution: Math.min(window.devicePixelRatio || 1, 2)
-      });
-    } catch(e) {
-      host.style.display = 'none';
-      return;
-    }
+    const food=document.createElement('button');
+    food.id='lexicon-pet-food';
+    food.type='button';
+    food.title='Feed the cat';
+    food.setAttribute('aria-label','Feed the cat');
 
-    host.style.pointerEvents = 'none';
-    canvas.style.pointerEvents = 'none';
+    const hit=document.createElement('div');
+    hit.className='lexicon-pet-hit';
+    hit.title=pet.name;
 
-    const loader = new PIXI.loaders.Loader();
+    const bubble=document.createElement('div');
+    bubble.id='lexicon-pet-bubble';
 
-    loader.add('model', petInfo.model);
-    loader.load(function(loader, resources){
-      try {
-        const resource = resources.model;
-        if (!resource || !resource.data) throw new Error('Live2D model resource missing');
+    const toast=document.createElement('div');
+    toast.id='lexicon-pet-toast';
 
-        const model = LIVE2DCUBISMPIXI.Model._create(resource.data);
-        if (!model) throw new Error('Live2D model creation failed');
+    wrap.appendChild(hit);
+    document.body.appendChild(wrap);
+    document.body.appendChild(food);
+    document.body.appendChild(bubble);
+    document.body.appendChild(toast);
 
-        model.interactive = false;
-        model.interactiveChildren = false;
-        model.buttonMode = false;
-        model.hitArea = null;
-
-        if (model.masks) {
-          model.masks.forEach(function(mask){
-            mask.interactive = false;
-            mask.interactiveChildren = false;
-          });
-        }
-
-        app.stage.addChild(model);
-
-        function resizeModel(){
-          const w = 150;
-          const h = 150;
-          const mw = model.getBounds().width || 1;
-          const mh = model.getBounds().height || 1;
-          const scale = Math.min((w * 0.92) / mw, (h * 0.98) / mh);
-          model.scale.set(scale);
-          model.x = w * 0.5;
-          model.y = h;
-          model.pivot.set(
-            (model.getLocalBounds().x + model.getLocalBounds().width * 0.5),
-            (model.getLocalBounds().y + model.getLocalBounds().height)
-          );
-        }
-
-        resizeModel();
-
-        window.addEventListener('resize', resizeModel, {passive:true});
-
-        const idle = model.motionManager &&
-          model.motionManager.definitions &&
-          model.motionManager.definitions['Idle'];
-
-        if (model.motionManager) {
-          try {
-            model.motionManager.startMotion('Idle', 0, 3);
-          } catch(e) {}
-        }
-
-        let x = petInfo.direction > 0
-          ? -host.offsetWidth
-          : window.innerWidth;
-
-        function tick(delta){
-          const speed = 0.45 * delta;
-          x += petInfo.direction * speed;
-
-          const width = host.offsetWidth || 150;
-          if (petInfo.direction > 0 && x > window.innerWidth + width) {
-            x = -width;
-          } else if (petInfo.direction < 0 && x < -width) {
-            x = window.innerWidth;
-          }
-
-          host.style.transform = 'translate3d(' + x + 'px,0,0)';
-        }
-
-        app.ticker.add(tick);
-        host.__live2dApp = app;
-      } catch(e) {
-        host.style.display = 'none';
-        try { app.destroy(true, {children:true, texture:true, baseTexture:true}); } catch(_) {}
-      }
+    hit.addEventListener('click',function(e){
+      e.stopPropagation();
+      speak(pet.poke[Math.floor(Math.random()*pet.poke.length)],3200);
     });
+
+    food.addEventListener('click',function(e){
+      e.stopPropagation();
+      if(fedLock) return;
+      if(fish<=0){
+        speak("No fish. Go study.",2500);
+        return;
+      }
+      fedLock=true;
+      fish--;
+      localStorage.setItem(FISH_KEY,String(fish));
+      updateFood();
+      speak(pet.feed[Math.floor(Math.random()*pet.feed.length)],3200);
+      setTimeout(()=>{fedLock=false;},500);
+    });
+
+    updateFood();
   }
 
-  // The pets are decorative and never capture clicks.
-  PETS.forEach(initPet);
+  function updateFood(){
+    const el=document.getElementById('lexicon-pet-food');
+    if(!el) return;
+    el.innerHTML='🐟<span class="lexicon-fish-count">'+fish+'</span>';
+    el.style.opacity=fish>0?'1':'.42';
+  }
+
+  function speak(text,duration){
+    const b=document.getElementById('lexicon-pet-bubble');
+    if(!b) return;
+    b.textContent=text;
+    b.classList.add('show');
+    clearTimeout(bubbleTimer);
+    bubbleTimer=setTimeout(()=>b.classList.remove('show'),duration||3200);
+  }
+
+  function showToast(text){
+    const t=document.getElementById('lexicon-pet-toast');
+    if(!t) return;
+    t.textContent=text;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer=setTimeout(()=>t.classList.remove('show'),2600);
+  }
+
+  function awardPractice(){
+    practiceSteps++;
+    if(practiceSteps>=5){
+      const earned=Math.floor(practiceSteps/5);
+      practiceSteps=practiceSteps%5;
+      fish+=earned;
+      localStorage.setItem(FISH_KEY,String(fish));
+      showToast('🐟 You earned '+earned+' dried fish!');
+      speak(
+        pet.id==='tororo'
+          ? "Fine. You earned a fish. Don't waste it."
+          : "Five completed words. One fish.",
+        3000
+      );
+      updateFood();
+    }
+    localStorage.setItem(STEP_KEY,String(practiceSteps));
+  }
+
+  function startIdle(){
+    clearInterval(idleTimer);
+    idleTimer=setInterval(()=>{
+      if(document.hidden) return;
+      speak(pet.idle[Math.floor(Math.random()*pet.idle.length)],3000);
+    },30000);
+  }
+
+  function loadLive2D(){
+    if(window.L2Dwidget){
+      initLive2D();
+      return;
+    }
+    const s=document.createElement('script');
+    s.src='https://cdn.jsdelivr.net/npm/live2d-widget@3.1.4/lib/L2Dwidget.min.js';
+    s.onload=initLive2D;
+    s.onerror=()=>console.warn('Lexicon pet: Live2D library failed to load.');
+    document.body.appendChild(s);
+  }
+
+  function initLive2D(){
+    if(!window.L2Dwidget) return;
+    try{
+      window.L2Dwidget.init({
+        model:{jsonPath:pet.model},
+        display:{
+          position:'right',
+          width:96,
+          height:104,
+          hOffset:2,
+          vOffset:0,
+          superSample:2
+        },
+        mobile:{show:true,scale:.82},
+        react:{opacityDefault:1,opacityOnHover:1}
+      });
+      setTimeout(bindCanvas,900);
+    }catch(err){
+      console.warn('Lexicon pet: Live2D initialization failed.',err);
+    }
+  }
+
+  function bindCanvas(){
+    const canvas=document.getElementById('live2dcanvas');
+    if(!canvas) return;
+    canvas.style.width='96px';
+    canvas.style.height='104px';
+    canvas.style.right='10px';
+    canvas.style.bottom='8px';
+    canvas.style.zIndex='90';
+    canvas.style.pointerEvents='auto';
+    canvas.style.border='0';
+    canvas.setAttribute('aria-label',pet.name);
+    canvas.title=pet.name;
+    canvas.addEventListener('click',function(e){
+      e.stopPropagation();
+      speak(pet.poke[Math.floor(Math.random()*pet.poke.length)],3200);
+    },true);
+  }
+
+  /*
+     The original study code uses selectAnswer() for recognition
+     and checkDictation() for spelling. We wrap those entry points
+     only after the original page has loaded. The original logic
+     remains responsible for scoring and rendering.
+  */
+  function hookPracticeFunctions(){
+    let attempts=0;
+    const timer=setInterval(()=>{
+      attempts++;
+
+      if(window.selectAnswer && !window.selectAnswer.__lexiconPetWrapped){
+        const original=window.selectAnswer;
+        function wrapped(){
+          const result=original.apply(this,arguments);
+          awardPractice();
+          return result;
+        }
+        wrapped.__lexiconPetWrapped=true;
+        wrapped.__lexiconPetOriginal=original;
+        window.selectAnswer=wrapped;
+      }
+
+      if(window.checkDictation && !window.checkDictation.__lexiconPetWrapped){
+        const original=window.checkDictation;
+        function wrapped(){
+          const input=document.getElementById('dictInput');
+          const value=input ? input.value.trim() : '';
+          const valid=value && /^[A-Za-z][A-Za-z' -]*$/.test(value);
+          const result=original.apply(this,arguments);
+          if(valid) awardPractice();
+          return result;
+        }
+        wrapped.__lexiconPetWrapped=true;
+        wrapped.__lexiconPetOriginal=original;
+        window.checkDictation=wrapped;
+      }
+
+      if(window.selectAnswer && window.checkDictation) clearInterval(timer);
+      if(attempts>80) clearInterval(timer);
+    },100);
+  }
+
+  function keepPetClearOfButtons(){
+    const canvas=document.getElementById('live2dcanvas');
+    const wrap=document.getElementById('lexicon-pet-wrap');
+    const food=document.getElementById('lexicon-pet-food');
+    if(!canvas || !wrap) return;
+
+    /*
+      Keep the pet in the lower-right corner, but move the whole
+      pet upward when a real button occupies that corner.
+      This is visual collision avoidance only; it never changes
+      the original button positions.
+    */
+    const candidates=[
+      {right:10,bottom:8},
+      {right:10,bottom:78},
+      {right:10,bottom:148},
+      {right:10,bottom:218},
+      {right:10,bottom:288},
+      {right:10,bottom:358},
+      {right:10,bottom:428}
+    ];
+
+    let chosen=candidates[0];
+    const buttons=[...document.querySelectorAll('button:not(#lexicon-pet-food)')]
+      .filter(b=>b.offsetParent!==null);
+
+    for(const c of candidates){
+      const rect={
+        left:window.innerWidth-c.right-96,
+        right:window.innerWidth-c.right,
+        top:window.innerHeight-c.bottom-104,
+        bottom:window.innerHeight-c.bottom
+      };
+      const collision=buttons.some(b=>{
+        const r=b.getBoundingClientRect();
+        return !(rect.right<r.left || rect.left>r.right || rect.bottom<r.top || rect.top>r.bottom);
+      });
+      if(!collision){chosen=c;break;}
+    }
+
+    canvas.style.right=chosen.right+'px';
+    canvas.style.bottom=chosen.bottom+'px';
+    wrap.style.right=chosen.right+'px';
+    wrap.style.bottom=chosen.bottom+'px';
+    if(food){
+      food.style.right=(chosen.right+68)+'px';
+      food.style.bottom=(chosen.bottom+4)+'px';
+    }
+    const bubble=document.getElementById('lexicon-pet-bubble');
+    if(bubble) bubble.style.bottom=(chosen.bottom+104)+'px';
+  }
+
+  function boot(){
+    makeUI();
+    loadLive2D();
+    hookPracticeFunctions();
+    setTimeout(()=>speak(pet.hello[Math.floor(Math.random()*pet.hello.length)],3500),2200);
+    startIdle();
+
+    const observer=new MutationObserver(()=>{
+      clearTimeout(window.__lexiconPetCollisionTimer);
+      window.__lexiconPetCollisionTimer=setTimeout(keepPetClearOfButtons,80);
+    });
+    observer.observe(document.body,{childList:true,subtree:true});
+
+    window.addEventListener('resize',keepPetClearOfButtons);
+    setTimeout(keepPetClearOfButtons,1200);
+  }
+
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',boot,{once:true});
+  }else{
+    boot();
+  }
 })();
 </script>
+
 </body>
 </html>
