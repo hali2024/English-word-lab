@@ -913,26 +913,90 @@ function loadPersistentStats(legacyState){
 
 function loadState(){
   let x=null;
-  try{x=JSON.parse(localStorage.getItem(KEY)||'null');}catch(e){}
+
+  try{
+    x=JSON.parse(localStorage.getItem(KEY)||'null');
+  }catch(e){
+    x=null;
+  }
+
   loadPersistentStats(x);
 
-  if(x&&Array.isArray(x.words)&&x.words.length){
+  if(x && Array.isArray(x.words) && x.words.length){
+
     state=x;
+
     state.libraryId=state.libraryId||null;
     state.reviewMode=!!state.reviewMode;
     state.words=state.words.map(normalizeWordRecord);
+
     if(!state.stats)state.stats={};
-    state.stats.recAttempts=typeof state.stats.recAttempts==='number'?state.stats.recAttempts:0;
-    state.stats.recCorrect=typeof state.stats.recCorrect==='number'?state.stats.recCorrect:0;
-    state.stats.dictAttempts=typeof state.stats.dictAttempts==='number'?state.stats.dictAttempts:0;
-    state.stats.dictCorrect=typeof state.stats.dictCorrect==='number'?state.stats.dictCorrect:0;
+
+    state.stats.recAttempts=
+      typeof state.stats.recAttempts==='number'
+        ? state.stats.recAttempts
+        : 0;
+
+    state.stats.recCorrect=
+      typeof state.stats.recCorrect==='number'
+        ? state.stats.recCorrect
+        : 0;
+
+    state.stats.dictAttempts=
+      typeof state.stats.dictAttempts==='number'
+        ? state.stats.dictAttempts
+        : 0;
+
+    state.stats.dictCorrect=
+      typeof state.stats.dictCorrect==='number'
+        ? state.stats.dictCorrect
+        : 0;
+
     state.stats.learnedWords=globalStats.learnedWords;
     state.stats.spelledWords=globalStats.spelledWords;
     state.stats.mistakes=globalStats.mistakes;
     state.stats.daily=globalStats.daily;
+
+    /*
+     * Repair an incomplete saved state.
+     *
+     * Older/partially-saved states may have screen="question"
+     * but current=null. Rendering such a state causes:
+     * Cannot read properties of null (reading 'id')
+     */
+    if(
+      state.screen==='question' &&
+      (
+        !state.current ||
+        !Number.isInteger(state.current.id) ||
+        !state.words[state.current.id]
+      )
+    ){
+      beginRecognitionRound();
+      loadRecognitionQuestion();
+    }
+
+    /*
+     * Also repair an invalid question queue.
+     */
+    if(
+      state.screen==='question' &&
+      (
+        !Array.isArray(state.roundQueue) ||
+        !state.roundQueue.length
+      )
+    ){
+      beginRecognitionRound();
+      loadRecognitionQuestion();
+    }
+
     showStudyView();
     render();
-  }else showHome();
+
+  }else{
+    showHome();
+  }
+
   renderReviewBanner();
 }
 
