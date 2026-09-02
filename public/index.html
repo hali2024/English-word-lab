@@ -1993,30 +1993,6 @@ if(accountMode==='account'){
   pointer-events:auto;
   cursor:pointer;
 }
-#lexicon-pet-food{
-  position:absolute;
-  right:78px;
-  bottom:8px;
-  z-index:91;
-  min-width:34px;
-  height:30px;
-  padding:2px 6px;
-  border:0;
-  background:transparent;
-  color:#71343b;
-  font:18px/26px Georgia,"Times New Roman",serif;
-  cursor:pointer;
-  opacity:.92;
-  pointer-events:auto;
-}
-#lexicon-pet-food:hover{transform:translateY(-1px);background:transparent}
-#lexicon-pet-food .lexicon-fish-count{
-  display:inline-block;
-  min-width:15px;
-  margin-left:2px;
-  font-size:10px;
-  vertical-align:top;
-}
 #lexicon-pet-bubble{
   position:fixed;
   right:18px;
@@ -2039,27 +2015,9 @@ if(accountMode==='account'){
   pointer-events:none;
 }
 #lexicon-pet-bubble.show{opacity:1;transform:translateY(0)}
-#lexicon-pet-toast{
-  position:fixed;
-  left:50%;
-  bottom:24px;
-  transform:translateX(-50%);
-  z-index:151;
-  padding:8px 13px;
-  border:1px solid rgba(113,52,59,.24);
-  background:rgba(251,247,237,.96);
-  color:#54262c;
-  font:11px/1.4 Georgia,"Times New Roman",serif;
-  box-shadow:0 8px 22px rgba(52,38,24,.12);
-  opacity:0;
-  transition:opacity .2s ease;
-  pointer-events:none;
-}
-#lexicon-pet-toast.show{opacity:1}
 @media(max-width:600px){
   #lexicon-pet-wrap{right:4px;bottom:3px;width:78px;height:86px}
   #lexicon-pet-wrap .lexicon-pet-hit{width:72px;height:80px}
-  #lexicon-pet-food{right:55px;bottom:4px;font-size:15px}
   #lexicon-pet-bubble{right:8px;bottom:82px;width:160px;font-size:11px}
 }
 </style>
@@ -2075,8 +2033,6 @@ if(accountMode==='account'){
      ========================================================= */
 
   const PET_KEY = 'theLexicon_pet_addon_v1';
-  const FISH_KEY = 'theLexicon_pet_fish_v1';
-  const STEP_KEY = 'theLexicon_pet_practice_steps_v1';
 
   const pets = [
     {
@@ -2094,11 +2050,6 @@ if(accountMode==='account'){
         "You really like bothering me, huh?",
         "I am not blushing. Obviously.",
         "One more poke and I'm leaving."
-      ],
-      feed:[
-        "Hmph. This fish is acceptable.",
-        "You got this for me? ...Thanks.",
-        "Not bad. Bring another one later."
       ],
       idle:[
         "Keep studying. I'll be watching.",
@@ -2122,11 +2073,6 @@ if(accountMode==='account'){
         "Enough.",
         "Your persistence is noted."
       ],
-      feed:[
-        "Accepted.",
-        "This fish is fine.",
-        "Thank you. That will do."
-      ],
       idle:[
         "Continue your practice.",
         "Five completed words earn one fish.",
@@ -2136,24 +2082,14 @@ if(accountMode==='account'){
   ];
 
   let pet = pets[Math.floor(Math.random()*pets.length)];
-  let fish = parseInt(localStorage.getItem(FISH_KEY)||'0',10);
-  let practiceSteps = parseInt(localStorage.getItem(STEP_KEY)||'0',10);
   let bubbleTimer = 0;
   let idleTimer = 0;
-  let toastTimer = 0;
-  let fedLock = false;
 
   function makeUI(){
     if(document.getElementById('lexicon-pet-wrap')) return;
 
     const wrap=document.createElement('div');
     wrap.id='lexicon-pet-wrap';
-
-    const food=document.createElement('button');
-    food.id='lexicon-pet-food';
-    food.type='button';
-    food.title='Feed the cat';
-    food.setAttribute('aria-label','Feed the cat');
 
     const hit=document.createElement('div');
     hit.className='lexicon-pet-hit';
@@ -2162,43 +2098,15 @@ if(accountMode==='account'){
     const bubble=document.createElement('div');
     bubble.id='lexicon-pet-bubble';
 
-    const toast=document.createElement('div');
-    toast.id='lexicon-pet-toast';
-
     wrap.appendChild(hit);
     document.body.appendChild(wrap);
-    document.body.appendChild(food);
     document.body.appendChild(bubble);
-    document.body.appendChild(toast);
 
     hit.addEventListener('click',function(e){
       e.stopPropagation();
       speak(pet.poke[Math.floor(Math.random()*pet.poke.length)],3200);
     });
 
-    food.addEventListener('click',function(e){
-      e.stopPropagation();
-      if(fedLock) return;
-      if(fish<=0){
-        speak("No fish. Go study.",2500);
-        return;
-      }
-      fedLock=true;
-      fish--;
-      localStorage.setItem(FISH_KEY,String(fish));
-      updateFood();
-      speak(pet.feed[Math.floor(Math.random()*pet.feed.length)],3200);
-      setTimeout(()=>{fedLock=false;},500);
-    });
-
-    updateFood();
-  }
-
-  function updateFood(){
-    const el=document.getElementById('lexicon-pet-food');
-    if(!el) return;
-    el.innerHTML='🐟<span class="lexicon-fish-count">'+fish+'</span>';
-    el.style.opacity=fish>0?'1':'.42';
   }
 
   function speak(text,duration){
@@ -2208,34 +2116,6 @@ if(accountMode==='account'){
     b.classList.add('show');
     clearTimeout(bubbleTimer);
     bubbleTimer=setTimeout(()=>b.classList.remove('show'),duration||3200);
-  }
-
-  function showToast(text){
-    const t=document.getElementById('lexicon-pet-toast');
-    if(!t) return;
-    t.textContent=text;
-    t.classList.add('show');
-    clearTimeout(toastTimer);
-    toastTimer=setTimeout(()=>t.classList.remove('show'),2600);
-  }
-
-  function awardPractice(){
-    practiceSteps++;
-    if(practiceSteps>=5){
-      const earned=Math.floor(practiceSteps/5);
-      practiceSteps=practiceSteps%5;
-      fish+=earned;
-      localStorage.setItem(FISH_KEY,String(fish));
-      showToast('🐟 You earned '+earned+' dried fish!');
-      speak(
-        pet.id==='tororo'
-          ? "Fine. You earned a fish. Don't waste it."
-          : "Five completed words. One fish.",
-        3000
-      );
-      updateFood();
-    }
-    localStorage.setItem(STEP_KEY,String(practiceSteps));
   }
 
   function startIdle(){
@@ -2298,53 +2178,9 @@ if(accountMode==='account'){
     },true);
   }
 
-  /*
-     The original study code uses selectAnswer() for recognition
-     and checkDictation() for spelling. We wrap those entry points
-     only after the original page has loaded. The original logic
-     remains responsible for scoring and rendering.
-  */
-  function hookPracticeFunctions(){
-    let attempts=0;
-    const timer=setInterval(()=>{
-      attempts++;
-
-      if(window.selectAnswer && !window.selectAnswer.__lexiconPetWrapped){
-        const original=window.selectAnswer;
-        function wrapped(){
-          const result=original.apply(this,arguments);
-          awardPractice();
-          return result;
-        }
-        wrapped.__lexiconPetWrapped=true;
-        wrapped.__lexiconPetOriginal=original;
-        window.selectAnswer=wrapped;
-      }
-
-      if(window.checkDictation && !window.checkDictation.__lexiconPetWrapped){
-        const original=window.checkDictation;
-        function wrapped(){
-          const input=document.getElementById('dictInput');
-          const value=input ? input.value.trim() : '';
-          const valid=value && /^[A-Za-z][A-Za-z' -]*$/.test(value);
-          const result=original.apply(this,arguments);
-          if(valid) awardPractice();
-          return result;
-        }
-        wrapped.__lexiconPetWrapped=true;
-        wrapped.__lexiconPetOriginal=original;
-        window.checkDictation=wrapped;
-      }
-
-      if(window.selectAnswer && window.checkDictation) clearInterval(timer);
-      if(attempts>80) clearInterval(timer);
-    },100);
-  }
-
   function keepPetClearOfButtons(){
     const canvas=document.getElementById('live2dcanvas');
     const wrap=document.getElementById('lexicon-pet-wrap');
-    const food=document.getElementById('lexicon-pet-food');
     if(!canvas || !wrap) return;
 
     /*
@@ -2364,7 +2200,7 @@ if(accountMode==='account'){
     ];
 
     let chosen=candidates[0];
-    const buttons=[...document.querySelectorAll('button:not(#lexicon-pet-food)')]
+    const buttons=[...document.querySelectorAll('button')]
       .filter(b=>b.offsetParent!==null);
 
     for(const c of candidates){
@@ -2385,10 +2221,6 @@ if(accountMode==='account'){
     canvas.style.bottom=chosen.bottom+'px';
     wrap.style.right=chosen.right+'px';
     wrap.style.bottom=chosen.bottom+'px';
-    if(food){
-      food.style.right=(chosen.right+68)+'px';
-      food.style.bottom=(chosen.bottom+4)+'px';
-    }
     const bubble=document.getElementById('lexicon-pet-bubble');
     if(bubble) bubble.style.bottom=(chosen.bottom+104)+'px';
   }
@@ -2396,7 +2228,6 @@ if(accountMode==='account'){
   function boot(){
     makeUI();
     loadLive2D();
-    hookPracticeFunctions();
     setTimeout(()=>speak(pet.hello[Math.floor(Math.random()*pet.hello.length)],3500),2200);
     startIdle();
 
