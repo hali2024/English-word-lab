@@ -208,7 +208,7 @@ textarea::placeholder{color:#a79f91}
 .heatCell[data-level="3"]{background:#bca392}
 .heatCell[data-level="4"]{background:#8e6d61}
 .heatCell[data-level="5"]{background:#71343b}
-.heatCell[data-over="100"]::after{content:"✦";position:absolute;inset:-3px 1px -6px 0;color:#d4a017;font-size:8px;line-height:11px;text-align:right}
+.heatCell[data-over="100"]::after{content:"✦";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#d4a017;font-size:7px;line-height:1;text-align:center;pointer-events:none}
 .heatLegendTitle{position:relative;text-align:right;font-size:10px;color:var(--muted);margin-top:8px}
 .heatLegendBoxes{position:relative;display:flex;justify-content:flex-end;gap:5px;margin-top:8px}
 .heatLegendBoxes .heatCell{flex:0 0 11px;cursor:default}
@@ -308,9 +308,15 @@ textarea::placeholder{color:#a79f91}
 .studyHomeButton{display:block;width:100%;max-width:360px;margin:16px auto 0}
 .practiceHubPanel{min-height:520px;display:flex;flex-direction:column;justify-content:center}
 .practiceHubStats{width:100%;max-width:760px;margin:22px auto 28px!important}
-.practiceHubActions{width:min(760px,100%);margin:0 auto;display:flex;flex-direction:column;gap:16px}
-.practiceHubActions button{width:100%;min-height:88px;font-size:21px;letter-spacing:.02em}
-.practiceHubPrompt{margin:12px 0 0!important;font-style:italic;font-size:12px!important}
+.practiceHubActions{width:min(820px,100%);margin:18px auto 0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+.practiceHubActions button{width:100%;min-height:118px;font-size:17px;letter-spacing:.02em;text-align:left;padding:18px 20px;background:linear-gradient(145deg,rgba(113,52,59,.98),rgba(84,38,44,.98));border:1px solid rgba(113,52,59,.75);box-shadow:0 12px 28px rgba(52,38,24,.12);display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:7px}
+.practiceHubActions button:hover{background:linear-gradient(145deg,#54262c,#71343b);box-shadow:0 16px 34px rgba(52,38,24,.16);transform:translateY(-2px)}
+.practiceHubActions .practiceIndex{font-size:9px;letter-spacing:.18em;text-transform:uppercase;opacity:.72}
+.practiceHubActions .practiceName{font-size:20px;line-height:1.2}
+.practiceHubActions .practiceDesc{font-size:11px;line-height:1.45;opacity:.78;font-style:italic}
+.practiceHubActions .practiceWide{grid-column:1/-1}
+.practiceHubPrompt{margin:18px 0 0!important;font-style:italic;font-size:12px!important}
+@media(max-width:700px){.practiceHubActions{grid-template-columns:1fr;gap:11px}.practiceHubActions .practiceWide{grid-column:auto}.practiceHubActions button{min-height:92px}.practiceHubActions .practiceName{font-size:18px}}
 .profileNameSection{position:relative;margin-bottom:22px;padding:17px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
 .profileNameLabel{display:block;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#9a7b4e;font-weight:600;margin-bottom:9px}
 .profileNameRow{display:flex;gap:10px;align-items:center}
@@ -1400,31 +1406,117 @@ function buildWordOptions(id){
     .map(o=>o.w.word);
   const candidates=shuffle(uniq(pool));
   const chosen=candidates.slice(0,3);
-  // If the library is too small to have 3 distinct distractor words,
-  // pad with lightly-altered variants so the question still has 4 options.
   while(chosen.length<3){
     chosen.push(correct.word+String.fromCharCode(97+chosen.length));
   }
   return shuffle([{text:correct.word,isCorrect:true},...chosen.map(text=>({text,isCorrect:false}))]);
 }
+function buildListeningOptions(id){
+  return buildWordOptions(id);
+}
+function relationValues(word,relation){
+  const values=Array.isArray(word?.[relation])?word[relation]:[];
+  return values.map(String).map(x=>x.trim()).filter(Boolean);
+}
+function buildRelationOptions(id,relation){
+  const correctWord=state.words[id];
+  const correctValues=relationValues(correctWord,relation);
+  const correct=correctValues[0]||'No '+(relation==='synonyms'?'synonym':'antonym')+' recorded';
+  const pool=[];
+  state.words.forEach((w,i)=>{
+    if(i===id)return;
+    relationValues(w,relation).forEach(v=>{
+      if(normalizeWordKey(v)!==normalizeWordKey(correct))pool.push(v);
+    });
+  });
+  const candidates=shuffle(uniq(pool));
+  const fallback=shuffle(state.words.map((w,i)=>({w,i}))
+    .filter(o=>o.i!==id&&o.w.word)
+    .map(o=>o.w.word)
+    .filter(v=>normalizeWordKey(v)!==normalizeWordKey(correct)));
+  for(const value of fallback)if(candidates.length<3&&!candidates.some(x=>normalizeWordKey(x)===normalizeWordKey(value)))candidates.push(value);
+  while(candidates.length<3)candidates.push(`Option ${candidates.length+1}`);
+  return shuffle([{text:correct,isCorrect:true},...candidates.slice(0,3).map(text=>({text,isCorrect:false}))]);
+}
+function getBlankSentence(word){
+  const examples=Array.isArray(word?.examples)?word.examples.filter(Boolean):(word?.example?[word.example]:[]);
+  const escapedWord=String(word?.word||'').replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  const pattern=escapedWord?new RegExp(`\\b${escapedWord}\\b`,'i'):null;
+  for(const example of examples){
+    if(pattern&&pattern.test(example)){
+      return example.replace(pattern,'______');
+    }
+  }
+  return `The word ______ means: ${word.definition}`;
+}
+function buildFillBlankOptions(id){
+  const correct=state.words[id];
+  const candidates=shuffle(state.words.map((w,i)=>({w,i}))
+    .filter(o=>o.i!==id&&o.w.word&&normalizeWordKey(o.w.word)!==normalizeWordKey(correct.word))
+    .map(o=>o.w.word));
+  const chosen=candidates.slice(0,3);
+  while(chosen.length<3)chosen.push(correct.word+String.fromCharCode(97+chosen.length));
+  return shuffle([{text:correct.word,isCorrect:true},...chosen.map(text=>({text,isCorrect:false}))]);
+}
+function getPracticeModeLabel(mode){
+  return ({
+    wordToDef:'Word → Meaning',
+    defToWord:'Meaning → Word',
+    listeningToWord:'Listening → Word',
+    synonym:'Synonym Choice',
+    antonym:'Antonym Choice',
+    fillBlank:'Fill in the Blank'
+  })[mode]||'Practice';
+}
+function getPracticeEligibleIds(mode){
+  if(mode==='synonym')return state.words.map((w,i)=>relationValues(w,'synonyms').length?i:null).filter(Number.isInteger);
+  if(mode==='antonym')return state.words.map((w,i)=>relationValues(w,'antonyms').length?i:null).filter(Number.isInteger);
+  return state.words.map((_,i)=>i);
+}
 function loadRecognitionQuestion(){
   const id=state.roundQueue[state.roundPos];
-  const options=state.mode==='defToWord'?buildWordOptions(id):buildDefinitionOptions(id);
+  if(!Number.isInteger(id)||!state.words[id]){
+    state.screen='phaseTransition';
+    state.current=null;
+    return;
+  }
+  let options;
+  if(state.mode==='defToWord')options=buildWordOptions(id);
+  else if(state.mode==='listeningToWord')options=buildListeningOptions(id);
+  else if(state.mode==='synonym')options=buildRelationOptions(id,'synonyms');
+  else if(state.mode==='antonym')options=buildRelationOptions(id,'antonyms');
+  else if(state.mode==='fillBlank')options=buildFillBlankOptions(id);
+  else options=buildDefinitionOptions(id);
   state.current={id,options,answered:false,selected:null,correct:null};
   state.locked=false;state.screen='question';
 }
 function renderQuestionScreen(){
   const w=state.words[state.current.id];
   recordWordEncounter(state.current.id);
-  const roundNote=state.roundNumber>1?`<small>Round ${state.roundNumber} · Reviewing ${state.roundQueue.length} words</small>`:`<small>${state.words.length} words total</small>`;
+  const roundNote=state.roundNumber>1?`<small>Round ${state.roundNumber} · Reviewing ${state.roundQueue.length} words</small>`:`<small>${state.roundQueue.length} words total</small>`;
+  const mode=state.mode;
+  const isDefToWord=mode==='defToWord';
+  const isListening=mode==='listeningToWord';
+  const isSynonym=mode==='synonym';
+  const isAntonym=mode==='antonym';
+  const isFillBlank=mode==='fillBlank';
   const optsHtml=state.current.options.map((o,i)=>`<button type="button" class="option" onclick="selectAnswer(${i})">${String.fromCharCode(65+i)}. ${escapeHTML(o.text)}</button>`).join('');
-  const isDefToWord=state.mode==='defToWord';
-  if(!isDefToWord)setTimeout(()=>speak(w.word),150);
-  const prompt=isDefToWord
-    ? `<div class="wordRow"><div>${w.partOfSpeech?`<div class="partOfSpeech">${escapeHTML(w.partOfSpeech)}</div>`:''}<div class="definition" style="font-size:19px">${escapeHTML(w.definition)}</div></div></div>`
-    : `<div class="wordRow"><div class="word">${escapeHTML(w.word)}</div>${speakerBtn(w.word)}</div>`;
+  let prompt='';
+  if(isDefToWord){
+    prompt=`<div class="wordRow"><div>${w.partOfSpeech?`<div class="partOfSpeech">${escapeHTML(w.partOfSpeech)}</div>`:''}<div class="definition" style="font-size:19px">${escapeHTML(w.definition)}</div></div></div>`;
+  }else if(isListening){
+    setTimeout(()=>speak(w.word),150);
+    prompt=`<div class="dictBox"><button type="button" class="speaker" title="Play pronunciation" onclick="speak('${safeJSString(w.word)}')"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round"><path d="M4 9v6h4l5 4V5L8 9H4"></path><path d="M16 9.5c1 .8 1.5 1.6 1.5 2.5s-.5 1.7-1.5 2.5"></path><path d="M18.5 7c1.7 1.4 2.5 3 2.5 5s-.8 3.6-2.5 5"></path></svg></button><div class="spellingHint">Listen carefully, then choose the word you hear.</div></div>`;
+  }else if(isSynonym||isAntonym){
+    prompt=`<div class="wordRow"><div class="word">${escapeHTML(w.word)}</div>${speakerBtn(w.word)}</div><div class="hint" style="margin:-2px 0 14px">${isSynonym?'Choose the closest synonym.':'Choose the closest antonym.'}</div>`;
+  }else if(isFillBlank){
+    prompt=`<div class="wordRow"><div class="definition" style="font-size:21px;line-height:1.65">${escapeHTML(getBlankSentence(w))}</div></div><div class="hint" style="margin:-2px 0 14px">Choose the word that best completes the sentence.</div>`;
+  }else{
+    setTimeout(()=>speak(w.word),150);
+    prompt=`<div class="wordRow"><div class="word">${escapeHTML(w.word)}</div>${speakerBtn(w.word)}</div>`;
+  }
   return `<section class="quiz">
-    <div class="mode">${isDefToWord?'Meaning → Word':'Word → Meaning'} ${roundNote}</div>
+    <div class="mode">${escapeHTML(getPracticeModeLabel(mode))} ${roundNote}</div>
     <div class="progress"><div class="bar" style="width:${state.roundQueue.length?state.roundPos/state.roundQueue.length*100:0}%"></div></div>
     ${prompt}
     <div class="options">${optsHtml}</div>
@@ -1481,16 +1573,19 @@ function renderRoundTransition(){
 }
 function advanceRound(){state.roundNumber++;beginRecognitionRound();loadRecognitionQuestion();save();render();}
 function renderPhaseTransition(){
-  const isDefToWord=state.mode==='defToWord';
+  const label=getPracticeModeLabel(state.mode);
   return `<section class="interstitial">
-    <h2>${isDefToWord?'Meaning → Word':'Word → Meaning'} Complete</h2>
+    <h2>${escapeHTML(label)} Complete</h2>
     <p>Every word has been remembered in the latest round.</p>
     <div class="centerRow"><button onclick="restartRecognitionOnly()">Restart</button><button class="secondary" onclick="returnToPracticeHub()">Return to Home</button></div>
   </section>`;
 }
 function restartRecognitionOnly(){
   const words=state.words,libraryId=state.libraryId,reviewMode=state.reviewMode,mode=state.mode;
-  state=freshState(words,libraryId,reviewMode,mode);beginRecognitionRound();loadRecognitionQuestion();save();render();
+  state=freshState(words,libraryId,reviewMode,mode);
+  state.activeIds=getPracticeEligibleIds(mode);
+  if(!state.activeIds.length){state.screen='phaseTransition';save();render();return;}
+  beginRecognitionRound();loadRecognitionQuestion();save();render();
 }
 function exitToHome(){
   localStorage.removeItem(KEY);
@@ -1505,95 +1600,6 @@ function returnToPracticeHub(){
 }
 
 /* ---------- dictation ---------- */
-function startDictationPhase(){state.phase='dictation';state.dictQueue=shuffle(state.words.map((_,i)=>i));loadDictQuestion();save();render();}
-function loadDictQuestion(){
-  if(state.dictQueue.length===0){state.phase='done';state.screen='complete';if(state.reviewMode)completeDailyReview();return;}
-  const id=state.dictQueue[0];state.current={id,checked:false,correct:null,inputVal:''};state.locked=false;state.screen='dictQuestion';
-}
-function renderDictQuestionScreen(){
-  const w=state.words[state.current.id],remaining=uniq(state.dictQueue).length;
-  recordWordEncounter(state.current.id);
-  setTimeout(()=>speak(w.word),150);
-  const total=state.words.length,completed=Math.max(0,total-remaining);
-  return `<section class="quiz">
-    <div class="mode">Spelling <small>${remaining} remaining</small></div>
-    <div class="progress"><div class="bar" style="width:${total?completed/total*100:0}%"></div></div>
-    <div class="dictBox">
-      <button type="button" class="speaker" title="Play pronunciation" onclick="speak('${safeJSString(w.word)}')"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round"><path d="M4 9v6h4l5 4V5L8 9H4"></path><path d="M16 9.5c1 .8 1.5 1.6 1.5 2.5s-.5 1.7-1.5 2.5"></path><path d="M18.5 7c1.7 1.4 2.5 3 2.5 5s-.8 3.6-2.5 5"></path></svg></button>
-      <input class="dictInput" id="dictInput" lang="en" inputmode="latin" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="done" placeholder="Write what you hear" onbeforeinput="handleDictBeforeInput(event)" oncompositionstart="handleDictCompositionStart(event)" oncompositionend="handleDictCompositionEnd(event)" onpaste="handleDictPaste(event)" ondrop="handleDictDrop(event)" onkeydown="if(event.key==='Enter')checkDictation()">
-      <div class="centerRow"><button class="secondary" type="button" onclick="toggleSpellingHint()">Hint</button><button type="button" onclick="checkDictation()">Submit</button></div>
-      <div id="spellingHint" class="spellingHint hidden">${(w.phonetic||w.ipa)?escapeHTML(w.phonetic||w.ipa):'No phonetic transcription available.'}</div>
-    </div>
-  </section>`;
-}
-function toggleSpellingHint(){
-  const el=document.getElementById('spellingHint');
-  if(el)el.classList.toggle('hidden');
-}
-let dictCompositionActive=false;
-let dictCompositionStartValue='';
-let dictCheatingNoticeOpen=false;
-function focusDictInput(){const el=document.getElementById('dictInput');if(el)el.focus();}
-function showCheatingNotice(message){
-  if(dictCheatingNoticeOpen)return;
-  dictCheatingNoticeOpen=true;
-  const title=document.getElementById('cabinetActionTitle'),intro=document.getElementById('cabinetActionIntro'),input=document.getElementById('cabinetActionInput'),warning=document.getElementById('cabinetActionWarning'),btn=document.getElementById('cabinetActionConfirmButton');
-  title.textContent='A gentle reminder';
-  intro.textContent='This spelling test is meant to measure what you can spell yourself.';
-  input.classList.add('hidden');
-  warning.classList.remove('hidden');
-  warning.textContent=message||'Please type the word yourself using direct English letter input. Paste and predictive-composition input are not allowed during the spelling test.';
-  btn.textContent='Understood';
-  btn.onclick=()=>{closeLayer(null,'cabinetActionModal');dictCheatingNoticeOpen=false;setTimeout(focusDictInput,50);};
-  openLayer('cabinetActionModal');
-}
-function handleDictCompositionStart(){
-  const el=document.getElementById('dictInput');
-  dictCompositionStartValue=el?el.value:'';
-  dictCompositionActive=true;
-}
-function handleDictCompositionEnd(){
-  dictCompositionActive=false;
-  const el=document.getElementById('dictInput');
-  if(el)el.value=dictCompositionStartValue;
-  showCheatingNotice('Predictive or IME composition was detected. Please type the spelling directly instead of selecting a suggested completed word. Voice input is still allowed.');
-}
-function handleDictBeforeInput(event){
-  if(event.inputType==='insertFromPaste'||event.inputType==='insertFromDrop')return;
-  if(event.inputType==='insertCompositionText'||event.inputType==='insertFromComposition') { event.preventDefault(); showCheatingNotice('Predictive or IME composition is not allowed in the spelling test. Please type the spelling directly.'); return; }
-  if(dictCompositionActive)return;
-  if(typeof event.data==='string' && /[^A-Za-z' -]/.test(event.data)){event.preventDefault();showCheatingNotice('Only direct English letters are accepted in the spelling test.');return;}
-}
-function handleDictPaste(event){event.preventDefault();showCheatingNotice('Pasting the answer is not allowed during the spelling test. Please type it yourself.');}
-function handleDictDrop(event){event.preventDefault();showCheatingNotice('Dropping text into the answer box is not allowed during the spelling test. Please type it yourself.');}
-function checkDictation(){
-  if(state.locked)return;
-  if(dictCompositionActive){showCheatingNotice('Please finish typing with direct English letter input before submitting.');return;}
-  const el=document.getElementById('dictInput'),val=(el?el.value:'').trim();
-  if(!val)return;
-  if(!/^[A-Za-z][A-Za-z' -]*$/.test(val)){showCheatingNotice('The answer contains characters that are not accepted in the spelling test. Please type the word directly in English.');return;}
-  state.locked=true;
-  const w=state.words[state.current.id],correct=val.toLowerCase()===w.word.toLowerCase();
-  state.stats.dictAttempts++;
-  recordQuestion();
-  if(correct){state.stats.dictCorrect++;recordSpelledWord(state.current.id);recordSpellingMastery();}else recordMistake(state.current.id);
-  state.current.checked=true;state.current.correct=correct;state.current.inputVal=val;
-  state.dictQueue.shift();if(!correct)state.dictQueue.push(state.current.id);
-  state.screen='dictFeedback';save();render();
-}
-function renderDictFeedbackScreen(){
-  const w=state.words[state.current.id],correct=state.current.correct;
-  const banner=correct?`<div class="banner good">Well spelled.</div>`:`<div class="banner bad">Not yet. The word returns to the end of the queue.</div>`;
-  return `<section class="detail">${banner}
-    <div class="wordRow">${speakerBtn(w.word)}<div><div class="word" style="font-size:30px">${escapeHTML(w.word)}</div><div class="wordMeta"><span class="phonetic">${w.phonetic?escapeHTML(w.phonetic):'No phonetic transcription available.'}</span>${w.cefr?`<span class="cefr">${escapeHTML(w.cefr)}</span>`:''}</div></div></div>
-    ${renderFamiliarity(w.word)}
-    <div class="block"><h3>Your Spelling</h3><div class="definition" style="color:${correct?'var(--good)':'var(--bad)'}">${escapeHTML(state.current.inputVal)}</div></div>
-    <div class="block"><h3>Definition</h3>${w.partOfSpeech?`<div class="partOfSpeech">${escapeHTML(w.partOfSpeech)}</div>`:''}<div class="definition">${escapeHTML(w.definition)}</div></div>
-    <div class="centerRow"><button onclick="continueDictation()">Continue</button></div>
-  </section>`;
-}
-function continueDictation(){loadDictQuestion();save();render();}
-
 /* ---------- familiarity ---------- */
 function renderFamiliarity(word){
   const ws=globalStats.wordStats?.[normalizeWordKey(word)];
@@ -1644,13 +1650,21 @@ function openPracticeHub(words,libraryId=null){
 function renderPracticeHub(){
   const lib=state.libraryId?getCabinet().find(x=>x.id===state.libraryId):null;
   const name=lib?lib.name:'This Session';
+  const cards=[
+    ['01','Word → Meaning','Read the word and choose its meaning.','wordToDef',''],
+    ['02','Meaning → Word','Read the definition and choose the word.','defToWord',''],
+    ['03','Listening → Word','Listen to the pronunciation and choose the word.','listeningToWord',''],
+    ['04','Synonym Choice','Choose the word’s closest synonym.','synonym',''],
+    ['05','Antonym Choice','Choose the word’s closest antonym.','antonym',''],
+    ['06','Fill in the Blank','Complete a sentence with the right word.','fillBlank',''],
+    ['07','Spelling Practice','Listen and type the spelling yourself.','spelling','practiceWide']
+  ];
   return `<section class="interstitial practiceHubPanel">
     <h2>${escapeHTML(name)}</h2>
+    <p class="modalIntro">A small collection of ways to revisit this vocabulary.</p>
     <div class="stats practiceHubStats">${renderStats()}</div>
     <div class="practiceHubActions">
-      <button onclick="hubStartMode('wordToDef')">Word → Meaning</button>
-      <button onclick="hubStartMode('defToWord')">Meaning → Word</button>
-      <button onclick="hubStartMode('spelling')">Spelling Practice</button>
+      ${cards.map(([index,title,desc,mode,extra])=>`<button class="${extra}" onclick="hubStartMode('${mode}')"><span class="practiceIndex">${index}</span><span class="practiceName">${title}</span><span class="practiceDesc">${desc}</span></button>`).join('')}
     </div>
     <button class="secondary studyHomeButton" onclick="openCabinet()">The Cabinet</button>
     <p class="practiceHubPrompt">Choose how you would like to practice</p>
@@ -1665,10 +1679,27 @@ function hubStartMode(mode){
   }else{
     state.phase='recognition';
     state.mode=mode;
+    state.activeIds=getPracticeEligibleIds(mode);
+    if(!state.activeIds.length){
+      state.practiceUnavailable=mode;
+      state.screen='practiceUnavailable';
+      save();render();
+      return;
+    }
+    state.practiceUnavailable='';
     beginRecognitionRound();
     loadRecognitionQuestion();
   }
   save();render();
+}
+function renderPracticeUnavailable(){
+  const label=getPracticeModeLabel(state.practiceUnavailable);
+  const relation=state.practiceUnavailable==='synonym'?'synonyms':'antonyms';
+  return `<section class="interstitial">
+    <h2>${escapeHTML(label)}</h2>
+    <p>This volume does not contain any ${relation} yet, so there are no questions to build for this practice.</p>
+    <div class="centerRow"><button class="secondary" onclick="returnToPracticeHub()">Return to Practice</button><button onclick="openCabinet()">The Cabinet</button></div>
+  </section>`;
 }
 
 /* ---------- daily review ---------- */
@@ -1822,7 +1853,18 @@ function renderProfile(){
   let currentStreak=0;const cursor=new Date();cursor.setHours(12,0,0,0);while(true){const k=dateKey(cursor);if(!studyDays.has(k))break;currentStreak++;cursor.setDate(cursor.getDate()-1);}
   const bestDay=Object.entries(globalStats.daily||{}).sort((a,b)=>Number(b[1])-Number(a[1]))[0];
   const username=accountUser?.username||'';
-  return `<div class="profileSummary">Your learning record is built from the study activity already saved to this account or browser.</div><div class="profileNameSection"><label class="profileNameLabel" for="profileUsername">Username</label><div class="profileNameRow"><input id="profileUsername" class="profileNameInput" type="text" maxlength="24" value="${escapeHTML(username)}" placeholder="Choose a username"><button class="profileNameButton" type="button" onclick="saveUsername()">Save Username</button></div><div id="profileNameStatus" class="profileNameStatus"></div></div><div class="profileGrid"><div class="profileStat"><div class="value">${allWords.size}</div><div class="name">Words Encountered</div></div><div class="profileStat"><div class="value">${learned.size}</div><div class="name">Words Learned</div></div><div class="profileStat"><div class="value">${spelled.size}</div><div class="name">Words Spelled</div></div><div class="profileStat"><div class="value">${globalStats.mistakes||0}</div><div class="name">Total Mistakes</div></div><div class="profileStat"><div class="value">${studyDays.size}</div><div class="name">Study Days</div></div><div class="profileStat"><div class="value">${currentStreak}</div><div class="name">Current Streak</div></div></div><div class="rankingSection"><div class="rankingTitle">Most Practised · Top 10</div>${renderRanking(practised,'Practice count')}</div><div class="rankingSection"><div class="rankingTitle">Most Missed · Top 10</div>${renderRanking(missed,'Mistake count')}</div>${bestDay?`<div class="profileNote">Best study day · ${escapeHTML(formatDate(bestDay[0]))} · ${Number(bestDay[1])} words studied.</div>`:''}`;
+  const hasUsername=!!username;
+  return `<div class="profileSummary">Your learning record is built from the study activity already saved to this account or browser.</div><div class="profileNameSection"><label class="profileNameLabel" for="profileUsername">Username</label><div class="profileNameRow"><input id="profileUsername" class="profileNameInput" type="text" maxlength="24" value="${escapeHTML(username)}" placeholder="Choose a username" ${hasUsername?'disabled':''}><button id="profileNameButton" class="profileNameButton" type="button" onclick="${hasUsername?'editUsername()':'saveUsername()'}">${hasUsername?'Edit':'Save Username'}</button></div><div id="profileNameStatus" class="profileNameStatus"></div></div><div class="profileGrid"><div class="profileStat"><div class="value">${allWords.size}</div><div class="name">Words Encountered</div></div><div class="profileStat"><div class="value">${learned.size}</div><div class="name">Words Learned</div></div><div class="profileStat"><div class="value">${spelled.size}</div><div class="name">Words Spelled</div></div><div class="profileStat"><div class="value">${globalStats.mistakes||0}</div><div class="name">Total Mistakes</div></div><div class="profileStat"><div class="value">${studyDays.size}</div><div class="name">Study Days</div></div><div class="profileStat"><div class="value">${currentStreak}</div><div class="name">Current Streak</div></div></div><div class="rankingSection"><div class="rankingTitle">Most Practised · Top 10</div>${renderRanking(practised,'Practice count')}</div><div class="rankingSection"><div class="rankingTitle">Most Missed · Top 10</div>${renderRanking(missed,'Mistake count')}</div>${bestDay?`<div class="profileNote">Best study day · ${escapeHTML(formatDate(bestDay[0]))} · ${Number(bestDay[1])} words studied.</div>`:''}`;
+}
+function editUsername(){
+  const input=document.getElementById('profileUsername'),button=document.getElementById('profileNameButton'),status=document.getElementById('profileNameStatus');
+  if(!input||!button)return;
+  input.disabled=false;
+  input.focus();
+  input.select();
+  button.textContent='Save Username';
+  button.onclick=saveUsername;
+  if(status)status.textContent='You can now edit your username.';
 }
 async function saveUsername(){
   const input=document.getElementById('profileUsername'),status=document.getElementById('profileNameStatus');
@@ -1833,14 +1875,15 @@ async function saveUsername(){
   if(!username){status.textContent='Please enter a username.';input.focus();return;}
   if(username.length<2||username.length>24){status.textContent='Username must be 2–24 characters.';input.focus();return;}
   if(!/^[A-Za-z0-9_ .-]+$/.test(username)){status.textContent='Use letters, numbers, spaces, _, . or - only.';input.focus();return;}
-  const button=document.querySelector('.profileNameButton');if(button)button.disabled=true;status.textContent='Saving…';
+  const button=document.getElementById('profileNameButton');if(button)button.disabled=true;status.textContent='Saving…';
   try{
     const data=await apiJSON('/api/profile/username',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({username})});
     accountUser=data.user;
-    status.textContent='Username saved.';
     renderAccountBar();
+    const profileContent=document.getElementById('profileContent');
+    if(profileContent)profileContent.innerHTML=renderProfile();
     showToast('Username saved.');
-  }catch(e){status.textContent=e.message||'Unable to save username.';}finally{if(button)button.disabled=false;}
+  }catch(e){status.textContent=e.message||'Unable to save username.';}finally{const currentButton=document.getElementById('profileNameButton');if(currentButton)currentButton.disabled=false;}
 }
 async function sendFeedback(){
   const input=document.getElementById('feedbackText');
@@ -1880,7 +1923,7 @@ function openProfileFromDrawer(){openLayer('profilePopover','settingsDrawer');}
 function openLedgerFromDrawer(){openLayer('recordPopover','settingsDrawer');}
 function openAlmanacFromDrawer(){openLayer('almanacPopover','settingsDrawer');}
 function openRankingFromDrawer(){openLayer('rankingPopover','settingsDrawer');loadDailyRanking();}
-async function loadDailyRanking(){const el=document.getElementById('rankingContent');if(!el)return;el.innerHTML='<div class="profileLoading">Loading ranking…</div>';try{const r=await fetch('/api/ranking/daily',{credentials:'include',cache:'no-store'});const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data.error||'Ranking unavailable.');if(!Array.isArray(data.rankings)||!data.rankings.length){el.innerHTML='<div class="profileNote">No registered users found.</div>';return;}const rankings=data.rankings.slice(0,10);el.innerHTML=`<div class="ranking">${rankings.map((x,i)=>`<div class="rankRow"><div class="rankNo">No. ${i+1}</div><div class="rankWord">${escapeHTML(x.username||'Learner')}</div><div class="rankCount">${Number(x.score||0)} mastered</div></div>`).join('')}</div>`;}catch(e){el.innerHTML=`<div class="profileNote">${escapeHTML(e.message||'Ranking is unavailable.')}</div>`;}}
+async function loadDailyRanking(){const el=document.getElementById('rankingContent');if(!el)return;el.innerHTML='<div class="profileLoading">Loading ranking…</div>';try{const r=await fetch('/api/ranking/daily',{credentials:'include',cache:'no-store'});const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data.error||'Ranking unavailable.');if(!Array.isArray(data.rankings)||!data.rankings.length){el.innerHTML='<div class="profileNote">No registered users found.</div>';return;}const rankings=data.rankings.slice(0,10);const displayName=x=>{const direct=x.username||x.displayName||x.name||x.user?.username||x.profile?.username;const isMe=(x.userId&&accountUser?.id&&String(x.userId)===String(accountUser.id))||(x.id&&accountUser?.id&&String(x.id)===String(accountUser.id))||(x.email&&accountUser?.email&&String(x.email).toLowerCase()===String(accountUser.email).toLowerCase());return direct||((isMe&&accountUser?.username)||'Learner');};el.innerHTML=`<div class="ranking">${rankings.map((x,i)=>`<div class="rankRow"><div class="rankNo">No. ${i+1}</div><div class="rankWord">${escapeHTML(displayName(x))}</div><div class="rankCount">${Number(x.score||0)} mastered</div></div>`).join('')}</div>`;}catch(e){el.innerHTML=`<div class="profileNote">${escapeHTML(e.message||'Ranking is unavailable.')}</div>`;}}
 
 /* ---------- archive ---------- */
 let pendingArchiveAction=null;
@@ -1892,7 +1935,7 @@ function restoreArchive(event){const file=event.target.files?.[0];if(!file)retur
 /* ---------- toast / stats / dispatcher ---------- */
 function showToast(message){const el=document.getElementById('toast');el.textContent=message;el.classList.remove('hidden');clearTimeout(showToast.timer);showToast.timer=setTimeout(()=>el.classList.add('hidden'),2200);}
 function renderStats(){const total=state.words.length;let v2=0,l2='Mastered',v3='0%',l3='Accuracy';if(state.phase==='recognition'){v2=state.masteredIds.length;v3=state.stats.recAttempts?Math.round(state.stats.recCorrect/state.stats.recAttempts*100)+'%':'0%';}else if(state.phase==='dictation'){l2='Completed';v2=total-uniq(state.dictQueue).length;v3=state.stats.dictAttempts?Math.round(state.stats.dictCorrect/state.stats.dictAttempts*100)+'%':'0%';}else{v2=total;v3='100%';}return `<div class="stat"><div class="num">${total}</div><div class="label">Total Words</div></div><div class="stat"><div class="num">${v2}</div><div class="label">${l2}</div></div><div class="stat"><div class="num">${v3}</div><div class="label">${l3}</div></div>`;}
-function render(){if(!state){renderReviewBanner();return;}const statsRow=document.getElementById('statsRow');statsRow.innerHTML=renderStats();statsRow.classList.toggle('hidden',state.screen==='practiceHub');const stage=document.getElementById('stage');switch(state.screen){case 'practiceHub':stage.innerHTML=renderPracticeHub();break;case 'question':stage.innerHTML=renderQuestionScreen();break;case 'detail':stage.innerHTML=renderDetailScreen();break;case 'roundTransition':stage.innerHTML=renderRoundTransition();break;case 'phaseTransition':stage.innerHTML=renderPhaseTransition();break;case 'dictQuestion':stage.innerHTML=renderDictQuestionScreen();focusDictInput();break;case 'dictFeedback':stage.innerHTML=renderDictFeedbackScreen();break;case 'complete':stage.innerHTML=renderComplete();break;default:stage.innerHTML='';}}
+function render(){if(!state){renderReviewBanner();return;}const statsRow=document.getElementById('statsRow');statsRow.innerHTML=renderStats();statsRow.classList.toggle('hidden',state.screen==='practiceHub');const stage=document.getElementById('stage');switch(state.screen){case 'practiceHub':stage.innerHTML=renderPracticeHub();break;case 'question':stage.innerHTML=renderQuestionScreen();break;case 'practiceUnavailable':stage.innerHTML=renderPracticeUnavailable();break;case 'detail':stage.innerHTML=renderDetailScreen();break;case 'roundTransition':stage.innerHTML=renderRoundTransition();break;case 'phaseTransition':stage.innerHTML=renderPhaseTransition();break;case 'dictQuestion':stage.innerHTML=renderDictQuestionScreen();focusDictInput();break;case 'dictFeedback':stage.innerHTML=renderDictFeedbackScreen();break;case 'complete':stage.innerHTML=renderComplete();break;default:stage.innerHTML='';}}
 
 /* ---------- account / authentication ---------- */
 const ACCOUNT_KEY='theLexicon_accountMode_v2';
