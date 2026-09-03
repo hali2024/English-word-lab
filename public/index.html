@@ -1362,9 +1362,25 @@ function renderDictQuestionScreen(){
     </div>
   </section>`;
 }
-function toggleSpellingHint(){
+async function toggleSpellingHint(){
   const el=document.getElementById('spellingHint');
-  if(el)el.classList.toggle('hidden');
+  if(!el)return;
+  if(el.classList.contains('hidden')){
+    const w=state?.words?.[state?.current?.id];
+    if(w && !(w.phonetic||w.ipa)){
+      try{
+        const r=await fetch('https://api.dictionaryapi.dev/api/v2/entries/en/'+encodeURIComponent(w.word));
+        if(r.ok){
+          const data=await r.json();
+          const found=data?.[0]?.phonetics?.find(p=>p?.text);
+          w.phonetic=found?.text||'';
+        }
+      }catch(e){console.warn('Unable to load IPA hint:',e);}
+    }
+    const phonetic=w?.phonetic||w?.ipa||'';
+    el.textContent=phonetic||'IPA unavailable';
+  }
+  el.classList.toggle('hidden');
 }
 let dictCompositionActive=false;
 let dictCompositionStartValue='';
