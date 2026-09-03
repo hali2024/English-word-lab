@@ -288,6 +288,24 @@ textarea::placeholder{color:#a79f91}
 .heatScale .scaleSegment span{display:block;position:absolute;top:10px;left:-1px;transform:translateX(-50%);white-space:nowrap;font-size:8px;color:var(--muted)}
 .heatScale .scaleSegment:last-child span{left:-1px}
 
+
+/* Requested interaction refinements */
+.modalClose{position:absolute;top:10px;right:10px;width:27px;height:27px;padding:0;border:0;background:transparent;color:var(--muted);font-size:18px;line-height:27px;z-index:3}
+.modalClose:hover{background:transparent;color:var(--accent);border:0;transform:none}
+.editList.selecting{user-select:none}
+.editRow{cursor:default;touch-action:none;user-select:none;transition:background .12s,border-color .12s}
+.editRow.selected{background:rgba(113,52,59,.10);border-color:var(--accent)}
+.editRow .editWord{flex:1}
+.editSelectionBar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:10px 0;border-bottom:1px solid var(--line);margin-bottom:8px}
+.editSelectionBar .selectionCount{font-size:11px;color:var(--muted);font-style:italic}
+.editBatchActions{display:flex;gap:6px;flex-wrap:wrap}
+.editBatchActions button{font-size:10px;padding:7px 9px}
+.moveSelect{min-width:170px;padding:7px 9px;border:1px solid var(--line-dark);background:rgba(255,252,245,.55);color:var(--ink);font:inherit;font-size:11px}
+.addLibraryLink{display:block;width:100%;margin-top:14px;padding:13px 10px;border:1px dashed var(--line-dark);background:transparent;color:var(--accent);font-size:11px;letter-spacing:.06em;cursor:pointer}
+.addLibraryLink:hover{background:rgba(113,52,59,.06)}
+.sourceChoiceGrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.sourceChoiceGrid .panel{margin:0;box-shadow:none}
+.studyHomeButton{display:block;width:100%;max-width:360px;margin:16px auto 0}
 @media(max-width:700px){
   .profileGrid{grid-template-columns:1fr}
   .rankRow{grid-template-columns:32px 1fr auto}
@@ -323,7 +341,7 @@ textarea::placeholder{color:#a79f91}
 <div class="app">
   <div class="top">
     <div class="homeTools">
-      <button class="utilityButton" type="button" onclick="openCabinet()">The Cabinet</button>
+      <button id="topCabinetButton" class="utilityButton" type="button" onclick="openCabinet()">The Cabinet</button>
       <button class="utilityButton" type="button" onclick="openSettings()">The Study</button>
     </div>
     <div class="accountBar" id="accountBar"></div>
@@ -494,6 +512,7 @@ become"></textarea>
   <!-- Save choice -->
   <div id="saveChoiceModal" class="modalLayer hidden" aria-hidden="true" onclick="closeLayer(event,'saveChoiceModal')">
     <div class="modalCard" onclick="event.stopPropagation()">
+      <button class="modalClose" type="button" aria-label="Close" onclick="closeLayer(null,'saveChoiceModal')">×</button>
       <h2 class="modalTitle">Keep this volume?</h2>
       <p class="modalIntro">This library may be placed in The Cabinet for later study.</p>
       <div class="modalActions">
@@ -506,6 +525,7 @@ become"></textarea>
   <!-- Name library -->
   <div id="nameLibraryModal" class="modalLayer hidden" aria-hidden="true" onclick="closeLayer(event,'nameLibraryModal')">
     <div class="modalCard" onclick="event.stopPropagation()">
+      <button class="modalClose" type="button" aria-label="Close" onclick="closeLayer(null,'nameLibraryModal')">×</button>
       <h2 class="modalTitle">Give it a name</h2>
       <p class="modalIntro">A quiet name for this collection.</p>
       <input id="libraryNameInput" class="nameInput" maxlength="80" placeholder="A name for this library" onkeydown="if(event.key==='Enter')confirmLibraryName()">
@@ -518,6 +538,7 @@ become"></textarea>
   <!-- Enter practice -->
   <div id="startPracticeModal" class="modalLayer hidden" aria-hidden="true" onclick="closeLayer(event,'startPracticeModal')">
     <div class="modalCard" onclick="event.stopPropagation()">
+      <button class="modalClose" type="button" aria-label="Close" onclick="closeLayer(null,'startPracticeModal')">×</button>
       <h2 class="modalTitle">Enter Practice?</h2>
       <p class="modalIntro">Your word library is ready. Would you like to begin practicing it now?</p>
       <div class="modalActions">
@@ -530,6 +551,7 @@ become"></textarea>
   <!-- Cabinet -->
   <div id="cabinetModal" class="modalLayer hidden" aria-hidden="true" onclick="closeLayer(event,'cabinetModal')">
     <div class="modalCard" onclick="event.stopPropagation()">
+      <button class="modalClose" type="button" aria-label="Close" onclick="closeLayer(null,'cabinetModal')">×</button>
       <h2 class="modalTitle">The Cabinet</h2>
       <p class="modalIntro">Volumes kept for another day.</p>
       <div id="cabinetContent"></div>
@@ -539,18 +561,40 @@ become"></textarea>
   <!-- Edit Cabinet library -->
   <div id="editLibraryModal" class="modalLayer hidden" aria-hidden="true" onclick="closeLayer(event,'editLibraryModal')">
     <div class="modalCard" onclick="event.stopPropagation()">
+      <button class="modalClose" type="button" aria-label="Close" onclick="closeLayer(null,'editLibraryModal')">×</button>
       <h2 class="modalTitle">Edit this volume</h2>
-      <p id="editLibraryIntro" class="modalIntro">Add or remove words; definitions and other details are composed automatically.</p>
+      <p id="editLibraryIntro" class="modalIntro">Long-press a word to select it. Drag across words to select several.</p>
+      <div id="editSelectionBar" class="editSelectionBar hidden"></div>
       <div id="editWordList" class="editList"></div>
-      <div id="addWordPanel" class="addWordPanel hidden">
-        <div id="addWordInputs">
-          <input class="addWordInput" type="text" autocomplete="off" placeholder="word" onkeydown="if(event.key==='Enter')composeAddedWords()">
-        </div>
-        <div class="modalActions"><button class="secondary" type="button" onclick="continueAddingWord()">Continue Adding</button><button id="addWordGenerateButton" type="button" onclick="composeAddedWords()">Compose</button></div>
-        <p id="addWordStatus" class="addWordStatus"></p>
+      <div class="modalActions"><button class="secondary" onclick="openLibrarySourceForEdit()">Add</button><button onclick="saveEditedLibrary()">Save Changes</button></div>
+    </div>
+  </div>
+
+  <!-- Add words to an existing Cabinet volume -->
+  <div id="librarySourceModal" class="modalLayer hidden" aria-hidden="true" onclick="closeLayer(event,'librarySourceModal')">
+    <div class="modalCard" onclick="event.stopPropagation()">
+      <button class="modalClose" type="button" aria-label="Close" onclick="closeLayer(null,'librarySourceModal')">×</button>
+      <h2 class="modalTitle">Add words</h2>
+      <p id="librarySourceIntro" class="modalIntro">Compose new words with AI or paste a CSV. Generated/loaded words are added directly to this volume.</p>
+      <div class="sourceChoiceGrid">
+        <section class="panel">
+          <h2>The Word Studio</h2>
+          <p class="hint">Enter English words, one per line.</p>
+          <textarea id="editAIWordsInput" style="min-height:150px;font-family:inherit" placeholder="seek
+find
+become"></textarea>
+          <div class="row"><button id="editGenerateAIButton" onclick="generateWordsIntoEditedLibrary()">Compose</button></div>
+          <p id="editAIStatus" class="hint" style="margin-bottom:0"></p>
+        </section>
+        <section class="panel">
+          <h2>From a CSV</h2>
+          <p class="hint">Paste a complete CSV library here.</p>
+          <textarea id="editCSVInput" placeholder="word,part_of_speech,phonetic,cefr,definition,example1,example2,example3,synonyms,antonyms,root_analysis,cognates
+"></textarea>
+          <div class="row"><button onclick="loadCSVIntoEditedLibrary()">Load CSV</button><button class="secondary" onclick="downloadTemplate()">Download CSV Template</button></div>
+          <p id="editCSVStatus" class="hint" style="margin-bottom:0"></p>
+        </section>
       </div>
-      <div id="editAddButtonRow" class="modalActions"><button class="secondary" onclick="showAddWordInput()">Add Word</button></div>
-      <div class="modalActions"><button onclick="saveEditedLibrary()">Save Changes</button></div>
     </div>
   </div>
 
@@ -564,6 +608,7 @@ become"></textarea>
         <button type="button" onclick="openProfileFromDrawer()">Profile</button>
         <button type="button" onclick="openLedgerFromDrawer()">The Ledger</button>
         <button type="button" onclick="openAlmanacFromDrawer()">The Almanac</button>
+        <button type="button" onclick="openRankingFromDrawer()">Ranking</button>
       </div>
 
       <div class="drawerSection">
@@ -582,6 +627,7 @@ become"></textarea>
   <!-- Ledger -->
   <div id="recordPopover" class="modalLayer hidden" aria-hidden="true" onclick="closeLayer(event,'recordPopover')">
     <div class="modalCard" onclick="event.stopPropagation()">
+      <button class="modalClose" type="button" aria-label="Close" onclick="closeLayer(null,'recordPopover')">×</button>
       <h2 class="modalTitle">The Ledger</h2>
       <div id="ledgerStats"></div>
     </div>
@@ -590,6 +636,7 @@ become"></textarea>
   <!-- Almanac -->
   <div id="almanacPopover" class="modalLayer hidden" aria-hidden="true" onclick="closeLayer(event,'almanacPopover')">
     <div class="modalCard" onclick="event.stopPropagation()">
+      <button class="modalClose" type="button" aria-label="Close" onclick="closeLayer(null,'almanacPopover')">×</button>
       <h2 class="modalTitle">The Almanac</h2>
       <div id="almanacContent"></div>
     </div>
@@ -598,15 +645,27 @@ become"></textarea>
   <!-- Profile -->
   <div id="profilePopover" class="modalLayer hidden" aria-hidden="true" onclick="closeLayer(event,'profilePopover')">
     <div class="modalCard" onclick="event.stopPropagation()">
+      <button class="modalClose" type="button" aria-label="Close" onclick="closeLayer(null,'profilePopover')">×</button>
       <h2 class="modalTitle">Profile</h2>
       <p class="modalIntro">A record of the words you have met, mastered, and missed.</p>
       <div id="profileContent"></div>
     </div>
   </div>
 
+  <!-- Daily ranking -->
+  <div id="rankingPopover" class="modalLayer hidden" aria-hidden="true" onclick="closeLayer(event,'rankingPopover')">
+    <div class="modalCard" onclick="event.stopPropagation()">
+      <button class="modalClose" type="button" aria-label="Close" onclick="closeLayer(null,'rankingPopover')">×</button>
+      <h2 class="modalTitle">Ranking</h2>
+      <p class="modalIntro">Today’s ranking by words mastered through spelling.</p>
+      <div id="rankingContent"></div>
+    </div>
+  </div>
+
   <!-- Cabinet action confirmation -->
   <div id="cabinetActionModal" class="modalLayer hidden" aria-hidden="true" onclick="closeLayer(event,'cabinetActionModal')">
     <div class="modalCard" onclick="event.stopPropagation()">
+      <button class="modalClose" type="button" aria-label="Close" onclick="closeLayer(null,'cabinetActionModal')">×</button>
       <h2 id="cabinetActionTitle" class="modalTitle">Confirm</h2>
       <p id="cabinetActionIntro" class="modalIntro"></p>
       <input id="cabinetActionInput" class="actionModalInput hidden" type="text" maxlength="80" autocomplete="off" placeholder="A name for this library" onkeydown="if(event.key==='Enter')confirmCabinetAction()">
@@ -618,6 +677,7 @@ become"></textarea>
   <!-- Archive information -->
   <div id="archiveInfoModal" class="modalLayer hidden" aria-hidden="true" onclick="closeLayer(event,'archiveInfoModal')">
     <div class="modalCard" onclick="event.stopPropagation()">
+      <button class="modalClose" type="button" aria-label="Close" onclick="closeLayer(null,'archiveInfoModal')">×</button>
       <h2 id="archiveInfoTitle" class="modalTitle">Archive</h2>
       <p id="archiveInfoIntro" class="modalIntro"></p>
       <p id="archiveInfoText" class="actionModalText"></p>
@@ -629,6 +689,7 @@ become"></textarea>
   <!-- User Manual -->
   <div id="manualPopover" class="modalLayer hidden" aria-hidden="true" onclick="closeLayer(event,'manualPopover')">
     <div class="modalCard" onclick="event.stopPropagation()">
+      <button class="modalClose" type="button" aria-label="Close" onclick="closeLayer(null,'manualPopover')">×</button>
       <h2 class="modalTitle">User Manual</h2>
       <p class="modalIntro">A detailed guide to The Lexicon, including the small interactions that may not be obvious at first.</p>
 
@@ -643,7 +704,7 @@ become"></textarea>
           <li><b>Recognition:</b> read the word and choose the definition that matches it. Incorrect words return in another round.</li>
           <li><b>Spelling:</b> listen to the pronunciation and type the word yourself. A word answered incorrectly returns to the end of the queue.</li>
           <li><b>Detail cards:</b> after an answer, use Continue to move to the next word.</li>
-          <li><b>Replay:</b> use the speaker or Replay button whenever you want to hear the pronunciation again.</li>
+          <li><b>Audio:</b> click the speaker to play the pronunciation again.</li>
         </ul>
       </div>
 
@@ -652,7 +713,7 @@ become"></textarea>
         <ul>
           <li><b>Open</b> resumes a saved volume and its progress.</li>
           <li><b>View</b> reveals the words currently stored in that volume.</li>
-          <li><b>Edit</b> lets you add or remove words. Click Save Changes when finished.</li>
+          <li><b>Edit</b> lets you long-press and drag to multi-select words, then delete or move them. Add opens the AI/CSV word importer.</li>
           <li><b>Rename</b> changes only the volume name.</li>
           <li><b>Clear Progress</b> keeps the words but resets that volume's study progress.</li>
           <li><b>Remove</b> deletes the saved volume from the Cabinet.</li>
@@ -706,6 +767,7 @@ become"></textarea>
   <!-- Email Feedback -->
   <div id="feedbackPopover" class="modalLayer hidden" aria-hidden="true" onclick="closeLayer(event,'feedbackPopover')">
     <div class="modalCard" onclick="event.stopPropagation()">
+      <button class="modalClose" type="button" aria-label="Close" onclick="closeLayer(null,'feedbackPopover')">×</button>
       <h2 class="modalTitle">Email Feedback</h2>
       <p class="modalIntro">Found a problem or have an idea? Write your feedback below.</p>
       <textarea id="feedbackText" class="feedbackBox" maxlength="5000" placeholder="Tell the developer what happened, what you expected, or what you would like to improve."></textarea>
@@ -736,6 +798,9 @@ function emptyPersistentStats(){
   return {
     learnedWords:[],
     spelledWords:[],
+    questionCount:0,
+    studySeconds:0,
+    dailySpellingMastery:{},
     mistakes:0,
     daily:{},
     dailyWords:{},
@@ -843,6 +908,24 @@ function recordLearnedWord(id){
   saveGlobalStatsOnly();
 }
 
+function recordSpellingMastery(){
+  const day=todayKey();
+  if(!globalStats.dailySpellingMastery||typeof globalStats.dailySpellingMastery!=='object')globalStats.dailySpellingMastery={};
+  globalStats.dailySpellingMastery[day]=(globalStats.dailySpellingMastery[day]||0)+1;
+}
+function recordQuestion(){
+  globalStats.questionCount=(globalStats.questionCount||0)+1;
+  touchStudyTime();
+}
+let studyClockStartedAt=0;
+function touchStudyTime(){
+  if(!studyClockStartedAt)studyClockStartedAt=Date.now();
+}
+function flushStudyTime(){
+  if(!studyClockStartedAt)return;
+  const delta=Math.max(0,Math.floor((Date.now()-studyClockStartedAt)/1000));
+  if(delta){globalStats.studySeconds=(globalStats.studySeconds||0)+delta;studyClockStartedAt=Date.now();saveGlobalStatsOnly();}
+}
 function recordSpelledWord(id){
   const wordKey=normalizeWordKey(state?.words?.[id]?.word);
   if(!wordKey)return;
@@ -899,6 +982,9 @@ function loadPersistentStats(legacyState){
     globalStats={
       learnedWords:Array.isArray(parsed.learnedWords)?parsed.learnedWords.map(normalizeWordKey).filter(Boolean):[],
       spelledWords:Array.isArray(parsed.spelledWords)?parsed.spelledWords.map(normalizeWordKey).filter(Boolean):[],
+      questionCount:Number(parsed.questionCount||0),
+      studySeconds:Number(parsed.studySeconds||0),
+      dailySpellingMastery:parsed.dailySpellingMastery&&typeof parsed.dailySpellingMastery==='object'?parsed.dailySpellingMastery:{},
       mistakes:typeof parsed.mistakes==='number'?parsed.mistakes:0,
       daily:parsed.daily&&typeof parsed.daily==='object'?parsed.daily:{},
       dailyWords:parsed.dailyWords&&typeof parsed.dailyWords==='object'?parsed.dailyWords:{},
@@ -921,6 +1007,7 @@ function loadPersistentStats(legacyState){
     globalStats={
       learnedWords:Array.isArray(legacy.learnedWords)?legacy.learnedWords.map(convert).filter(Boolean):[],
       spelledWords:Array.isArray(legacy.spelledWords)?legacy.spelledWords.map(convert).filter(Boolean):[],
+      questionCount:0,studySeconds:0,dailySpellingMastery:{},
       mistakes:typeof legacy.mistakes==='number'?legacy.mistakes:0,
       daily:legacy.daily&&typeof legacy.daily==='object'?legacy.daily:{},
       dailyWords:{},dailyWordPractice:{},dailyWordMistakes:{},wordStats:{},dailyReview:{},dailyPoem:null
@@ -1037,7 +1124,10 @@ function normalizeWordRecord(w){
 
 /* ---------- home / import ---------- */
 function showHome(){
+  flushStudyTime();
+  studyClockStartedAt=0;
   state=null;
+  showTopHomeTools();
   document.getElementById('homeArea').classList.remove('hidden');
   document.getElementById('importArea').classList.remove('hidden');
   document.getElementById('appArea').classList.add('hidden');
@@ -1046,7 +1136,13 @@ function showHome(){
 function showStudyView(){
   document.getElementById('homeArea').classList.add('hidden');
   document.getElementById('appArea').classList.remove('hidden');
+  document.getElementById('topCabinetButton')?.classList.add('hidden');
+  touchStudyTime();
 }
+function showTopHomeTools(){
+  document.getElementById('topCabinetButton')?.classList.remove('hidden');
+}
+
 function resetImportFields(){
   document.getElementById('aiWordsInput').value='';
   document.getElementById('csvInput').value='';
@@ -1327,6 +1423,7 @@ function selectAnswer(i){
   const opt=state.current.options[i];
   state.current.answered=true;state.current.selected=i;state.current.correct=opt.isCorrect;
   state.stats.recAttempts++;
+  recordQuestion();
   if(opt.isCorrect){
     state.stats.recCorrect++;
     state.masteredIds=uniq([...state.masteredIds,state.current.id]);
@@ -1375,7 +1472,7 @@ function renderPhaseTransition(){
   return `<section class="interstitial">
     <h2>${isDefToWord?'Meaning → Word':'Word → Meaning'} Complete</h2>
     <p>Every word has been remembered in the latest round.</p>
-    <div class="centerRow"><button onclick="restartRecognitionOnly()">Restart</button><button class="secondary" onclick="returnToPracticeHub()">Return to Practice Page</button></div>
+    <div class="centerRow"><button onclick="restartRecognitionOnly()">Restart</button><button class="secondary" onclick="returnToPracticeHub()">Return to Home</button></div>
   </section>`;
 }
 function restartRecognitionOnly(){
@@ -1389,9 +1486,8 @@ function exitToHome(){
 }
 function returnToPracticeHub(){
   if(!state){showHome();return;}
-  const words=state.words,libraryId=state.libraryId;
-  state=freshState(words,libraryId,false,'wordToDef');
   state.screen='practiceHub';
+  state.locked=false;
   save();render();
 }
 
@@ -1412,7 +1508,7 @@ function renderDictQuestionScreen(){
     <div class="dictBox">
       <button type="button" class="speaker" title="Play pronunciation" onclick="speak('${safeJSString(w.word)}')"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round"><path d="M4 9v6h4l5 4V5L8 9H4"></path><path d="M16 9.5c1 .8 1.5 1.6 1.5 2.5s-.5 1.7-1.5 2.5"></path><path d="M18.5 7c1.7 1.4 2.5 3 2.5 5s-.8 3.6-2.5 5"></path></svg></button>
       <input class="dictInput" id="dictInput" lang="en" inputmode="latin" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="done" placeholder="Write what you hear" onbeforeinput="handleDictBeforeInput(event)" oncompositionstart="handleDictCompositionStart(event)" oncompositionend="handleDictCompositionEnd(event)" onpaste="handleDictPaste(event)" ondrop="handleDictDrop(event)" onkeydown="if(event.key==='Enter')checkDictation()">
-      <div class="centerRow"><button class="secondary" type="button" onclick="speak('${safeJSString(w.word)}')">Replay</button><button class="secondary" type="button" onclick="toggleSpellingHint()">Hint</button><button type="button" onclick="checkDictation()">Submit</button></div>
+      <div class="centerRow"><button class="secondary" type="button" onclick="toggleSpellingHint()">Hint</button><button type="button" onclick="checkDictation()">Submit</button></div>
       <div id="spellingHint" class="spellingHint hidden">${(w.phonetic||w.ipa)?escapeHTML(w.phonetic||w.ipa):'No phonetic transcription available.'}</div>
     </div>
   </section>`;
@@ -1451,6 +1547,7 @@ function handleDictCompositionEnd(){
 }
 function handleDictBeforeInput(event){
   if(event.inputType==='insertFromPaste'||event.inputType==='insertFromDrop')return;
+  if(event.inputType==='insertCompositionText'||event.inputType==='insertFromComposition') { event.preventDefault(); showCheatingNotice('Predictive or IME composition is not allowed in the spelling test. Please type the spelling directly.'); return; }
   if(dictCompositionActive)return;
   if(typeof event.data==='string' && /[^A-Za-z' -]/.test(event.data)){event.preventDefault();showCheatingNotice('Only direct English letters are accepted in the spelling test.');return;}
 }
@@ -1465,7 +1562,8 @@ function checkDictation(){
   state.locked=true;
   const w=state.words[state.current.id],correct=val.toLowerCase()===w.word.toLowerCase();
   state.stats.dictAttempts++;
-  if(correct){state.stats.dictCorrect++;recordSpelledWord(state.current.id);}else recordMistake(state.current.id);
+  recordQuestion();
+  if(correct){state.stats.dictCorrect++;recordSpelledWord(state.current.id);recordSpellingMastery();}else recordMistake(state.current.id);
   state.current.checked=true;state.current.correct=correct;state.current.inputVal=val;
   state.dictQueue.shift();if(!correct)state.dictQueue.push(state.current.id);
   state.screen='dictFeedback';save();render();
@@ -1506,7 +1604,7 @@ function renderComplete(){
     </div>
     <div class="centerRow">
       <button onclick="restartSpellingOnly()">Restart</button>
-      <button class="secondary" onclick="returnToPracticeHub()">Return to Practice Page</button>
+      <button class="secondary" onclick="returnToPracticeHub()">Return to Home</button>
     </div>
   </section>`;
 }
@@ -1540,7 +1638,7 @@ function renderPracticeHub(){
       <button onclick="hubStartMode('wordToDef')">Word → Meaning</button>
       <button onclick="hubStartMode('defToWord')">Meaning → Word</button>
       <button onclick="hubStartMode('spelling')">Spelling Practice</button>
-      <button class="secondary" onclick="openCabinet()">The Cabinet</button>
+      <button class="secondary studyHomeButton" onclick="openCabinet()">The Cabinet</button>
     </div>
   </section>`;
 }
@@ -1596,6 +1694,12 @@ function openCabinet(){
   renderCabinet();
   openLayer('cabinetModal');
 }
+function openNewLibraryFromCabinet(){
+  closeAllLayers();
+  showHome();
+  resetImportFields();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
 function libraryProgress(lib){
   const p=lib.progress;
   if(!p)return {percent:0,status:'Not yet opened.'};
@@ -1606,7 +1710,7 @@ function libraryProgress(lib){
 }
 function renderCabinet(){
   const el=document.getElementById('cabinetContent'),cabinet=getCabinet();
-  if(!cabinet.length){el.innerHTML='<div class="emptyState">The Cabinet is empty.</div>';return;}
+  if(!cabinet.length){el.innerHTML='<div class="emptyState">The Cabinet is empty.</div><button class="addLibraryLink" onclick="openNewLibraryFromCabinet()">+ Add new library</button>';return;}
   el.innerHTML=`<div class="cabinetList">${cabinet.map(lib=>{
     const p=libraryProgress(lib);
     const active=state&&state.libraryId===lib.id;
@@ -1622,7 +1726,7 @@ function renderCabinet(){
       </div>
       <div id="cabinetDetail_${lib.id}" class="cabinetDetail hidden"></div>
     </div>`;
-  }).join('')}</div>`;
+  }).join('')}</div><button class="addLibraryLink" onclick="openNewLibraryFromCabinet()">+ Add new library</button>`;
 }
 function showCabinetDetail(id){
   const lib=getCabinet().find(x=>x.id===id);if(!lib)return;
@@ -1633,7 +1737,14 @@ function showCabinetDetail(id){
 function openCabinetLibrary(id){
   const lib=getCabinet().find(x=>x.id===id);if(!lib)return;
   closeAllLayers();
-  openPracticeHub(lib.words,id);
+  if(lib.progress&&Array.isArray(lib.progress.words)&&lib.progress.words.length){
+    startLibrary(lib.progress.words,id,false,JSON.parse(JSON.stringify(lib.progress)));
+    state.screen='practiceHub';
+    state.locked=false;
+    save();render();
+  }else{
+    openPracticeHub(lib.words,id);
+  }
 }
 let pendingCabinetAction=null;
 function openCabinetAction(type,id){
@@ -1664,9 +1775,12 @@ function confirmCabinetAction(){
 
 /* ---------- Ledger / Almanac ---------- */
 function renderLedger(){
-  const learned=new Set(globalStats.learnedWords||[]).size,spelled=new Set(globalStats.spelledWords||[]).size,mistakes=globalStats.mistakes||0;
-  return `<div class="ledgerGrid"><div class="ledgerStat"><div class="value">${learned}</div><div class="name">Words Learned</div></div><div class="ledgerStat"><div class="value">${spelled}</div><div class="name">Words Spelled</div></div><div class="ledgerStat"><div class="value">${mistakes}</div><div class="name">Mistakes</div></div></div>`;
+  flushStudyTime();
+  const questions=Number(globalStats.questionCount||0);
+  const hours=(Number(globalStats.studySeconds||0)/3600).toFixed(1);
+  return `<div class="ledgerGrid"><div class="ledgerStat"><div class="value">${questions}</div><div class="name">Questions Answered</div></div><div class="ledgerStat"><div class="value">${hours}h</div><div class="name">Time in The Lexicon</div></div></div>`;
 }
+
 function renderAlmanac(){
   const daily=globalStats.daily||{},dailyWords=globalStats.dailyWords||{};
   const start=new Date('2026-09-01T00:00:00');const end=new Date('2027-09-01T00:00:00');
@@ -1732,6 +1846,8 @@ function openSettings(){openLayer('settingsDrawer');}
 function openProfileFromDrawer(){openLayer('profilePopover','settingsDrawer');}
 function openLedgerFromDrawer(){openLayer('recordPopover','settingsDrawer');}
 function openAlmanacFromDrawer(){openLayer('almanacPopover','settingsDrawer');}
+function openRankingFromDrawer(){openLayer('rankingPopover','settingsDrawer');loadDailyRanking();}
+async function loadDailyRanking(){const el=document.getElementById('rankingContent');if(!el)return;el.innerHTML='<div class="profileLoading">Loading ranking…</div>';try{const r=await fetch('/api/ranking/daily',{credentials:'include',cache:'no-store'});const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data.error||'Ranking unavailable.');if(!Array.isArray(data.ranking)||!data.ranking.length){el.innerHTML='<div class="profileNote">No spelling mastery recorded today yet.</div>';return;}el.innerHTML=`<div class="ranking">${data.ranking.map((x,i)=>`<div class="rankRow"><div class="rankNo">No. ${i+1}</div><div class="rankWord">${escapeHTML(x.displayName||x.email||'Learner')}</div><div class="rankCount">${Number(x.count||0)} mastered</div></div>`).join('')}</div>`;}catch(e){el.innerHTML=`<div class="profileNote">${escapeHTML(e.message||'Ranking is unavailable.')}</div>`;}}
 
 /* ---------- archive ---------- */
 let pendingArchiveAction=null;
@@ -1961,6 +2077,7 @@ async function loadRemoteData(){
   const data=await apiJSON('/api/data');
   lastServerUpdatedAt=data.updatedAt||null;
   lastLocalMutationAt=0;
+  hasUnsyncedLocalChanges=false;
   if(data.cabinet)localStorage.setItem(CABINET_KEY,JSON.stringify(data.cabinet));else localStorage.removeItem(CABINET_KEY);
   if(data.globalStats)localStorage.setItem(STATS_KEY,JSON.stringify(data.globalStats));else localStorage.removeItem(STATS_KEY);
   if(data.currentState)localStorage.setItem(KEY,JSON.stringify(data.currentState));else localStorage.removeItem(KEY);
@@ -1970,6 +2087,7 @@ let syncTimer=null;
 let syncInFlight=false;
 let lastServerUpdatedAt=null;
 let lastLocalMutationAt=0;
+let hasUnsyncedLocalChanges=false;
 
 async function syncAccountDataNow(){
   if(accountMode!=='account')return true;
@@ -1987,7 +2105,7 @@ async function syncAccountDataNow(){
       })
     });
     const data=await r.json().catch(()=>({}));
-    if(r.ok&&data.updatedAt){lastServerUpdatedAt=data.updatedAt;return true;}
+    if(r.ok&&data.updatedAt){lastServerUpdatedAt=data.updatedAt;hasUnsyncedLocalChanges=false;return true;}
     console.warn('Account sync failed:',data.error||r.status);
     return false;
   }catch(e){
@@ -2000,6 +2118,7 @@ async function syncAccountDataNow(){
 
 function syncAccountData(){
   if(accountMode!=='account')return;
+  hasUnsyncedLocalChanges=true;
   lastLocalMutationAt=Date.now();
   clearTimeout(syncTimer);
   syncTimer=setTimeout(()=>{syncAccountDataNow();},350);
@@ -2009,6 +2128,7 @@ function syncAccountData(){
 // device is not stuck with stale localStorage until the user logs in again.
 let remotePollTimer=setInterval(async()=>{
   if(accountMode!=='account'||!accountUser||syncInFlight||Date.now()-lastLocalMutationAt<1500)return;
+  if(hasUnsyncedLocalChanges){syncAccountDataNow();return;}
   try{
     const r=await fetch('/api/data',{credentials:'include'});
     if(!r.ok)return;
@@ -2024,63 +2144,21 @@ let remotePollTimer=setInterval(async()=>{
 },10000);
 
 /* ---------- Cabinet editing ---------- */
-let editingLibraryId=null,editingWords=[];
-function openEditLibrary(id){const lib=getCabinet().find(x=>x.id===id);if(!lib)return;editingLibraryId=id;editingWords=lib.words.map(normalizeWordRecord);document.getElementById('editLibraryIntro').textContent=`${lib.name} · ${editingWords.length} words. Add or remove words; definitions and other details are composed automatically.`;renderEditWordList();cancelAddWord();openLayer('editLibraryModal','cabinetModal');}
-function renderEditWordList(){const el=document.getElementById('editWordList');if(!editingWords.length){el.innerHTML='<div class="emptyState">No words yet.</div>';return;}el.innerHTML=editingWords.map((w,i)=>`<div class="editRow"><div class="editWord">${escapeHTML(w.word)}</div><button class="ghost" onclick="removeEditedWord(${i})">Delete</button></div>`).join('');}
-function removeEditedWord(i){if(editingWords.length<=1){showToast('A library must contain at least one word.');return;}editingWords.splice(i,1);renderEditWordList();}
-function showAddWordInput(){
-  document.getElementById('editAddButtonRow').classList.add('hidden');
-  document.getElementById('addWordPanel').classList.remove('hidden');
-  document.getElementById('addWordInputs').innerHTML='<input class="addWordInput" type="text" autocomplete="off" placeholder="word" onkeydown="if(event.key===\'Enter\')composeAddedWords()">';
-  document.getElementById('addWordStatus').textContent='';
-  setTimeout(()=>document.querySelector('#addWordInputs .addWordInput:last-child')?.focus(),40);
-}
-function continueAddingWord(){
-  const inputs=[...document.querySelectorAll('#addWordInputs .addWordInput')];
-  const last=inputs[inputs.length-1];
-  if(last&&!last.value.trim()){last.focus();return;}
-  const input=document.createElement('input');
-  input.className='addWordInput';
-  input.type='text';
-  input.autocomplete='off';
-  input.placeholder='word';
-  input.onkeydown=e=>{if(e.key==='Enter')composeAddedWords();};
-  document.getElementById('addWordInputs').appendChild(input);
-  document.getElementById('addWordStatus').textContent='';
-  setTimeout(()=>input.focus(),40);
-}
-function cancelAddWord(){
-  document.getElementById('addWordPanel').classList.add('hidden');
-  document.getElementById('editAddButtonRow').classList.remove('hidden');
-  document.getElementById('addWordStatus').textContent='';
-}
-async function composeAddedWords(){
-  const inputs=[...document.querySelectorAll('#addWordInputs .addWordInput')];
-  const status=document.getElementById('addWordStatus'),btn=document.getElementById('addWordGenerateButton');
-  const words=inputs.map(input=>(input.value||'').trim()).filter(Boolean);
-  if(!words.length){inputs[0]?.focus();return;}
-  const uniqueWords=[...new Set(words.map(w=>normalizeWordKey(w)))].map(key=>words.find(w=>normalizeWordKey(w)===key));
-  const existing=new Set(editingWords.map(w=>normalizeWordKey(w.word)));
-  const duplicates=uniqueWords.filter(w=>existing.has(normalizeWordKey(w)));
-  if(duplicates.length){status.textContent=`Already in this volume: ${duplicates.join(', ')}`;return;}
-  if(uniqueWords.length>50){status.textContent='Please add no more than 50 words at a time.';return;}
-  btn.disabled=true;status.textContent=`Composing ${uniqueWords.length} word${uniqueWords.length===1?'':'s'}…`;
-  try{
-    const r=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({words:uniqueWords})});
-    const data=await r.json().catch(()=>({}));
-    if(!r.ok)throw new Error(data.error||`Request failed (${r.status})`);
-    if(!Array.isArray(data.words)||data.words.length!==uniqueWords.length)throw new Error('The generated words did not match the words you entered.');
-    const generated=data.words.map((w,i)=>normalizeWordRecord({...w,word:uniqueWords[i]}));
-    if(generated.some(w=>!w.word||!w.definition))throw new Error('Some generated words did not contain definitions.');
-    editingWords.push(...generated);
-    renderEditWordList();
-    cancelAddWord();
-    status.textContent='';
-  }catch(e){
-    status.textContent=e.message||'Unable to compose these words.';
-  }finally{btn.disabled=false;}
-}
-function preserveEditedLibraryProgress(oldProgress,oldWords,newWords){
+let editingLibraryId=null,editingWords=[],editingSelected=new Set(),editingSelecting=false,editingLongPressTimer=null,editingPointerId=null;
+function openEditLibrary(id){const lib=getCabinet().find(x=>x.id===id);if(!lib)return;editingLibraryId=id;editingWords=lib.words.map(normalizeWordRecord);editingSelected=new Set();document.getElementById('editLibraryIntro').textContent=`${lib.name} · ${editingWords.length} words. Long-press a word, then drag across words to select several.`;renderEditWordList();openLayer('editLibraryModal','cabinetModal');}
+function renderEditWordList(){const el=document.getElementById('editWordList'),bar=document.getElementById('editSelectionBar');if(!editingWords.length){el.innerHTML='<div class="emptyState">No words yet.</div>';bar.classList.add('hidden');return;}el.classList.toggle('selecting',editingSelecting);el.innerHTML=editingWords.map((w,i)=>`<div class="editRow ${editingSelected.has(i)?'selected':''}" data-edit-index="${i}" onpointerdown="beginEditLongPress(event,${i})" onpointerenter="continueEditSelection(event,${i})" onpointerup="endEditLongPress(event)"><div class="editWord">${escapeHTML(w.word)}</div></div>`).join('');renderEditSelectionBar();}
+function renderEditSelectionBar(){const bar=document.getElementById('editSelectionBar');if(!bar)return;if(!editingSelected.size){bar.classList.add('hidden');bar.innerHTML='';return;}const options=getCabinet().filter(x=>x.id!==editingLibraryId).map(x=>`<option value="${escapeHTML(x.id)}">${escapeHTML(x.name)}</option>`).join('');bar.classList.remove('hidden');bar.innerHTML=`<span class="selectionCount">${editingSelected.size} selected</span><div class="editBatchActions"><button class="ghost" onclick="deleteSelectedEditedWords()">Delete</button>${options?`<select class="moveSelect" onchange="moveSelectedEditedWords(this.value);this.selectedIndex=0"><option value="">Move to…</option>${options}</select>`:'<span class="selectionCount">Create another Cabinet volume first to move words.</span>'}<button class="ghost" onclick="clearEditSelection()">Clear selection</button></div>`;}
+function beginEditLongPress(event,i){if(event.button!==undefined&&event.button!==0)return;editingPointerId=event.pointerId;clearTimeout(editingLongPressTimer);editingLongPressTimer=setTimeout(()=>{editingSelecting=true;editingSelected.add(i);renderEditWordList();},420);}
+function continueEditSelection(event,i){if(!editingSelecting||editingPointerId!==event.pointerId)return;editingSelected.add(i);renderEditWordList();}
+function endEditLongPress(event){if(editingPointerId!==event.pointerId)return;clearTimeout(editingLongPressTimer);editingPointerId=null;}
+function clearEditSelection(){editingSelected=new Set();editingSelecting=false;renderEditWordList();}
+function deleteSelectedEditedWords(){if(!editingSelected.size)return;if(editingSelected.size>=editingWords.length){showToast('A library must contain at least one word.');return;}editingWords=editingWords.filter((_,i)=>!editingSelected.has(i));editingSelected=new Set();editingSelecting=false;renderEditWordList();}
+function moveSelectedEditedWords(targetId){if(!targetId||!editingSelected.size)return;const cabinet=getCabinet(),target=cabinet.find(x=>x.id===targetId),source=cabinet.find(x=>x.id===editingLibraryId);if(!target||!source)return;const moved=editingWords.filter((_,i)=>editingSelected.has(i)).map(normalizeWordRecord);if(moved.length>=editingWords.length){showToast('A library must contain at least one word.');return;}const existing=new Set(target.words.map(w=>normalizeWordKey(w.word)));const unique=moved.filter(w=>!existing.has(normalizeWordKey(w.word)));if(!unique.length){showToast('Those words are already in the target volume.');return;}const targetOldWords=target.words.map(normalizeWordRecord);const targetNewWords=[...target.words,...unique].map(normalizeWordRecord);target.words=targetNewWords;target.progress=preserveEditedLibraryProgress(target.progress,targetOldWords,targetNewWords,target.id)||target.progress;target.updatedAt=new Date().toISOString();editingWords=editingWords.filter((_,i)=>!editingSelected.has(i));editingSelected=new Set();editingSelecting=false;setCabinet(cabinet);renderEditWordList();showToast(`${unique.length} word${unique.length===1?'':'s'} moved.`);}
+function openLibrarySourceForEdit(){closeAllLayers();document.getElementById('editAIWordsInput').value='';document.getElementById('editCSVInput').value='';document.getElementById('editAIStatus').textContent='';document.getElementById('editCSVStatus').textContent='';openLayer('librarySourceModal','editLibraryModal');}
+async function generateWordsIntoEditedLibrary(){const input=document.getElementById('editAIWordsInput'),btn=document.getElementById('editGenerateAIButton'),status=document.getElementById('editAIStatus');const words=[...new Set(input.value.split(/[\n,，;；]+/).map(x=>x.trim()).filter(Boolean))];if(!words.length){status.textContent='Please enter at least one English word.';return;}if(words.length>50){status.textContent='Please enter no more than 50 words at a time.';return;}const existing=new Set(editingWords.map(w=>normalizeWordKey(w.word)));const duplicates=words.filter(w=>existing.has(normalizeWordKey(w)));if(duplicates.length){status.textContent=`Already in this volume: ${duplicates.join(', ')}`;return;}btn.disabled=true;status.textContent=`Composing ${words.length} word${words.length===1?'':'s'}…`;try{const r=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({words})});const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data.error||`Request failed (${r.status})`);const generated=data.words?.map((w,i)=>normalizeWordRecord({...w,word:words[i]})).filter(w=>w.word&&w.definition)||[];if(generated.length!==words.length)throw new Error('The generated library did not contain the expected words.');await appendWordsToEditedLibrary(generated);status.textContent='Added to this volume.';input.value='';}catch(e){status.textContent=e.message||'Unable to compose these words.';}finally{btn.disabled=false;}}
+function loadCSVIntoEditedLibrary(){const status=document.getElementById('editCSVStatus'),words=parseCSV(document.getElementById('editCSVInput').value);if(!words.length){status.textContent='No valid words found.';return;}const existing=new Set(editingWords.map(w=>normalizeWordKey(w.word))),unique=words.filter(w=>!existing.has(normalizeWordKey(w.word)));if(!unique.length){status.textContent='All of these words are already in the volume.';return;}appendWordsToEditedLibrary(unique);status.textContent=`Added ${unique.length} word${unique.length===1?'':'s'} to this volume.`;document.getElementById('editCSVInput').value='';}
+async function appendWordsToEditedLibrary(words){editingWords.push(...words.map(normalizeWordRecord));const cabinet=getCabinet(),lib=cabinet.find(x=>x.id===editingLibraryId);if(lib){const oldWords=lib.words.map(normalizeWordRecord);const normalized=editingWords.map(normalizeWordRecord);lib.words=normalized;lib.progress=preserveEditedLibraryProgress(lib.progress||(state?.libraryId===editingLibraryId?state:null),oldWords,normalized)||lib.progress;lib.updatedAt=new Date().toISOString();setCabinet(cabinet);if(state?.libraryId===editingLibraryId){state.words=normalized;state=lib.progress||state;try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}}}renderEditWordList();}
+function preserveEditedLibraryProgress(oldProgress,oldWords,newWords,libraryId=editingLibraryId){
   if(!oldProgress||!Array.isArray(oldProgress.words)||!oldProgress.words.length)return null;
   const oldNormalized=oldProgress.words.map(normalizeWordRecord);
   const newNormalized=newWords.map(normalizeWordRecord);
@@ -2090,7 +2168,7 @@ function preserveEditedLibraryProgress(oldProgress,oldWords,newWords){
   const masteredIds=mapIds(oldProgress.masteredIds);
   const progress=JSON.parse(JSON.stringify(oldProgress));
   progress.words=newNormalized;
-  progress.libraryId=editingLibraryId;
+  progress.libraryId=libraryId;
   progress.reviewMode=false;
   progress.masteredIds=masteredIds;
   progress.activeIds=newNormalized.map((_,i)=>i).filter(i=>!masteredIds.includes(i));
@@ -2151,6 +2229,8 @@ async function saveEditedLibrary(){
 }
 
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeAllLayers();});
+document.addEventListener('visibilitychange',()=>{if(document.hidden)flushStudyTime();else if(state)touchStudyTime();});
+window.addEventListener('pagehide',flushStudyTime);
 renderAccountBar();
 closeAllLayers();
 if(resetToken){openResetFromToken();}
@@ -2245,7 +2325,7 @@ if(accountMode==='account'){
       ],
       idle:[
         "Keep studying. I'll be watching.",
-        "Five words, then you may feed me.",
+        "Keep going. I am watching your progress.",
         "Don't expect praise just because you studied."
       ]
     },
@@ -2267,7 +2347,7 @@ if(accountMode==='account'){
       ],
       idle:[
         "Continue your practice.",
-        "Five completed words earn one fish.",
+        "Finish the next few words. I will still be here.",
         "I am still here."
       ]
     }
