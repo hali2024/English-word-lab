@@ -457,12 +457,12 @@ body{
 
 html[data-theme="night"]{
   color-scheme:dark;
-  --paper:#171615;--paper-deep:#27231f;--ink:#e8dfd0;--muted:#b0a293;
-  --line:rgba(225,207,175,.18);--line-dark:rgba(225,207,175,.34);
-  --accent:#d69aa2;--accent-soft:#342326;--navy:#a9b4ba;
-  --good:#d69aa2;--good-bg:#342326;--bad:#c4b29b;--bad-bg:#2a2623;
-  --white:#1d1b19;--shadow:0 28px 80px rgba(0,0,0,.38);
-  --gold:#d1ad69;--gold-soft:rgba(209,173,105,.24);--page:#1a1918;--page-2:#24211f;
+  --paper:#0d0d0c;--paper-deep:#1a1814;--ink:#eee4cc;--muted:#a99d86;
+  --line:rgba(212,175,55,.24);--line-dark:rgba(212,175,55,.46);
+  --accent:#d4af37;--accent-soft:#29220d;--navy:#b7a56e;
+  --good:#d4af37;--good-bg:#29220d;--bad:#b8a36d;--bad-bg:#211d12;
+  --white:#11110f;--shadow:0 28px 80px rgba(0,0,0,.52);
+  --gold:#d4af37;--gold-soft:rgba(212,175,55,.24);--page:#0b0b0a;--page-2:#15130f;
 }
 html[data-theme="night"] body{
   background:
@@ -478,10 +478,8 @@ html[data-theme="night"] .detail,
 html[data-theme="night"] .interstitial,
 html[data-theme="night"] .modalCard,
 html[data-theme="night"] .drawerCard{
-  background:
-    linear-gradient(110deg,rgba(255,255,255,.035),rgba(255,255,255,.012)),
-    linear-gradient(145deg,#211f1c,#181716);
-  box-shadow:0 28px 80px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.04);
+  background:#15130f;
+  box-shadow:0 28px 80px rgba(0,0,0,.52);
 }
 html[data-theme="night"] .option,
 html[data-theme="night"] .drawerSection button,
@@ -497,16 +495,31 @@ html[data-theme="night"] .shelfAdmin input,
 html[data-theme="night"] .shelfAdmin textarea{
   background:rgba(7,7,6,.36);color:var(--ink);border-color:var(--line-dark)
 }
-html[data-theme="night"] .bookCover{background:linear-gradient(145deg,#5c3238,#24191b);color:#eadfce}
-html[data-theme="night"] .bookCard{background:linear-gradient(135deg,rgba(255,255,255,.03),rgba(255,255,255,.01))}
+html[data-theme="night"] .bookCover{background:#11100d;color:#d4af37;border-color:rgba(212,175,55,.66)}
+html[data-theme="night"] .bookCard{background:#12110e}
 html[data-theme="night"] .rootText,.html[data-theme="night"] .rememberBox,.html[data-theme="night"] .guestNotice,.html[data-theme="night"] .actionModalWarning{background:rgba(64,55,47,.22)}
-html[data-theme="night"] .stat,.html[data-theme="night"] .result,.html[data-theme="night"] .profileStat,.html[data-theme="night"] .ledgerStat,.html[data-theme="night"] .progressCard,.html[data-theme="night"] .practiceHomeMode{background:rgba(255,255,255,.025)}
-html[data-theme="night"] .practiceHomeMode:hover{background:rgba(255,255,255,.05)}
+html[data-theme="night"] .stat,.html[data-theme="night"] .result,.html[data-theme="night"] .profileStat,.html[data-theme="night"] .ledgerStat,.html[data-theme="night"] .progressCard,.html[data-theme="night"] .practiceHomeMode{background:#12110e}
+html[data-theme="night"] .practiceHomeMode:hover{background:#12110e;border-color:var(--line-dark)}
+html[data-theme="night"] .practiceHubActions button{background:#12110e;color:var(--ink);border-color:var(--line-dark);box-shadow:0 10px 24px rgba(0,0,0,.28)}
+html[data-theme="night"] .practiceHubActions button:hover{background:#12110e;color:var(--accent);border-color:var(--line-dark);box-shadow:0 15px 30px rgba(0,0,0,.38)}
+html[data-theme="night"] .practiceHubActions button:hover:after{width:4px;opacity:.55}
+html[data-theme="night"] .practiceHomeMode,.html[data-theme="night"] .bookCard,.html[data-theme="night"] .practiceHubActions button{background-color:#12110e}
 html[data-theme="night"] .heatCell[data-level="1"]{background:#36312c}
 html[data-theme="night"] .heatCell[data-level="2"]{background:#4b4138}
 html[data-theme="night"] .heatCell[data-level="3"]{background:#665447}
 html[data-theme="night"] .heatCell[data-level="4"]{background:#8d6d5d}
 html[data-theme="night"] .heatCell[data-level="5"]{background:#b97680}
+html[data-theme="night"] .top h1,
+html[data-theme="night"] .panel h2,
+html[data-theme="night"] .interstitial h2,
+html[data-theme="night"] .modalTitle,
+html[data-theme="night"] .drawerTitle,
+html[data-theme="night"] .word,
+html[data-theme="night"] .practiceHomeMode .practiceHomeName,
+html[data-theme="night"] .practiceHubActions .practiceName,
+html[data-theme="night"] .progressHero h3{color:var(--accent)}
+html[data-theme="night"] .practiceHomeMode:hover,
+html[data-theme="night"] .practiceHubActions button:hover{background-color:#12110e}
 
 </style>
 </head>
@@ -1914,11 +1927,11 @@ function renderQuestionScreen(){
     prompt=`<div class="wordRow"><div>${w.partOfSpeech?`<div class="partOfSpeech">${escapeHTML(w.partOfSpeech)}</div>`:''}<div class="definition" style="font-size:19px">${escapeHTML(w.definition)}</div></div></div>`;
   }else if(isListening){
     speak(w.word);
-    prompt=`<div class="dictBox"><button type="button" class="speaker" title="Play pronunciation" onclick="speak('${safeJSString(w.word)}')"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round"><path d="M4 9v6h4l5 4V5L8 9H4"></path><path d="M16 9.5c1 .8 1.5 1.6 1.5 2.5s-.5 1.7-1.5 2.5"></path><path d="M18.5 7c1.7 1.4 2.5 3 2.5 5s-.8 3.6-2.5 5"></path></svg></button><div class="spellingHint">Listen carefully, then choose the word you hear.</div></div>`;
+    prompt=`<div class="dictBox"><button type="button" class="speaker" title="Play pronunciation" onclick="speak('${safeJSString(w.word)}')"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round"><path d="M4 9v6h4l5 4V5L8 9H4"></path><path d="M16 9.5c1 .8 1.5 1.6 1.5 2.5s-.5 1.7-1.5 2.5"></path><path d="M18.5 7c1.7 1.4 2.5 3 2.5 5s-.8 3.6-2.5 5"></path></svg></button></div>`;
   }else if(isSynonym||isAntonym){
-    prompt=`<div class="wordRow"><div class="word">${escapeHTML(w.word)}</div>${speakerBtn(w.word)}</div><div class="hint" style="margin:-2px 0 14px">${isSynonym?'Choose the closest synonym.':'Choose the closest antonym.'}</div>`;
+    prompt=`<div class="wordRow"><div class="word">${escapeHTML(w.word)}</div>${speakerBtn(w.word)}</div>`;
   }else if(isFillBlank){
-    prompt=`<div class="wordRow"><div class="definition" style="font-size:21px;line-height:1.65">${escapeHTML(getBlankSentence(w))}</div></div><div class="hint" style="margin:-2px 0 14px">Choose the word that best completes the sentence.</div>`;
+    prompt=`<div class="wordRow"><div class="definition" style="font-size:21px;line-height:1.65">${escapeHTML(getBlankSentence(w))}</div></div>`;
   }else{
     speak(w.word);
     prompt=`<div class="wordRow"><div class="word">${escapeHTML(w.word)}</div>${speakerBtn(w.word)}</div>`;
@@ -3000,23 +3013,19 @@ function showStudyView(){
 }
 function renderPracticeLanding(){
   const cards=[
-    ['01',t('modeWordToDef'),t('descWordToDef')],
-    ['02',t('modeDefToWord'),t('descDefToWord')],
-    ['03',t('modeListening'),t('descListening')],
-    ['04',t('modeSynonym'),t('descSynonym')],
-    ['05',t('modeAntonym'),t('descAntonym')],
-    ['06',t('modeFillBlank'),t('descFillBlank')],
-    ['07',t('modeSpelling'),t('descSpelling')]
+    ['01',t('modeWordToDef')],
+    ['02',t('modeDefToWord')],
+    ['03',t('modeListening')],
+    ['04',t('modeSynonym')],
+    ['05',t('modeAntonym')],
+    ['06',t('modeFillBlank')],
+    ['07',t('modeSpelling')]
   ];
   const hasCabinet=getCabinet().length>0;
   const el=document.getElementById('practiceHomeLanding');
   if(!el)return;
   el.innerHTML=`<section class="practiceHomeLandingInner">
-    <div class="practiceTitle">${escapeHTML(t('appTitle'))}</div>
-    <div class="landingRule"></div>
-    <p class="practiceSub">${hasCabinet?'Choose a volume in The Cabinet, then enter one of the practices below.':'Your practice desk is ready. Open The Cabinet to choose a saved volume, or use The Word Studio to compose a new one.'}</p>
-    <div class="practiceHomeModes">${cards.map(([index,title,desc])=>`<button type="button" class="practiceHomeMode" onclick="openCabinet()"><span class="practiceHomeIndex">${index}</span><span><span class="practiceHomeName">${escapeHTML(title)}</span><span class="practiceHomeDesc">${escapeHTML(desc)}</span></span></button>`).join('')}</div>
-    <p class="practiceHomeHint">${hasCabinet?'The seven practice forms are gathered here as your home desk; a selected volume determines which modes are currently available.':'No volume is selected yet. The practice forms are shown here so this page remains the true home page.'}</p>
+    <div class="practiceHomeModes">${cards.map(([index,title])=>`<button type="button" class="practiceHomeMode" onclick="openCabinet()"><span class="practiceHomeIndex">${index}</span><span class="practiceHomeName">${escapeHTML(title)}</span></button>`).join('')}</div>
     <div class="centerRow"><button onclick="openCabinet()">${t('cabinetBtn')}</button><button class="secondary" onclick="openWordStudio()">The Word Studio</button></div>
   </section>`;
 }
