@@ -515,6 +515,18 @@ become"></textarea>
     </div>
   </div>
 
+  <!-- Enter practice -->
+  <div id="startPracticeModal" class="modalLayer hidden" aria-hidden="true" onclick="closeLayer(event,'startPracticeModal')">
+    <div class="modalCard" onclick="event.stopPropagation()">
+      <h2 class="modalTitle">Enter Practice?</h2>
+      <p class="modalIntro">Your word library is ready. Would you like to begin practicing it now?</p>
+      <div class="modalActions">
+        <button class="choiceButton" onclick="choosePracticeNow(true)">Enter Practice</button>
+        <button class="choiceButton no" onclick="choosePracticeNow(false)">Not Now</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Cabinet -->
   <div id="cabinetModal" class="modalLayer hidden" aria-hidden="true" onclick="closeLayer(event,'cabinetModal')">
     <div class="modalCard" onclick="event.stopPropagation()">
@@ -760,9 +772,10 @@ function setCabinet(list){
   if(typeof syncAccountData==='function')syncAccountData();
 }
 
-function freshState(words,libraryId=null,reviewMode=false){
+function freshState(words,libraryId=null,reviewMode=false,mode='wordToDef'){
   return {
     words,
+    mode,
     phase:'recognition',
     screen:'question',
     activeIds:words.map((_,i)=>i),
@@ -1094,10 +1107,25 @@ function chooseSaveLibrary(shouldSave){
     openLayer('nameLibraryModal');
     setTimeout(()=>document.getElementById('libraryNameInput').focus(),40);
   }else{
-    startLibrary(pendingLibraryWords,null,false);
+    promptEnterPractice(pendingLibraryWords,null);
     pendingLibraryWords=null;
     pendingLibrarySource='';
   }
+}
+
+let pendingPracticeWords=null,pendingPracticeLibraryId=null;
+function promptEnterPractice(words,libraryId){
+  pendingPracticeWords=words;
+  pendingPracticeLibraryId=libraryId;
+  openLayer('startPracticeModal');
+}
+function choosePracticeNow(enter){
+  closeAllLayers();
+  const words=pendingPracticeWords,libraryId=pendingPracticeLibraryId;
+  pendingPracticeWords=null;pendingPracticeLibraryId=null;
+  if(!words)return;
+  if(enter)openPracticeHub(words,libraryId);
+  else showHome();
 }
 
 function confirmLibraryName(){
@@ -1116,7 +1144,7 @@ function confirmLibraryName(){
   cabinet.push(library);
   setCabinet(cabinet);
   closeAllLayers();
-  startLibrary(library.words,library.id,false);
+  promptEnterPractice(library.words,library.id);
   pendingLibraryWords=null;
   pendingLibrarySource='';
 }
@@ -1256,9 +1284,24 @@ function buildDefinitionOptions(id){
   const candidates=shuffle(uniq([...pool,...fallbackDefinitions.filter(d=>d!==correct.definition)]));
   return shuffle([{text:correct.definition,isCorrect:true},...candidates.slice(0,3).map(text=>({text,isCorrect:false}))]);
 }
+function buildWordOptions(id){
+  const correct=state.words[id];
+  const pool=state.words.map((w,i)=>({w,i}))
+    .filter(o=>o.i!==id&&o.w.word&&normalizeWordKey(o.w.word)!==normalizeWordKey(correct.word))
+    .map(o=>o.w.word);
+  const candidates=shuffle(uniq(pool));
+  const chosen=candidates.slice(0,3);
+  // If the library is too small to have 3 distinct distractor words,
+  // pad with lightly-altered variants so the question still has 4 options.
+  while(chosen.length<3){
+    chosen.push(correct.word+String.fromCharCode(97+chosen.length));
+  }
+  return shuffle([{text:correct.word,isCorrect:true},...chosen.map(text=>({text,isCorrect:false}))]);
+}
 function loadRecognitionQuestion(){
   const id=state.roundQueue[state.roundPos];
-  state.current={id,options:buildDefinitionOptions(id),answered:false,selected:null,correct:null};
+  const options=state.mode==='defToWord'?buildWordOptions(id):buildDefinitionOptions(id);
+  state.current={id,options,answered:false,selected:null,correct:null};
   state.locked=false;state.screen='question';
 }
 function renderQuestionScreen(){
@@ -1266,11 +1309,15 @@ function renderQuestionScreen(){
   recordWordEncounter(state.current.id);
   const roundNote=state.roundNumber>1?`<small>Round ${state.roundNumber} · Reviewing ${state.roundQueue.length} words</small>`:`<small>${state.words.length} words total</small>`;
   const optsHtml=state.current.options.map((o,i)=>`<button type="button" class="option" onclick="selectAnswer(${i})">${String.fromCharCode(65+i)}. ${escapeHTML(o.text)}</button>`).join('');
-  setTimeout(()=>speak(w.word),150);
+  const isDefToWord=state.mode==='defToWord';
+  if(!isDefToWord)setTimeout(()=>speak(w.word),150);
+  const prompt=isDefToWord
+    ? `<div class="wordRow"><div>${w.partOfSpeech?`<div class="partOfSpeech">${escapeHTML(w.partOfSpeech)}</div>`:''}<div class="definition" style="font-size:19px">${escapeHTML(w.definition)}</div></div></div>`
+    : `<div class="wordRow"><div class="word">${escapeHTML(w.word)}</div>${speakerBtn(w.word)}</div>`;
   return `<section class="quiz">
-    <div class="mode">Recognition ${roundNote}</div>
+    <div class="mode">${isDefToWord?'Meaning → Word':'Word → Meaning'} ${roundNote}</div>
     <div class="progress"><div class="bar" style="width:${state.roundQueue.length?state.roundPos/state.roundQueue.length*100:0}%"></div></div>
-    <div class="wordRow"><div class="word">${escapeHTML(w.word)}</div>${speakerBtn(w.word)}</div>
+    ${prompt}
     <div class="options">${optsHtml}</div>
   </section>`;
 }
@@ -1297,7 +1344,7 @@ function renderDetailScreen(){
   const examples=w.examples&&w.examples.length?w.examples:(w.example?[w.example]:[]);
   return `<section class="detail">
     ${banner}
-    <div class="wordRow">${speakerBtn(w.word)}<div><div class="word" style="font-size:31px">${escapeHTML(w.word)}</div>${w.phonetic||w.cefr?`<div class="wordMeta">${w.phonetic?`<span class="phonetic">${escapeHTML(w.phonetic)}</span>`:''}${w.cefr?`<span class="cefr">${escapeHTML(w.cefr)}</span>`:''}</div>`:''}</div></div>
+    <div class="wordRow">${speakerBtn(w.word)}<div><div class="word" style="font-size:31px">${escapeHTML(w.word)}</div><div class="wordMeta"><span class="phonetic">${w.phonetic?escapeHTML(w.phonetic):'No phonetic transcription available.'}</span>${w.cefr?`<span class="cefr">${escapeHTML(w.cefr)}</span>`:''}</div></div></div>
     ${renderFamiliarity(w.word)}
     <div class="block"><h3>Definition</h3>${w.partOfSpeech?`<div class="partOfSpeech">${escapeHTML(w.partOfSpeech)}</div>`:''}<div class="definition">${escapeHTML(w.definition)}</div></div>
     ${examples.length?`<div class="block"><h3>Examples</h3><div class="examples">${examples.slice(0,3).map(x=>`<div class="example">${escapeHTML(x)}</div>`).join('')}</div></div>`:''}
@@ -1324,20 +1371,28 @@ function renderRoundTransition(){
 }
 function advanceRound(){state.roundNumber++;beginRecognitionRound();loadRecognitionQuestion();save();render();}
 function renderPhaseTransition(){
+  const isDefToWord=state.mode==='defToWord';
   return `<section class="interstitial">
-    <h2>Recognition Complete</h2>
+    <h2>${isDefToWord?'Meaning → Word':'Word → Meaning'} Complete</h2>
     <p>Every word has been remembered in the latest round.</p>
-    <div class="centerRow"><button onclick="restartRecognitionOnly()">Restart Recognition</button><button class="secondary" onclick="exitToHome()">Exit to Home</button><button onclick="startDictationPhase()">Begin Spelling Test</button></div>
+    <div class="centerRow"><button onclick="restartRecognitionOnly()">Restart</button><button class="secondary" onclick="returnToPracticeHub()">Return to Practice Page</button></div>
   </section>`;
 }
 function restartRecognitionOnly(){
-  const words=state.words,libraryId=state.libraryId,reviewMode=state.reviewMode;
-  state=freshState(words,libraryId,reviewMode);beginRecognitionRound();loadRecognitionQuestion();save();render();
+  const words=state.words,libraryId=state.libraryId,reviewMode=state.reviewMode,mode=state.mode;
+  state=freshState(words,libraryId,reviewMode,mode);beginRecognitionRound();loadRecognitionQuestion();save();render();
 }
 function exitToHome(){
   localStorage.removeItem(KEY);
   state=null;
   showHome();
+}
+function returnToPracticeHub(){
+  if(!state){showHome();return;}
+  const words=state.words,libraryId=state.libraryId;
+  state=freshState(words,libraryId,false,'wordToDef');
+  state.screen='practiceHub';
+  save();render();
 }
 
 /* ---------- dictation ---------- */
@@ -1362,43 +1417,9 @@ function renderDictQuestionScreen(){
     </div>
   </section>`;
 }
-async function toggleSpellingHint(){
+function toggleSpellingHint(){
   const el=document.getElementById('spellingHint');
-  if(!el||!state||!state.current||!state.words?.[state.current.id])return;
-  const w=state.words[state.current.id];
-
-  // If the word already has IPA/phonetic data, just reveal it.
-  if(w.phonetic||w.ipa){
-    el.textContent=w.phonetic||w.ipa;
-    el.classList.toggle('hidden');
-    return;
-  }
-
-  // Otherwise fetch IPA automatically instead of showing
-  // “No phonetic transcription available.”
-  if(!el.classList.contains('hidden')){
-    el.classList.add('hidden');
-    return;
-  }
-  el.textContent='Loading phonetic transcription…';
-  el.classList.remove('hidden');
-
-  try{
-    const word=String(w.word||'').trim();
-    const response=await fetch('https://api.dictionaryapi.dev/api/v2/entries/en/'+encodeURIComponent(word));
-    if(!response.ok)throw new Error('IPA lookup failed');
-    const data=await response.json();
-    const phonetic=(data?.[0]?.phonetic||data?.[0]?.phonetics?.map(p=>p?.text).find(Boolean)||'').trim();
-    if(!phonetic)throw new Error('No IPA returned');
-
-    // Store it on the current word so the hint works immediately
-    // and remains available on later screens in this session.
-    w.phonetic=phonetic;
-    el.textContent=phonetic;
-    save();
-  }catch(error){
-    el.textContent='Phonetic transcription unavailable for this word.';
-  }
+  if(el)el.classList.toggle('hidden');
 }
 let dictCompositionActive=false;
 let dictCompositionStartValue='';
@@ -1453,7 +1474,7 @@ function renderDictFeedbackScreen(){
   const w=state.words[state.current.id],correct=state.current.correct;
   const banner=correct?`<div class="banner good">Well spelled.</div>`:`<div class="banner bad">Not yet. The word returns to the end of the queue.</div>`;
   return `<section class="detail">${banner}
-    <div class="wordRow">${speakerBtn(w.word)}<div><div class="word" style="font-size:30px">${escapeHTML(w.word)}</div>${w.phonetic||w.cefr?`<div class="wordMeta">${w.phonetic?`<span class="phonetic">${escapeHTML(w.phonetic)}</span>`:''}${w.cefr?`<span class="cefr">${escapeHTML(w.cefr)}</span>`:''}</div>`:''}</div></div>
+    <div class="wordRow">${speakerBtn(w.word)}<div><div class="word" style="font-size:30px">${escapeHTML(w.word)}</div><div class="wordMeta"><span class="phonetic">${w.phonetic?escapeHTML(w.phonetic):'No phonetic transcription available.'}</span>${w.cefr?`<span class="cefr">${escapeHTML(w.cefr)}</span>`:''}</div></div></div>
     ${renderFamiliarity(w.word)}
     <div class="block"><h3>Your Spelling</h3><div class="definition" style="color:${correct?'var(--good)':'var(--bad)'}">${escapeHTML(state.current.inputVal)}</div></div>
     <div class="block"><h3>Definition</h3>${w.partOfSpeech?`<div class="partOfSpeech">${escapeHTML(w.partOfSpeech)}</div>`:''}<div class="definition">${escapeHTML(w.definition)}</div></div>
@@ -1476,32 +1497,66 @@ function renderFamiliarity(word){
 
 /* ---------- complete ---------- */
 function renderComplete(){
-  const rec=state.stats.recAttempts?Math.round(state.stats.recCorrect/state.stats.recAttempts*100):0;
   const dict=state.stats.dictAttempts?Math.round(state.stats.dictCorrect/state.stats.dictAttempts*100):0;
   return `<section class="interstitial">
-    <h2>Complete</h2>
-    <p>You have finished this study of ${state.words.length} words.</p>
+    <h2>Spelling Complete</h2>
+    <p>You have finished spelling practice for ${state.words.length} words.</p>
     <div class="results">
-      <div class="result"><div class="value">${rec}%</div><div class="name">Recognition</div><div class="note">${state.roundNumber} round${state.roundNumber===1?'':'s'}</div></div>
       <div class="result"><div class="value">${dict}%</div><div class="name">Spelling</div><div class="note">${state.stats.dictAttempts} attempts</div></div>
     </div>
     <div class="centerRow">
-      <button onclick="restartSameLibrary()">Restart Recognition & Spelling</button>
-      <button class="secondary" onclick="restartSpellingOnly()">Restart Spelling</button>
-      <button class="secondary" onclick="importNewLibrary()">Import New Library</button>
+      <button onclick="restartSpellingOnly()">Restart</button>
+      <button class="secondary" onclick="returnToPracticeHub()">Return to Practice Page</button>
     </div>
   </section>`;
 }
 function restartSameLibrary(){
-  const words=state.words,libraryId=state.libraryId,reviewMode=state.reviewMode;
-  state=freshState(words,libraryId,reviewMode);beginRecognitionRound();loadRecognitionQuestion();save();render();
+  const words=state.words,libraryId=state.libraryId,reviewMode=state.reviewMode,mode=state.mode;
+  state=freshState(words,libraryId,reviewMode,mode);beginRecognitionRound();loadRecognitionQuestion();save();render();
 }
 function restartSpellingOnly(){
   state.phase='dictation';
+  state.mode='spelling';
   state.dictQueue=shuffle(state.words.map((_,i)=>i));
   loadDictQuestion();
   save();
   render();
+}
+
+/* ---------- practice hub ---------- */
+function openPracticeHub(words,libraryId=null){
+  state=freshState(words.map(normalizeWordRecord),libraryId,false,'wordToDef');
+  state.screen='practiceHub';
+  showStudyView();
+  save();render();
+}
+function renderPracticeHub(){
+  const lib=state.libraryId?getCabinet().find(x=>x.id===state.libraryId):null;
+  const name=lib?lib.name:'This Session';
+  return `<section class="interstitial">
+    <h2>${escapeHTML(name)}</h2>
+    <p>${state.words.length} word${state.words.length===1?'':'s'} in this library. Choose how you would like to practice.</p>
+    <div class="centerRow" style="flex-direction:column;align-items:stretch;max-width:360px;margin:0 auto">
+      <button onclick="hubStartMode('wordToDef')">Word → Meaning</button>
+      <button onclick="hubStartMode('defToWord')">Meaning → Word</button>
+      <button onclick="hubStartMode('spelling')">Spelling Practice</button>
+      <button class="secondary" onclick="openCabinet()">The Cabinet</button>
+    </div>
+  </section>`;
+}
+function hubStartMode(mode){
+  if(mode==='spelling'){
+    state.phase='dictation';
+    state.mode='spelling';
+    state.dictQueue=shuffle(state.words.map((_,i)=>i));
+    loadDictQuestion();
+  }else{
+    state.phase='recognition';
+    state.mode=mode;
+    beginRecognitionRound();
+    loadRecognitionQuestion();
+  }
+  save();render();
 }
 
 /* ---------- daily review ---------- */
@@ -1554,10 +1609,11 @@ function renderCabinet(){
   if(!cabinet.length){el.innerHTML='<div class="emptyState">The Cabinet is empty.</div>';return;}
   el.innerHTML=`<div class="cabinetList">${cabinet.map(lib=>{
     const p=libraryProgress(lib);
+    const active=state&&state.libraryId===lib.id;
     return `<div class="cabinetItem">
-      <div class="cabinetHead"><div><div class="cabinetName">${escapeHTML(lib.name)}</div><div class="cabinetMeta">${lib.words.length} words · ${p.percent}% · ${escapeHTML(p.status)}</div></div></div>
+      <div class="cabinetHead"><div><div class="cabinetName">${escapeHTML(lib.name)}${active?' <span class="cefr">In Study</span>':''}</div><div class="cabinetMeta">${lib.words.length} words · ${p.percent}% · ${escapeHTML(p.status)}</div></div></div>
       <div class="cabinetActions">
-        <button onclick="openCabinetLibrary('${lib.id}')">Open</button>
+        <button onclick="openCabinetLibrary('${lib.id}')">Study</button>
         <button class="secondary" onclick="showCabinetDetail('${lib.id}')">View</button>
         <button class="secondary" onclick="openEditLibrary(\'${lib.id}\')">Edit</button>
          <button class="secondary" onclick="renameLibrary(\'${lib.id}\')">Rename</button>
@@ -1577,8 +1633,7 @@ function showCabinetDetail(id){
 function openCabinetLibrary(id){
   const lib=getCabinet().find(x=>x.id===id);if(!lib)return;
   closeAllLayers();
-  if(lib.progress&&lib.progress.words?.length)startLibrary(lib.words,id,false,lib.progress);
-  else startLibrary(lib.words,id,false,null);
+  openPracticeHub(lib.words,id);
 }
 let pendingCabinetAction=null;
 function openCabinetAction(type,id){
@@ -1688,7 +1743,7 @@ function restoreArchive(event){const file=event.target.files?.[0];if(!file)retur
 /* ---------- toast / stats / dispatcher ---------- */
 function showToast(message){const el=document.getElementById('toast');el.textContent=message;el.classList.remove('hidden');clearTimeout(showToast.timer);showToast.timer=setTimeout(()=>el.classList.add('hidden'),2200);}
 function renderStats(){const total=state.words.length;let v2=0,l2='Mastered',v3='0%',l3='Accuracy';if(state.phase==='recognition'){v2=state.masteredIds.length;v3=state.stats.recAttempts?Math.round(state.stats.recCorrect/state.stats.recAttempts*100)+'%':'0%';}else if(state.phase==='dictation'){l2='Completed';v2=total-uniq(state.dictQueue).length;v3=state.stats.dictAttempts?Math.round(state.stats.dictCorrect/state.stats.dictAttempts*100)+'%':'0%';}else{v2=total;v3='100%';}return `<div class="stat"><div class="num">${total}</div><div class="label">Total Words</div></div><div class="stat"><div class="num">${v2}</div><div class="label">${l2}</div></div><div class="stat"><div class="num">${v3}</div><div class="label">${l3}</div></div>`;}
-function render(){if(!state){renderReviewBanner();return;}document.getElementById('statsRow').innerHTML=renderStats();const stage=document.getElementById('stage');switch(state.screen){case 'question':stage.innerHTML=renderQuestionScreen();break;case 'detail':stage.innerHTML=renderDetailScreen();break;case 'roundTransition':stage.innerHTML=renderRoundTransition();break;case 'phaseTransition':stage.innerHTML=renderPhaseTransition();break;case 'dictQuestion':stage.innerHTML=renderDictQuestionScreen();focusDictInput();break;case 'dictFeedback':stage.innerHTML=renderDictFeedbackScreen();break;case 'complete':stage.innerHTML=renderComplete();break;default:stage.innerHTML='';}}
+function render(){if(!state){renderReviewBanner();return;}document.getElementById('statsRow').innerHTML=renderStats();const stage=document.getElementById('stage');switch(state.screen){case 'practiceHub':stage.innerHTML=renderPracticeHub();break;case 'question':stage.innerHTML=renderQuestionScreen();break;case 'detail':stage.innerHTML=renderDetailScreen();break;case 'roundTransition':stage.innerHTML=renderRoundTransition();break;case 'phaseTransition':stage.innerHTML=renderPhaseTransition();break;case 'dictQuestion':stage.innerHTML=renderDictQuestionScreen();focusDictInput();break;case 'dictFeedback':stage.innerHTML=renderDictFeedbackScreen();break;case 'complete':stage.innerHTML=renderComplete();break;default:stage.innerHTML='';}}
 
 /* ---------- account / authentication ---------- */
 const ACCOUNT_KEY='theLexicon_accountMode_v2';
