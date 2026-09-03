@@ -1990,6 +1990,59 @@ app.post(
 // DeepSeek
 // ============================================================
 
+// ============================================================
+// Phonetic fallback (free dictionary API)
+// ============================================================
+
+async function fetchPhoneticFallback(word) {
+  const clean = String(word || '').trim();
+
+  if (!clean) {
+    return '';
+  }
+
+  try {
+    const response = await fetch(
+      `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(clean.toLowerCase())}`
+    );
+
+    if (!response.ok) {
+      return '';
+    }
+
+    const data = await response.json();
+    const entry = Array.isArray(data) ? data[0] : null;
+
+    if (!entry) {
+      return '';
+    }
+
+    const direct =
+      typeof entry.phonetic === 'string'
+        ? entry.phonetic.trim()
+        : '';
+
+    if (direct) {
+      return direct;
+    }
+
+    const fromList = Array.isArray(entry.phonetics)
+      ? entry.phonetics.find(
+          p => typeof p?.text === 'string' && p.text.trim()
+        )
+      : null;
+
+    return fromList ? fromList.text.trim() : '';
+  } catch (error) {
+    console.warn(
+      `Phonetic fallback lookup failed for "${clean}":`,
+      error.message
+    );
+
+    return '';
+  }
+}
+
 async function deepseek(
   words,
   one = false
@@ -2039,7 +2092,7 @@ Return valid JSON only in this exact structure:
 
 Preserve the input word exactly.
 Return the most appropriate standard part of speech for the word.
-Return a concise IPA pronunciation in /slashes/.
+The "phonetic" field is REQUIRED and must never be left blank: always return a concise IPA pronunciation in /slashes/, even for uncommon or compound words — give your best accurate transcription rather than omitting it.
 Return one CEFR level only: A1, A2, B1, B2, C1, or C2.
 Do not include explanations outside the JSON.
 
@@ -2082,6 +2135,8 @@ Return exactly one entry per input word.
 Preserve spelling exactly.
 
 Never split a word.
+
+The "phonetic" field is REQUIRED for every single entry and must never be left blank: always return a concise IPA pronunciation in /slashes/, even for uncommon or compound words — give your best accurate transcription rather than omitting it.
 
 Provide exactly three natural useful example sentences.
 
@@ -2282,6 +2337,18 @@ Do not add extra fields.
       })
     );
 
+  // The model occasionally leaves "phonetic" blank even when asked for it.
+  // Before validating, try to backfill any missing transcription from a
+  // free public dictionary so the in-app spelling "Hint" always has
+  // something to show instead of silently staying empty.
+  await Promise.all(
+    result.words.map(async item => {
+      if (item.phonetic) return;
+      const fallback = await fetchPhoneticFallback(item.word);
+      if (fallback) item.phonetic = fallback;
+    })
+  );
+
   for (
     const item of result.words
   ) {
@@ -2299,7 +2366,7 @@ Do not add extra fields.
 
     if (!item.phonetic) {
       console.warn(
-        `DeepSeek did not return a phonetic transcription for "${item.word}"`
+        `DeepSeek did not return a phonetic transcription for "${item.word}", and the dictionary fallback lookup also failed`
       );
     }
 
