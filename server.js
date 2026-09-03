@@ -1018,6 +1018,910 @@ app.post(
     }
   }
 );
+    const oldDailyMastery =
+      oldData.dailySpellingMastery &&
+      typeof oldData.dailySpellingMastery === 'object'
+        ? oldData.dailySpellingMastery
+        : {};
+
+    const newDailyMastery =
+      newData.dailySpellingMastery &&
+      typeof newData.dailySpellingMastery === 'object'
+        ? newData.dailySpellingMastery
+        : {};
+
+    const today =
+      new Date()
+        .toISOString()
+        .slice(0, 10);
+
+    const oldMastery =
+      Number(
+        oldDailyMastery[today] || 0
+      );
+
+    const newMastery =
+      Number(
+        newDailyMastery[today] || 0
+      );
+
+    const masteryDelta =
+      Math.max(
+        0,
+        newMastery - oldMastery
+      );
+
+    for (
+      let i = 0;
+      i < masteryDelta;
+      i += 1
+    ) {
+      await client.query(
+        `
+        INSERT INTO study_events(
+          user_id,
+          event_type,
+          word,
+          created_at
+        )
+        VALUES(
+          $1,
+          'spelling_mastery',
+          NULL,
+          NOW()
+        )
+        `,
+        [userId]
+      );
+    }
+  }
+
+
+// ============================================================
+// USER DATA — SAVE
+// ============================================================
+
+app.put(
+  '/api/data',
+  async (req, res) => {
+    if (!requireDB(res)) {
+      return;
+    }
+
+    if (!req.session.userId) {
+      return res.status(401).json({
+        error:
+          'Not logged in.'
+      });
+    }
+
+    const client =
+      await pool.connect();
+
+    try {
+      const cabinet =
+        Array.isArray(
+          req.body.cabinet
+        )
+          ? req.body.cabinet
+          : [];
+
+      const globalStats =
+        req.body.globalStats &&
+        typeof req.body.globalStats ===
+          'object'
+          ? req.body.globalStats
+          : {};
+
+      const currentState =
+        req.body.currentState ??
+        null;
+
+      await client.query(
+        'BEGIN'
+      );
+
+      const previous =
+        await client.query(
+          `
+          SELECT global_stats
+          FROM user_data
+          WHERE user_id=$1
+          FOR UPDATE
+          `,
+          [req.session.userId]
+        );
+
+      await recordStudyEvents(
+        client,
+        req.session.userId,
+        previous.rows[0]?.global_stats || {},
+        globalStats,
+        previous.rowCount > 0
+      );
+
+      await client.query(
+        `
+        INSERT INTO user_data(
+          user_id,
+          cabinet,
+          global_stats,
+          current_state,
+          updated_at
+        )
+        VALUES(
+          $1,
+          $2::jsonb,
+          $3::jsonb,
+          $4::jsonb,
+          NOW()
+        )
+
+        ON CONFLICT(user_id)
+
+        DO UPDATE SET
+          cabinet=
+            EXCLUDED.cabinet,
+
+          global_stats=
+            EXCLUDED.global_stats,
+
+          current_state=
+            EXCLUDED.current_state,
+
+          updated_at=
+            NOW()
+        `,
+        [
+          req.session.userId,
+
+          JSON.stringify(
+            cabinet
+          ),
+
+          JSON.stringify(
+            globalStats
+          ),
+
+          JSON.stringify(
+            currentState
+          )
+        ]
+      );
+
+      const saved =
+        await client.query(
+          `
+          SELECT updated_at
+          FROM user_data
+          WHERE user_id=$1
+          `,
+          [req.session.userId]
+        );
+
+      await client.query(
+        'COMMIT'
+      );
+
+      res.json({
+        ok: true,
+
+        updatedAt:
+          saved.rows[0]
+            ?.updated_at ||
+          null
+      });
+    } catch (error) {
+      try {
+        await client.query(
+          'ROLLBACK'
+        );
+      } catch (_) {}
+
+      console.error(error);
+
+      res.status(500).json({
+        error:
+          'Unable to save user data.'
+      });
+    } finally {
+      client.release();
+    }
+  }
+);
+
+
+// ============================================================
+// FEEDBACK
+// ============================================================
+
+app.post(
+  '/api/feedback',
+  async (req, res) => {
+    try {
+      const message =
+        String(
+          req.body?.message || ''
+        ).trim();
+
+      if (!message) {
+        return res.status(400).json({
+          error:
+            'Please enter your feedback.'
+        });
+      }
+
+      if (message.length > 5000) {
+        return res.status(400).json({
+          error:
+            'Feedback is too long.'
+        });
+      }
+
+      const recipient =
+        process.env.FEEDBACK_TO ||
+        'feedback@lexiconoftheworld.win';
+
+      await sendMail(
+        recipient,
+
+        'The Lexicon Feedback',
+
+        message,
+
+        `<div style=\"font-family:Arial,sans-serif;white-space:pre-wrap\">${message.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>`
+      );
+
+      res.json({
+        ok: true
+      });
+    } catch (error) {
+      console.error(
+        'Feedback email error:',
+        error
+      );
+
+      res.status(500).json({
+        error:
+          'Unable to send feedback right now. Please try again later.'
+      });
+    }
+  }
+);
+
+
+// ============================================================
+// DeepSeek
+// ============================================================
+
+
+// ============================================================
+// Phonetic fallback (free dictionary API)
+// ============================================================
+
+async function fetchPhoneticFallback(
+  word
+) {
+  const clean =
+    String(word || '')
+      .trim();
+
+  if (!clean) {
+    return '';
+  }
+
+  try {
+    const response =
+      await fetch(
+        `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(clean.toLowerCase())}`
+      );
+
+    if (!response.ok) {
+      return '';
+    }
+
+    const data =
+      await response.json();
+
+    const entry =
+      Array.isArray(data)
+        ? data[0]
+        : null;
+
+    if (!entry) {
+      return '';
+    }
+
+    const direct =
+      typeof entry.phonetic ===
+        'string'
+        ? entry.phonetic.trim()
+        : '';
+
+    if (direct) {
+      return direct;
+    }
+
+    const fromList =
+      Array.isArray(
+        entry.phonetics
+      )
+        ? entry.phonetics.find(
+            p =>
+              typeof p?.text ===
+                'string' &&
+              p.text.trim()
+          )
+        : null;
+
+    return fromList
+      ? fromList.text.trim()
+      : '';
+  } catch (error) {
+    console.warn(
+      `Phonetic fallback lookup failed for "${clean}":`,
+      error.message
+    );
+
+    return '';
+  }
+}
+
+
+async function deepseek(
+  words,
+  one = false
+) {
+  if (
+    !process.env.DEEPSEEK_API_KEY
+  ) {
+    throw new Error(
+      'DeepSeek API key is not configured'
+    );
+  }
+
+  const list =
+    words
+      .map(String)
+      .map(
+        x => x.trim()
+      )
+      .filter(Boolean);
+
+  const system =
+    one
+      ? `
+You are an English vocabulary learning assistant.
+
+The user provides exactly ONE English vocabulary word.
+
+Return valid JSON only in this exact structure:
+
+{
+  "words": [
+    {
+      "word": "exact input word",
+      "partOfSpeech": "standard English part of speech",
+      "phonetic": "IPA pronunciation",
+      "cefr": "CEFR level from A1, A2, B1, B2, C1, C2",
+      "definition": "clear concise English definition",
+      "examples": [
+        "sentence 1",
+        "sentence 2",
+        "sentence 3"
+      ],
+      "synonyms": [],
+      "antonyms": [],
+      "root": "brief accurate root/etymology",
+      "cognates": []
+    }
+  ]
+}
+
+Preserve the input word exactly.
+Return the most appropriate standard part of speech for the word.
+
+The "phonetic" field is REQUIRED and must never be left blank: always return a concise IPA pronunciation in /slashes/, even for uncommon or compound words — give your best accurate transcription rather than omitting it.
+
+Return one CEFR level only: A1, A2, B1, B2, C1, or C2.
+
+Do not include explanations outside the JSON.
+
+Return exactly one item.
+
+Return exactly three useful example sentences.
+
+Never split or replace the word.
+`
+      : `
+You are an English vocabulary learning assistant.
+
+The user provides a list of English vocabulary words.
+
+Return valid JSON only with this structure:
+
+{
+  "words": [
+    {
+      "word": "exact input",
+      "partOfSpeech": "standard English part of speech",
+      "phonetic": "IPA pronunciation",
+      "cefr": "CEFR level from A1, A2, B1, B2, C1, C2",
+      "definition": "clear concise definition",
+      "examples": [
+        "sentence 1",
+        "sentence 2",
+        "sentence 3"
+      ],
+      "synonyms": [],
+      "antonyms": [],
+      "root": "brief accurate root/etymology",
+      "cognates": []
+    }
+  ]
+}
+
+Return exactly one entry per input word.
+
+Preserve spelling exactly.
+
+Never split a word.
+
+The "phonetic" field is REQUIRED for every single entry and must never be left blank: always return a concise IPA pronunciation in /slashes/, even for uncommon or compound words — give your best accurate transcription rather than omitting it.
+
+Provide exactly three natural useful example sentences.
+
+Do not add extra fields.
+`;
+
+  const user =
+    one
+      ? `Generate one vocabulary entry for this exact word:\n${list[0]}`
+      : `Generate the vocabulary library for these words:\n${list.join('\n')}`;
+
+  const response =
+    await fetch(
+      'https://api.deepseek.com/chat/completions',
+      {
+        method: 'POST',
+
+        headers: {
+          'Content-Type':
+            'application/json',
+
+          Authorization:
+            `Bearer ${process.env.DEEPSEEK_API_KEY}`
+        },
+
+        body: JSON.stringify({
+          model:
+            'deepseek-v4-flash',
+
+          thinking: {
+            type: 'disabled'
+          },
+
+          messages: [
+            {
+              role: 'system',
+              content: system
+            },
+
+            {
+              role: 'user',
+              content: user
+            }
+          ],
+
+          response_format: {
+            type: 'json_object'
+          },
+
+          max_tokens:
+            one
+              ? 2000
+              : 6000,
+
+          stream: false
+        })
+      }
+    );
+
+  if (!response.ok) {
+    console.error(
+      'DeepSeek API error:',
+      await response.text()
+    );
+
+    throw new Error(
+      'DeepSeek API request failed'
+    );
+  }
+
+  const data =
+    await response.json();
+
+  const content =
+    data?.choices?.[0]
+      ?.message?.content;
+
+  if (!content) {
+    throw new Error(
+      'DeepSeek returned an empty response'
+    );
+  }
+
+  let result;
+
+  try {
+    result =
+      JSON.parse(content);
+  } catch (_) {
+    throw new Error(
+      'DeepSeek returned invalid JSON'
+    );
+  }
+
+  if (
+    !Array.isArray(
+      result.words
+    ) ||
+    result.words.length !==
+      list.length
+  ) {
+    throw new Error(
+      'DeepSeek returned an incorrect number of vocabulary entries'
+    );
+  }
+
+  result.words =
+    result.words.map(
+      (item, index) => ({
+        word:
+          list[index],
+
+        partOfSpeech:
+          String(
+            item?.partOfSpeech ||
+              ''
+          ).trim(),
+
+        phonetic:
+          String(
+            item?.phonetic ||
+              ''
+          ).trim(),
+
+        cefr:
+          String(
+            item?.cefr ||
+              ''
+          ).trim(),
+
+        definition:
+          String(
+            item?.definition ||
+              ''
+          ).trim(),
+
+        examples:
+          Array.isArray(
+            item?.examples
+          )
+            ? item.examples
+                .map(
+                  value =>
+                    String(
+                      value || ''
+                    ).trim()
+                )
+                .filter(Boolean)
+                .slice(0, 3)
+            : [],
+
+        synonyms:
+          Array.isArray(
+            item?.synonyms
+          )
+            ? item.synonyms
+                .map(
+                  value =>
+                    String(
+                      value || ''
+                    ).trim()
+                )
+                .filter(Boolean)
+            : [],
+
+        antonyms:
+          Array.isArray(
+            item?.antonyms
+          )
+            ? item.antonyms
+                .map(
+                  value =>
+                    String(
+                      value || ''
+                    ).trim()
+                )
+                .filter(Boolean)
+            : [],
+
+        root:
+          String(
+            item?.root || ''
+          ).trim(),
+
+        cognates:
+          Array.isArray(
+            item?.cognates
+          )
+            ? item.cognates
+                .map(
+                  value =>
+                    String(
+                      value || ''
+                    ).trim()
+                )
+                .filter(Boolean)
+            : []
+      })
+    );
+
+  // The model occasionally leaves "phonetic" blank even when asked for it.
+  // Before validating, try to backfill any missing transcription from a
+  // free public dictionary so the in-app spelling "Hint" always has
+  // something to show instead of silently staying empty.
+
+  await Promise.all(
+    result.words.map(
+      async item => {
+        if (item.phonetic) {
+          return;
+        }
+
+        const fallback =
+          await fetchPhoneticFallback(
+            item.word
+          );
+
+        if (fallback) {
+          item.phonetic =
+            fallback;
+        }
+      }
+    )
+  );
+
+  for (
+    const item of result.words
+  ) {
+    if (!item.definition) {
+      throw new Error(
+        `DeepSeek did not return a definition for "${item.word}"`
+      );
+    }
+
+    if (!item.partOfSpeech) {
+      console.warn(
+        `DeepSeek did not return a part of speech for "${item.word}"`
+      );
+    }
+
+    if (!item.phonetic) {
+      console.warn(
+        `DeepSeek did not return a phonetic transcription for "${item.word}", and the dictionary fallback lookup also failed`
+      );
+    }
+
+    if (!item.cefr) {
+      console.warn(
+        `DeepSeek did not return a CEFR level for "${item.word}"`
+      );
+    }
+
+    if (
+      item.examples.length !==
+      3
+    ) {
+      throw new Error(
+        `DeepSeek did not return exactly three examples for "${item.word}"`
+      );
+    }
+  }
+
+  return result;
+}
+
+
+// ============================================================
+// DeepSeek — full library
+// ============================================================
+
+app.post(
+  '/api/generate',
+  async (req, res) => {
+    try {
+      const words =
+        Array.isArray(
+          req.body.words
+        )
+          ? req.body.words
+          : [];
+
+      if (!words.length) {
+        return res.status(400).json({
+          error:
+            'Please provide at least one word'
+        });
+      }
+
+      if (words.length > 50) {
+        return res.status(400).json({
+          error:
+            'Maximum 50 words per request'
+        });
+      }
+
+      res.json(
+        await deepseek(
+          words,
+          false
+        )
+      );
+    } catch (error) {
+      console.error(error);
+
+      res.status(502).json({
+        error:
+          error.message ||
+          'Unable to generate vocabulary'
+      });
+    }
+  }
+);
+
+
+// ============================================================
+// DeepSeek — single word
+// ============================================================
+
+app.post(
+  '/api/generate-one',
+  async (req, res) => {
+    try {
+      const word =
+        String(
+          req.body?.word || ''
+        ).trim();
+
+      if (!word) {
+        return res.status(400).json({
+          error:
+            'Please provide a word.'
+        });
+      }
+
+      if (word.length > 200) {
+        return res.status(400).json({
+          error:
+            'The word is too long.'
+        });
+      }
+
+      res.json(
+        await deepseek(
+          [word],
+          true
+        )
+      );
+    } catch (error) {
+      console.error(error);
+
+      res.status(502).json({
+        error:
+          error.message ||
+          'Unable to generate this word right now. Please try again.'
+      });
+    }
+  }
+);
+
+
+// ============================================================
+// Reset password page
+// ============================================================
+
+app.get(
+  '/reset-password',
+  (req, res) => {
+    res.sendFile(
+      path.join(
+        __dirname,
+        'public',
+        'index.html'
+      )
+    );
+  }
+);
+
+
+// ============================================================
+// Live2D models
+// ============================================================
+
+app.use(
+  '/live2d',
+  express.static(
+    path.join(
+      __dirname,
+      'live2d'
+    )
+  )
+);
+
+
+// ============================================================
+// Static website
+// ============================================================
+
+app.use(
+  express.static(
+    path.join(
+      __dirname,
+      'public'
+    )
+  )
+);
+
+
+// ============================================================
+// Start
+// ============================================================
+
+initDB()
+  .then(() => {
+    console.log(
+      'Database initialized.'
+    );
+
+    app.listen(
+      PORT,
+      () => {
+        console.log(
+          `Server running on port ${PORT}`
+        );
+      }
+    );
+  })
+  .catch(error => {
+    console.error(
+      'Database initialization failed:',
+      error
+    );
+
+    process.exit(1);
+  });
+      await loginSession(
+        req,
+        user,
+        !!req.body.remember
+      );
+
+      res.json({
+        user:
+          userPublic(user)
+      });
+    } catch (error) {
+      console.error(error);
+
+      res.status(500).json({
+        error:
+          'Unable to log in.'
+      });
+    }
+  }
+);
 
 
 // ============================================================
@@ -1409,7 +2313,7 @@ app.post(
         'The Lexicon — reset your password',
 
         `Use this link to reset your The Lexicon password. ` +
-        `It expires in ${RESET_TTL} minutes:\n\n${link}`,
+          `It expires in ${RESET_TTL} minutes:\n\n${link}`,
 
         `
         <div style="font-family:Arial,sans-serif">
@@ -1667,127 +2571,300 @@ async function recordStudyEvents(
 ) {
   // The first ever /api/data save only establishes the baseline.
   // This prevents old historical counters from becoming today's events.
+
   if (!hadPreviousSnapshot) {
     return;
   }
 
   const oldData =
-    oldStats && typeof oldStats === 'object'
+    oldStats &&
+    typeof oldStats === 'object'
       ? oldStats
       : {};
 
   const newData =
-    newStats && typeof newStats === 'object'
+    newStats &&
+    typeof newStats === 'object'
       ? newStats
       : {};
 
   const oldWordStats =
-    oldData.wordStats && typeof oldData.wordStats === 'object'
+    oldData.wordStats &&
+    typeof oldData.wordStats === 'object'
       ? oldData.wordStats
       : {};
 
   const newWordStats =
-    newData.wordStats && typeof newData.wordStats === 'object'
+    newData.wordStats &&
+    typeof newData.wordStats === 'object'
       ? newData.wordStats
       : {};
 
-  for (const [word, newWord] of Object.entries(newWordStats)) {
-    const oldWord = oldWordStats[word] || {};
+  for (
+    const [
+      word,
+      newWord
+    ]
+    of Object.entries(
+      newWordStats
+    )
+  ) {
+    const oldWord =
+      oldWordStats[word] ||
+      {};
 
     const oldPractised =
-      Number(oldWord.practised || 0);
+      Number(
+        oldWord.practised ||
+          0
+      );
+
     const newPractised =
-      Number(newWord?.practised || 0);
+      Number(
+        newWord?.practised ||
+          0
+      );
 
     const practiceDelta =
-      Math.max(0, newPractised - oldPractised);
+      Math.max(
+        0,
+        newPractised -
+          oldPractised
+      );
 
-    for (let i = 0; i < practiceDelta; i += 1) {
+    for (
+      let i = 0;
+      i < practiceDelta;
+      i += 1
+    ) {
       await client.query(
         `
         INSERT INTO study_events(
-          user_id, event_type, word, created_at
+          user_id,
+          event_type,
+          word,
+          created_at
         )
-        VALUES($1, 'practice', $2, NOW())
+        VALUES(
+          $1,
+          'practice',
+          $2,
+          NOW()
+        )
         `,
-        [userId, word]
+        [
+          userId,
+          word
+        ]
       );
     }
 
     const oldMistakes =
-      Number(oldWord.mistakes || 0);
+      Number(
+        oldWord.mistakes ||
+          0
+      );
+
     const newMistakes =
-      Number(newWord?.mistakes || 0);
+      Number(
+        newWord?.mistakes ||
+          0
+      );
 
     const mistakeDelta =
-      Math.max(0, newMistakes - oldMistakes);
+      Math.max(
+        0,
+        newMistakes -
+          oldMistakes
+      );
 
-    for (let i = 0; i < mistakeDelta; i += 1) {
+    for (
+      let i = 0;
+      i < mistakeDelta;
+      i += 1
+    ) {
       await client.query(
         `
         INSERT INTO study_events(
-          user_id, event_type, word, created_at
+          user_id,
+          event_type,
+          word,
+          created_at
         )
-        VALUES($1, 'mistake', $2, NOW())
+        VALUES(
+          $1,
+          'mistake',
+          $2,
+          NOW()
+        )
         `,
-        [userId, word]
+        [
+          userId,
+          word
+        ]
       );
     }
   }
 
   const oldLearned =
     new Set(
-      Array.isArray(oldData.learnedWords)
+      Array.isArray(
+        oldData.learnedWords
+      )
         ? oldData.learnedWords
         : []
     );
 
   const newLearned =
-    Array.isArray(newData.learnedWords)
+    Array.isArray(
+      newData.learnedWords
+    )
       ? newData.learnedWords
       : [];
 
-  for (const word of newLearned) {
-    if (oldLearned.has(word)) {
+  for (
+    const word of newLearned
+  ) {
+    if (
+      oldLearned.has(word)
+    ) {
       continue;
     }
 
     await client.query(
       `
       INSERT INTO study_events(
-        user_id, event_type, word, created_at
+        user_id,
+        event_type,
+        word,
+        created_at
       )
-      VALUES($1, 'learned', $2, NOW())
+      VALUES(
+        $1,
+        'learned',
+        $2,
+        NOW()
+      )
       `,
-      [userId, word]
+      [
+        userId,
+        word
+      ]
     );
   }
 
   const oldSpelled =
     new Set(
-      Array.isArray(oldData.spelledWords)
+      Array.isArray(
+        oldData.spelledWords
+      )
         ? oldData.spelledWords
         : []
     );
 
   const newSpelled =
-    Array.isArray(newData.spelledWords)
+    Array.isArray(
+      newData.spelledWords
+    )
       ? newData.spelledWords
       : [];
 
-  for (const word of newSpelled) {
-    if (oldSpelled.has(word)) {
+  for (
+    const word of newSpelled
+  ) {
+    if (
+      oldSpelled.has(word)
+    ) {
       continue;
     }
 
     await client.query(
       `
       INSERT INTO study_events(
-        user_id, event_type, word, created_at
+        user_id,
+        event_type,
+        word,
+        created_at
       )
-      VALUES($1, 'spelling', $2, NOW())
+      VALUES(
+        $1,
+        'spelling',
+        $2,
+        NOW()
+      )
       `,
-      [userId, word]
+      [
+        userId,
+        word
+      ]
+    );
+  }
+
+  // Ranking:
+  // count every newly successful spelling mastery.
+  //
+  // Repeating the same word successfully is still counted
+  // as another spelling mastery.
+
+  const oldDailyMastery =
+    oldData.dailySpellingMastery &&
+    typeof oldData.dailySpellingMastery ===
+      'object'
+      ? oldData.dailySpellingMastery
+      : {};
+
+  const newDailyMastery =
+    newData.dailySpellingMastery &&
+    typeof newData.dailySpellingMastery ===
+      'object'
+      ? newData.dailySpellingMastery
+      : {};
+
+  const today =
+    new Date()
+      .toISOString()
+      .slice(0, 10);
+
+  const oldMastery =
+    Number(
+      oldDailyMastery[today] ||
+        0
+    );
+
+  const newMastery =
+    Number(
+      newDailyMastery[today] ||
+        0
+    );
+
+  const masteryDelta =
+    Math.max(
+      0,
+      newMastery -
+        oldMastery
+    );
+
+  for (
+    let i = 0;
+    i < masteryDelta;
+    i += 1
+  ) {
+    await client.query(
+      `
+      INSERT INTO study_events(
+        user_id,
+        event_type,
+        word,
+        created_at
+      )
+      VALUES(
+        $1,
+        'spelling_mastery',
+        NULL,
+        NOW()
+      )
+      `,
+      [userId]
     );
   }
 }
@@ -1833,7 +2910,9 @@ app.put(
         req.body.currentState ??
         null;
 
-      await client.query('BEGIN');
+      await client.query(
+        'BEGIN'
+      );
 
       const previous =
         await client.query(
@@ -1849,7 +2928,9 @@ app.put(
       await recordStudyEvents(
         client,
         req.session.userId,
-        previous.rows[0]?.global_stats || {},
+        previous.rows[0]
+          ?.global_stats ||
+          {},
         globalStats,
         previous.rowCount > 0
       );
@@ -1913,7 +2994,9 @@ app.put(
           [req.session.userId]
         );
 
-      await client.query('COMMIT');
+      await client.query(
+        'COMMIT'
+      );
 
       res.json({
         ok: true,
@@ -1925,7 +3008,9 @@ app.put(
       });
     } catch (error) {
       try {
-        await client.query('ROLLBACK');
+        await client.query(
+          'ROLLBACK'
+        );
       } catch (_) {}
 
       console.error(error);
@@ -1939,555 +3024,6 @@ app.put(
     }
   }
 );
-
-
-// ============================================================
-// FEEDBACK
-// ============================================================
-
-app.post(
-  '/api/feedback',
-  async (req, res) => {
-    try {
-      const message = String(req.body?.message || '').trim();
-
-      if (!message) {
-        return res.status(400).json({
-          error: 'Please enter your feedback.'
-        });
-      }
-
-      if (message.length > 5000) {
-        return res.status(400).json({
-          error: 'Feedback is too long.'
-        });
-      }
-
-      const recipient =
-        process.env.FEEDBACK_TO ||
-        'feedback@lexiconoftheworld.win';
-
-      await sendMail(
-        recipient,
-        'The Lexicon Feedback',
-        message,
-        `<div style=\"font-family:Arial,sans-serif;white-space:pre-wrap\">${message.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>`
-      );
-
-      res.json({ ok: true });
-    } catch (error) {
-      console.error('Feedback email error:', error);
-
-      res.status(500).json({
-        error: 'Unable to send feedback right now. Please try again later.'
-      });
-    }
-  }
-);
-
-
-// ============================================================
-// DeepSeek
-// ============================================================
-
-// ============================================================
-// Phonetic fallback (free dictionary API)
-// ============================================================
-
-async function fetchPhoneticFallback(word) {
-  const clean = String(word || '').trim();
-
-  if (!clean) {
-    return '';
-  }
-
-  try {
-    const response = await fetch(
-      `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(clean.toLowerCase())}`
-    );
-
-    if (!response.ok) {
-      return '';
-    }
-
-    const data = await response.json();
-    const entry = Array.isArray(data) ? data[0] : null;
-
-    if (!entry) {
-      return '';
-    }
-
-    const direct =
-      typeof entry.phonetic === 'string'
-        ? entry.phonetic.trim()
-        : '';
-
-    if (direct) {
-      return direct;
-    }
-
-    const fromList = Array.isArray(entry.phonetics)
-      ? entry.phonetics.find(
-          p => typeof p?.text === 'string' && p.text.trim()
-        )
-      : null;
-
-    return fromList ? fromList.text.trim() : '';
-  } catch (error) {
-    console.warn(
-      `Phonetic fallback lookup failed for "${clean}":`,
-      error.message
-    );
-
-    return '';
-  }
-}
-
-async function deepseek(
-  words,
-  one = false
-) {
-  if (
-    !process.env.DEEPSEEK_API_KEY
-  ) {
-    throw new Error(
-      'DeepSeek API key is not configured'
-    );
-  }
-
-  const list =
-    words
-      .map(String)
-      .map(x => x.trim())
-      .filter(Boolean);
-
-  const system = one
-    ? `
-You are an English vocabulary learning assistant.
-
-The user provides exactly ONE English vocabulary word.
-
-Return valid JSON only in this exact structure:
-
-{
-  "words": [
-    {
-      "word": "exact input word",
-      "partOfSpeech": "standard English part of speech",
-      "phonetic": "IPA pronunciation",
-      "cefr": "CEFR level from A1, A2, B1, B2, C1, C2",
-      "definition": "clear concise English definition",
-      "examples": [
-        "sentence 1",
-        "sentence 2",
-        "sentence 3"
-      ],
-      "synonyms": [],
-      "antonyms": [],
-      "root": "brief accurate root/etymology",
-      "cognates": []
-    }
-  ]
-}
-
-Preserve the input word exactly.
-Return the most appropriate standard part of speech for the word.
-The "phonetic" field is REQUIRED and must never be left blank: always return a concise IPA pronunciation in /slashes/, even for uncommon or compound words — give your best accurate transcription rather than omitting it.
-Return one CEFR level only: A1, A2, B1, B2, C1, or C2.
-Do not include explanations outside the JSON.
-
-Return exactly one item.
-
-Return exactly three useful example sentences.
-
-Never split or replace the word.
-`
-    : `
-You are an English vocabulary learning assistant.
-
-The user provides a list of English vocabulary words.
-
-Return valid JSON only with this structure:
-
-{
-  "words": [
-    {
-      "word": "exact input",
-      "partOfSpeech": "standard English part of speech",
-      "phonetic": "IPA pronunciation",
-      "cefr": "CEFR level from A1, A2, B1, B2, C1, C2",
-      "definition": "clear concise definition",
-      "examples": [
-        "sentence 1",
-        "sentence 2",
-        "sentence 3"
-      ],
-      "synonyms": [],
-      "antonyms": [],
-      "root": "brief accurate root/etymology",
-      "cognates": []
-    }
-  ]
-}
-
-Return exactly one entry per input word.
-
-Preserve spelling exactly.
-
-Never split a word.
-
-The "phonetic" field is REQUIRED for every single entry and must never be left blank: always return a concise IPA pronunciation in /slashes/, even for uncommon or compound words — give your best accurate transcription rather than omitting it.
-
-Provide exactly three natural useful example sentences.
-
-Do not add extra fields.
-`;
-
-  const user =
-    one
-      ? `Generate one vocabulary entry for this exact word:\n${list[0]}`
-      : `Generate the vocabulary library for these words:\n${list.join('\n')}`;
-
-  const response =
-    await fetch(
-      'https://api.deepseek.com/chat/completions',
-      {
-        method: 'POST',
-
-        headers: {
-          'Content-Type':
-            'application/json',
-
-          Authorization:
-            `Bearer ${process.env.DEEPSEEK_API_KEY}`
-        },
-
-        body: JSON.stringify({
-          model:
-            'deepseek-v4-flash',
-
-          thinking: {
-            type: 'disabled'
-          },
-
-          messages: [
-            {
-              role: 'system',
-              content: system
-            },
-
-            {
-              role: 'user',
-              content: user
-            }
-          ],
-
-          response_format: {
-            type: 'json_object'
-          },
-
-          max_tokens:
-            one
-              ? 2000
-              : 6000,
-
-          stream: false
-        })
-      }
-    );
-
-  if (!response.ok) {
-    console.error(
-      'DeepSeek API error:',
-      await response.text()
-    );
-
-    throw new Error(
-      'DeepSeek API request failed'
-    );
-  }
-
-  const data =
-    await response.json();
-
-  const content =
-    data?.choices?.[0]
-      ?.message?.content;
-
-  if (!content) {
-    throw new Error(
-      'DeepSeek returned an empty response'
-    );
-  }
-
-  let result;
-
-  try {
-    result =
-      JSON.parse(content);
-  } catch (_) {
-    throw new Error(
-      'DeepSeek returned invalid JSON'
-    );
-  }
-
-  if (
-    !Array.isArray(
-      result.words
-    ) ||
-    result.words.length !==
-      list.length
-  ) {
-    throw new Error(
-      'DeepSeek returned an incorrect number of vocabulary entries'
-    );
-  }
-
-  result.words =
-    result.words.map(
-      (item, index) => ({
-        word:
-          list[index],
-
-        partOfSpeech:
-          String(
-            item?.partOfSpeech ||
-              ''
-          ).trim(),
-
-        phonetic:
-          String(
-            item?.phonetic ||
-              ''
-          ).trim(),
-
-        cefr:
-          String(
-            item?.cefr ||
-              ''
-          ).trim(),
-
-        definition:
-          String(
-            item?.definition ||
-              ''
-          ).trim(),
-
-        examples:
-          Array.isArray(
-            item?.examples
-          )
-            ? item.examples
-                .map(
-                  value =>
-                    String(
-                      value || ''
-                    ).trim()
-                )
-                .filter(Boolean)
-                .slice(0, 3)
-            : [],
-
-        synonyms:
-          Array.isArray(
-            item?.synonyms
-          )
-            ? item.synonyms
-                .map(
-                  value =>
-                    String(
-                      value || ''
-                    ).trim()
-                )
-                .filter(Boolean)
-            : [],
-
-        antonyms:
-          Array.isArray(
-            item?.antonyms
-          )
-            ? item.antonyms
-                .map(
-                  value =>
-                    String(
-                      value || ''
-                    ).trim()
-                )
-                .filter(Boolean)
-            : [],
-
-        root:
-          String(
-            item?.root || ''
-          ).trim(),
-
-        cognates:
-          Array.isArray(
-            item?.cognates
-          )
-            ? item.cognates
-                .map(
-                  value =>
-                    String(
-                      value || ''
-                    ).trim()
-                )
-                .filter(Boolean)
-            : []
-      })
-    );
-
-  // The model occasionally leaves "phonetic" blank even when asked for it.
-  // Before validating, try to backfill any missing transcription from a
-  // free public dictionary so the in-app spelling "Hint" always has
-  // something to show instead of silently staying empty.
-  await Promise.all(
-    result.words.map(async item => {
-      if (item.phonetic) return;
-      const fallback = await fetchPhoneticFallback(item.word);
-      if (fallback) item.phonetic = fallback;
-    })
-  );
-
-  for (
-    const item of result.words
-  ) {
-    if (!item.definition) {
-      throw new Error(
-        `DeepSeek did not return a definition for "${item.word}"`
-      );
-    }
-
-    if (!item.partOfSpeech) {
-      console.warn(
-        `DeepSeek did not return a part of speech for "${item.word}"`
-      );
-    }
-
-    if (!item.phonetic) {
-      console.warn(
-        `DeepSeek did not return a phonetic transcription for "${item.word}", and the dictionary fallback lookup also failed`
-      );
-    }
-
-    if (!item.cefr) {
-      console.warn(
-        `DeepSeek did not return a CEFR level for "${item.word}"`
-      );
-    }
-
-    if (
-      item.examples.length !==
-      3
-    ){
-      throw new Error(
-        `DeepSeek did not return exactly three examples for "${item.word}"`
-      );
-    }
-  }
-
-  return result;
-}
-
-
-// ============================================================
-// DeepSeek — full library
-// ============================================================
-
-app.post(
-  '/api/generate',
-  async (req, res) => {
-    try {
-      const words =
-        Array.isArray(
-          req.body.words
-        )
-          ? req.body.words
-          : [];
-
-      if (!words.length) {
-        return res.status(400).json({
-          error:
-            'Please provide at least one word'
-        });
-      }
-
-      if (words.length > 50) {
-        return res.status(400).json({
-          error:
-            'Maximum 50 words per request'
-        });
-      }
-
-      res.json(
-        await deepseek(
-          words,
-          false
-        )
-      );
-    } catch (error) {
-      console.error(error);
-
-      res.status(502).json({
-        error:
-          error.message ||
-          'Unable to generate vocabulary'
-      });
-    }
-  }
-);
-
-
-// ============================================================
-// DeepSeek — single word
-// ============================================================
-
-app.post(
-  '/api/generate-one',
-  async (req, res) => {
-    try {
-      const word =
-        String(
-          req.body?.word || ''
-        ).trim();
-
-      if (!word) {
-        return res.status(400).json({
-          error:
-            'Please provide a word.'
-        });
-      }
-
-      if (word.length > 200) {
-        return res.status(400).json({
-          error:
-            'The word is too long.'
-        });
-      }
-
-      res.json(
-        await deepseek(
-          [word],
-          true
-        )
-      );
-    } catch (error) {
-      console.error(error);
-
-      res.status(502).json({
-        error:
-          error.message ||
-          'Unable to generate this word right now. Please try again.'
-      });
-    }
-  }
-);
-
-
-// ============================================================
-// Reset password page
-// ============================================================
-
 app.get(
   '/reset-password',
   (req, res) => {
