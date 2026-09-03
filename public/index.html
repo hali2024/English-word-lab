@@ -2675,6 +2675,485 @@ if(accountMode==='account'){
 
 </script>
 
+
+<style id="lexicon-chinese-mode-addon">
+/* Chinese mode: restrained Song-style typography, without changing the English mode. */
+html.lang-zh body,
+html.lang-zh button,
+html.lang-zh input,
+html.lang-zh textarea,
+html.lang-zh select{
+  font-family:"Noto Serif CJK SC","Source Han Serif SC","Songti SC","STSong","SimSun",serif;
+}
+html.lang-zh .word,
+html.lang-zh .wordPill,
+html.lang-zh .chip,
+html.lang-zh .phonetic,
+html.lang-zh .cefr,
+html.lang-zh textarea,
+html.lang-zh input,
+html.lang-zh select{
+  font-family:"Noto Serif CJK SC","Source Han Serif SC","Songti SC","STSong","SimSun",serif;
+}
+html.lang-zh .label,
+html.lang-zh .mode,
+html.lang-zh .mode small,
+html.lang-zh .block h3,
+html.lang-zh .rankingTitle,
+html.lang-zh .profileNameLabel,
+html.lang-zh .manualSection h3{
+  letter-spacing:.08em;
+}
+html.lang-zh .sub,
+html.lang-zh .modalIntro,
+html.lang-zh .drawerIntro,
+html.lang-zh .hint,
+html.lang-zh .example,
+html.lang-zh .familiarity,
+html.lang-zh .profileSummary,
+html.lang-zh .profileNote{
+  font-style:normal;
+}
+</style>
+
+<script id="lexicon-chinese-mode-addon-script">
+(function(){
+  'use strict';
+
+  const ZH = {
+    "The Lexicon":"辞典",
+    "A private study of language":"",
+    "The Cabinet":"词库",
+    "The Study":"设置",
+    "The Word Studio":"AI生成词库",
+    "Enter the words you wish to study.":"请输入单词。",
+    "Compose Library":"生成词库",
+    "From a CSV":"从 CSV 导入",
+    "Paste your CSV here":"请在此粘贴 CSV 内容。",
+    "Load Library":"载入词库",
+    "Download CSV Template":"下载 CSV 模板",
+    "Clear Library & Progress":"清空词库及学习进度",
+    "Records, almanac, and the archive.":"学习记录、年鉴与存档。",
+    "User Manual":"使用说明",
+    "Email Feedback":"意见反馈",
+    "Language":"语言",
+    "English":"English",
+    "中文":"中文",
+    "Word → Meaning":"单词 → 释义",
+    "Meaning → Word":"释义 → 单词",
+    "Listening → Word":"听音 → 选词",
+    "Synonym Choice":"同义词辨析",
+    "Antonym Choice":"反义词辨析",
+    "Fill in the Blank":"完形填空",
+    "Spelling Practice":"拼写研习",
+    "Read the word and choose its meaning.":"阅读单词，并选出相应释义。",
+    "Read the definition and choose the word.":"阅读释义，并选出相应单词。",
+    "Listen to the pronunciation and choose the word.":"选出听到的单词。",
+    "Choose the word’s closest synonym.":"选出与该词意义最为接近的同义词。",
+    "Choose the word’s closest antonym.":"选出与该词意义相反的反义词。",
+    "Complete a sentence with the right word.":"选出恰当单词，补全句意。",
+    "Listen and type the spelling yourself.":"完成单词拼写。",
+    "Well remembered.":"对",
+    "Worth another look.":"错",
+    "Definition":"释义",
+    "Examples":"例句",
+    "Synonyms":"同义词",
+    "Antonyms":"反义词",
+    "Root Analysis":"词根分析",
+    "Cognates":"同源词",
+    "None recorded":"暂无记录",
+    "Continue":"继续",
+    "Total Words":"词汇总数",
+    "Mastered":"已掌握",
+    "Completed":"已完成",
+    "Accuracy":"正确率",
+    "This Session":"本次进程",
+    "A small collection of ways to revisit this vocabulary.":"",
+    "Choose how you would like to practice":"选择练习方式",
+    "Under Maintenance":"正在维护",
+    "Expected to be back by":"预计恢复于",
+    "Announcements":"公告",
+    "No announcements yet.":"暂无公告。",
+    "Today's Review":"今日复习",
+    "Begin Review":"开始复习",
+    "Begin Review":"开始复习",
+    "A familiar word":"熟悉的单词",
+    "Your Study":"你的学习",
+    "Choose how you would like to keep your records.":"请选择保存学习记录的方式。",
+    "Log in":"登录",
+    "Register":"注册",
+    "Continue as Guest":"以访客身份继续",
+    "Sign in to restore your libraries and learning records.":"登录后即可恢复你的词库与学习记录。",
+    "Password":"密码",
+    "Email code":"邮箱验证码",
+    "Send verification code":"发送验证邮件",
+    "Send login code":"发送登录验证码",
+    "We sent a 6-digit verification code to your email. Verify it before choosing a password.":"六位数验证码已发送至你的邮箱。请先完成验证，再设置密码。",
+    "Resend":"重新发送",
+    "Verify email":"验证邮箱",
+    "Your email is verified. Now choose a password.":"邮箱验证已完成。现在请设置密码。",
+    "Create account":"创建账户",
+    "Forgot password?":"忘记密码？",
+    "Request a one-time code, then enter it below.":"请先获取一次性验证码，再于下方输入。",
+    "Log in with code":"使用验证码登录",
+    "Enter your account email. We will send a secure password-reset link.":"请输入账户邮箱，我们将向你发送安全的密码重置链接。",
+    "Send reset link":"发送重置链接",
+    "Back to login":"返回登录",
+    "Back":"返回",
+    "Reset password":"重置密码",
+    "Choose a new password for your account.":"请为账户设置新的密码。",
+    "Set new password":"设置新密码",
+    "Guest mode keeps your data only in this browser.":"访客模式仅将数据保存在当前浏览器中。",
+    "Your word libraries, learning progress, and study records will stay on this browser only. If you change browser, device, or clear this browser's storage, your guest data will not follow you.":"你的词库、学习进度与研习记录仅保存在当前浏览器中。更换浏览器或设备，或清除浏览器存储后，访客数据将无法随之迁移。",
+    "Confirm Guest Mode":"确认以访客身份继续",
+    "Remember this device?":"记住此设备？",
+    "If you choose Yes, this browser will keep you signed in on this device.":"若选择“是”，此浏览器将在此设备上保持登录状态。",
+    "If you choose No, you will need to sign in again after the session ends.":"若选择“否”，本次会话结束后需重新登录。",
+    "For your security, only choose Yes on a private device that you control.":"为保障安全，仅应在由你本人控制的私人设备上选择“是”。",
+    "Yes, remember this device":"是，记住此设备",
+    "No, not now":"否，暂不记住",
+    "Log out?":"退出登录？",
+    "Are you sure you want to log out of this account?":"确定要退出当前账户吗？",
+    "Yes, log out":"确定退出",
+    "Cancel":"取消",
+    "Keep this volume?":"是否保存此词库？",
+    "This library may be placed in The Cabinet for later study.":"可收入词库，以便日后学习。",
+    "Keep it":"收入词库",
+    "Only for now":"仅本次使用",
+    "Give it a name":"为词库命名",
+    "A quiet name for this collection.":"为词库命名",
+    "A name for this library":"请输入词库名称",
+    "Place in The Cabinet":"收入词库",
+    "Enter Practice?":"开始学习？",
+    "Your word library is ready. Would you like to begin practicing it now?":"词库已经准备好，现在开始学习吗？",
+    "Enter Practice":"开始",
+    "Not Now":"暂不开始",
+    "Volumes kept for another day.":"留待来日学习的词库。",
+    "Edit this volume":"编辑此词库",
+    "Long-press a word to select it. Drag across words to select several.":"长按单词即可选取；拖动可连续选取多个单词。",
+    "Add":"增补",
+    "Save Changes":"保存更改",
+    "Add words":"增补词汇",
+    "Compose new words with AI or paste a CSV. Generated/loaded words are added directly to this volume.":"可借助 AI 编纂新词，或粘贴 CSV；生成或载入的词汇将直接加入此词库。",
+    "Enter English words, one per line.":"请输入英文单词，每行一个。",
+    "Compose":"编纂",
+    "Paste a complete CSV library here.":"请在此粘贴完整的 CSV 词库。",
+    "Load CSV":"载入 CSV",
+    "Profile":"学习档案",
+    "The Ledger":"记录",
+    "The Almanac":"热力图",
+    "Ranking":"排行",
+    "Export Archive":"导出存档",
+    "Restore Archive":"恢复存档",
+    "Archive":"存档",
+    "A record of the words you have met, mastered, and missed.":"记录你曾遇见、掌握与错失的词汇。",
+    "Today’s ranking by words mastered through spelling.":"按今日通过拼写学习而掌握的词汇数排名。",
+    "Confirm":"确认",
+    "A detailed guide to The Lexicon, including the small interactions that may not be obvious at first.":"《辞典》使用说明",
+    "Getting started":"新手入门",
+    "Study flow":"学习流程",
+    "Cabinet":"词库",
+    "Closing cards and panels":"关闭卡片与面板",
+    "Spelling test rules":"拼写测试规则",
+    "The Study":"设置",
+    "Account and guest mode":"账户与访客模式",
+    "Important backup note":"备份须知",
+    "Found a problem or have an idea? Write your feedback below.":"若发现问题，或有所建议，请在下方留下意见。",
+    "Send Feedback":"发送意见",
+    "Play pronunciation":"播放发音",
+    "Email address":"邮箱地址",
+    "Password (8+ characters)":"密码（至少 8 个字符）",
+    "Confirm password":"确认密码",
+    "New password (8+ characters)":"新密码（至少 8 个字符）",
+    "Confirm new password":"确认新密码",
+    "Choose a username":"请输入用户名",
+    "Username":"用户名",
+    "Save Username":"保存用户名",
+    "Edit":"编辑",
+    "Log out":"退出登录",
+    "Close":"关闭",
+    "Open":"打开",
+    "View":"查看",
+    "Rename":"更名",
+    "Clear Progress":"清除进度",
+    "Remove":"移除",
+    "Words":"词汇",
+    "Study":"学习",
+    "In Study":"学习中",
+    "No words yet.":"尚无词汇。",
+    "The Cabinet is empty.":"词库尚为空。",
+    "+ Add new library":"+ 新建词库",
+    "Questions Answered":"已答题数",
+    "Time in The Lexicon":"《辞典》学习时长",
+    "Words studied in one day":"单日学习词数",
+    "✦ marks a day above 100 words.":"✦ 表示当日学习词数超过 100。",
+    "Your learning record is built from the study activity already saved to this account or browser.":"你的学习档案由已保存于账户或浏览器中的学习记录汇集而成。",
+    "Words Encountered":"遇见词汇",
+    "Words Learned":"掌握词汇",
+    "Words Spelled":"完成拼写",
+    "Total Mistakes":"错误总数",
+    "Study Days":"学习日数",
+    "Current Streak":"当前连续学习",
+    "Most Practised · Top 10":"最常学习 · 前十",
+    "Most Missed · Top 10":"最易错误 · 前十",
+    "Best study day":"学习最佳日",
+    "Practice count":"学习次数",
+    "Mistake count":"错误次数",
+    "No practice count recorded yet.":"尚无学习次数记录。",
+    "No mistake count recorded yet.":"尚无错误记录。",
+    "Loading ranking…":"正在载入……",
+    "No registered users found.":"尚未找到注册用户。",
+    "mastered":"已掌握",
+    "A gentle reminder":"温馨提示",
+    "This spelling test is meant to measure what you can spell yourself.":"本次拼写测试意在检验你亲自拼写单词的能力。",
+    "Understood":"理解",
+    "Pasting the answer is not allowed during the spelling test. Please type it yourself.":"拼写测试不允许粘贴答案，请亲自输入。",
+    "Dropping text into the answer box is not allowed during the spelling test. Please type it yourself.":"拼写测试不允许将文字拖入答案框，请亲自输入。",
+    "Only direct English letters are accepted in the spelling test.":"拼写测试仅接受直接输入的英文字母。",
+    "Please type the word yourself using direct English letter input. Paste and predictive-composition input are not allowed during the spelling test.":"请直接输入单词拼写。拼写测试不允许使用粘贴或预测性输入。",
+    "Predictive or IME composition was detected. Please type the spelling directly instead of selecting a suggested completed word. Voice input is still allowed.":"检测到预测输入或输入法组词。请直接输入拼写，而不要选取系统提供的完整候选词；语音输入仍可使用。",
+    "The answer contains characters that are not accepted in the spelling test. Please type the word directly in English.":"答案含有拼写测试不接受的字符，请直接以英文输入单词。",
+    "Please finish typing with direct English letter input before submitting.":"请完成直接英文输入后再提交。",
+    "Spelling Complete":"拼写学习已完成",
+    "You have finished spelling practice for":"你已完成本次拼写，共",
+    "Spelling":"拼写",
+    "attempts":"次作答",
+    "Well spelled.":"拼写正确。",
+    "Not yet. The word returns to the end of the queue.":"尚未掌握。该词将返回队尾，稍后再次出现。",
+    "Your Spelling":"你的拼写",
+    "Replay":"再听一次",
+    "Submit":"提交",
+    "Restart":"重新开始",
+    "Return to Home":"返回首页",
+    "Return to Practice":"返回学习方式",
+    "Round":"轮次",
+    "Complete":"完成",
+    "Begin Round":"开始第",
+    "familiar word":"熟悉的词",
+    "familiar words":"熟悉的词",
+    "await another visit.":"等待再次复习。",
+    "No.":"第",
+    "selected":"项已选",
+    "Delete":"删除",
+    "Clear selection":"清除选择",
+    "Move to…":"移至……",
+    "Create another Cabinet volume first to move words.":"请先另建一个词库，才可移动词汇。",
+    "A library must contain at least one word.":"词库至少须保留一个单词。",
+    "Those words are already in the target volume.":"所选词汇已存在于目标词库中。",
+    "Changes saved.":"更改已保存。",
+    "No changes were made.":"未作任何更改。",
+    "Added to this volume.":"已加入此词库。",
+    "No valid words found.":"未找到有效词汇。",
+    "All of these words are already in the volume.":"这些词汇均已存在于当前词库中。",
+    "No vocabulary was returned.":"未返回任何词汇。",
+    "Server returned an invalid response.":"服务器返回了无效响应。",
+    "The generated library did not contain the expected number of words.":"生成的词库所含词汇数量与预期不符。",
+    "Some words were returned without definitions.":"部分词汇未返回释义。",
+    "Please enter at least one English word.":"请至少输入一个英文单词。",
+    "Please enter no more than 50 words at a time.":"每次最多请输入 50 个单词。",
+    "Unable to compose these words.":"暂时无法编纂这些词汇。",
+    "Saving…":"正在保存……",
+    "Sending…":"正在发送……",
+    "Feedback sent.":"意见已发送。",
+    "Feedback sent. Thank you.":"意见已送达，感谢你的反馈。",
+    "Unable to send feedback right now. Please try again later.":"暂时无法发送意见，请稍后再试。",
+    "Please log in to set a username.":"请先登录后再设置用户名。",
+    "Please enter a username.":"请输入用户名。",
+    "Username must be 2–24 characters.":"用户名须为 2–24 个字符。",
+    "Use letters, numbers, spaces, _, . or - only.":"仅可使用字母、数字、空格、下划线、句点或连字符。",
+    "Username saved.":"用户名已保存。",
+    "You can now edit your username.":"现在可以编辑用户名了。",
+    "Unable to save username.":"暂时无法保存用户名。",
+    "Archive restored.":"存档已恢复。",
+    "This archive could not be restored.":"无法恢复此存档。",
+    "Invalid archive.":"存档文件无效。",
+    "A library must contain at least one word.":"词库至少须保留一个单词。",
+    "Guest mode enabled. Data stays in this browser.":"访客模式已启用，数据仅保存在此浏览器中。",
+    "You have been logged out.":"你已退出登录。",
+    "This device will be remembered.":"此设备将被记住。",
+    "Signed in for this session.":"已登录，仅限本次会话。",
+    "Password updated.":"密码已更新。",
+    "Verification code sent.":"验证码已发送。",
+    "Login code sent.":"登录验证码已发送。",
+    "Please enter a valid email address.":"请输入有效的邮箱地址。",
+    "Please enter your email address.":"请输入邮箱地址。",
+    "Please enter your email and password.":"请输入邮箱与密码。",
+    "Please verify your email first.":"请先完成邮箱验证。",
+    "Enter the verification code.":"请输入验证码。",
+    "Enter your email and code.":"请输入邮箱与验证码。",
+    "Passwords do not match.":"两次输入的密码不一致。",
+    "Password must be at least 8 characters.":"密码至少须为 8 个字符。",
+    "If that account exists, a reset link has been sent.":"若该账户存在，重置链接已发送。",
+    "Unable to complete the request.":"暂时无法完成请求。",
+    "Ranking unavailable.":"暂不可用。",
+    "No registered users found.":"尚未找到注册用户。",
+    "Archive restored.":"存档已恢复。",
+    "A complete backup of your Lexicon data.":"《辞典》数据的完整备份。",
+    "Create a complete backup of your Lexicon data.":"创建《辞典》数据的完整备份。",
+    "Restore your Lexicon data from a previous backup.":"从先前的备份中恢复《辞典》数据。",
+    "The archive contains your saved libraries, learning progress, long-term statistics, and the current study state. You can use it later to restore this data in the browser.":"存档包含已保存的词库、学习进度、长期统计与当前学习状态，日后可在浏览器中据此恢复数据。",
+    "After you confirm, choose a previously exported JSON archive. The records contained in that archive will replace the current local Cabinet, statistics, and study state.":"确认后，请选择此前导出的 JSON 文件存档。文件中的记录将替换当前本地的词库、统计数据与学习状态。",
+    "Restore only an archive you trust. Your current local records may be replaced.":"仅恢复你信任的存档文件；当前本地记录可能因此被替换。",
+    "A name for this library":"请输入词库名称"
+  };
+
+  function zhExact(text){
+    const t=String(text||'').trim();
+    return Object.prototype.hasOwnProperty.call(ZH,t)?ZH[t]:null;
+  }
+
+  function translateDynamic(text){
+    const raw=String(text||'');
+    const trimmed=raw.trim();
+    const exact=zhExact(trimmed);
+    if(exact!==null) return raw.replace(trimmed,exact);
+
+    let m=trimmed.match(/^Round\s+(\d+)\s+Complete$/i);
+    if(m)return raw.replace(trimmed,`第 ${m[1]} 轮学习完成`);
+    m=trimmed.match(/^Round\s+(\d+)\s+·\s+Reviewing\s+(\d+)\s+words$/i);
+    if(m)return raw.replace(trimmed,`第 ${m[1]} 轮 · 复习 ${m[2]} 个词`);
+    m=trimmed.match(/^(\d+)\s+words total$/i);
+    if(m)return raw.replace(trimmed,`共 ${m[1]} 个词`);
+    m=trimmed.match(/^(\d+)\s+remaining$/i);
+    if(m)return raw.replace(trimmed,`尚余 ${m[1]} 个`);
+    m=trimmed.match(/^(\d+)\s+selected$/i);
+    if(m)return raw.replace(trimmed,`已选 ${m[1]} 项`);
+    m=trimmed.match(/^(\d+)\s+of\s+(\d+)\s+remembered\.$/i);
+    if(m)return raw.replace(trimmed,`已记住 ${m[1]} / ${m[2]} 个`);
+    m=trimmed.match(/^(\d+)\s+of\s+(\d+)\s+remembered\.$/i);
+    if(m)return raw.replace(trimmed,`已记住 ${m[1]} / ${m[2]} 个`);
+    m=trimmed.match(/^(\d+)\s+word(s)?\s+moved\.$/i);
+    if(m)return raw.replace(trimmed,`已移动 ${m[1]} 个词。`);
+    m=trimmed.match(/^Added\s+(\d+)\s+word(s)?\s+to this volume\.$/i);
+    if(m)return raw.replace(trimmed,`已向此词库增补 ${m[1]} 个词。`);
+    m=trimmed.match(/^Composing\s+(\d+)\s+word(s)?…$/i);
+    if(m)return raw.replace(trimmed,`正在编纂 ${m[1]} 个词……`);
+    m=trimmed.match(/^(\d+)\s+familiar word(s)? await another visit\.$/i);
+    if(m)return raw.replace(trimmed,`${m[1]} 个熟悉的词尚待再次温习。`);
+    m=trimmed.match(/^Best study day\s+·\s+(.+?)\s+·\s+(\d+)\s+words studied\.$/i);
+    if(m)return raw.replace(trimmed,`最佳日 · ${m[1]} · 当日学习 ${m[2]} 词。`);
+    m=trimmed.match(/^(\d+)\s+of\s+(\d+)\s+remembered\.$/i);
+    if(m)return raw.replace(trimmed,`已记住 ${m[1]} / ${m[2]} 个。`);
+    m=trimmed.match(/^(\d+)\s+mastered$/i);
+    if(m)return raw.replace(trimmed,`已掌握 ${m[1]} 个`);
+    m=trimmed.match(/^(\d+)\s+(time|times)$/i);
+    if(m)return raw.replace(trimmed,`学习 ${m[1]} 次`);
+    m=trimmed.match(/^(\d+)\s+(mistake|mistakes)$/i);
+    if(m)return raw.replace(trimmed,`错误 ${m[1]} 次`);
+    m=trimmed.match(/^(\d+)\s+words studied$/i);
+    if(m)return raw.replace(trimmed,`学习 ${m[1]} 词`);
+    m=trimmed.match(/^The word ______ means:\s*(.*)$/i);
+    if(m)return raw.replace(trimmed,`单词 ______ 的含义是：${m[1]}`);
+    return null;
+  }
+
+  function shouldSkipTextNode(node){
+    const p=node.parentElement;
+    if(!p)return true;
+    if(p.closest('script,style,textarea'))return true;
+    if(p.closest('.word,.definition,.example,.phonetic,.chip,.wordPill,.rootText,.partOfSpeech,.cefr'))return true;
+    return false;
+  }
+
+  function applyChineseUI(){
+    if(typeof LANG==='undefined')return;
+    document.documentElement.classList.toggle('lang-zh',LANG==='zh');
+    if(LANG!=='zh')return;
+
+    document.querySelectorAll('*').forEach(el=>{
+      if(el.children.length===0 && !el.closest('script,style,textarea')){
+        const translated=translateDynamic(el.textContent);
+        if(translated!==null && el.textContent.trim()!==translated.trim()) el.textContent=translated;
+      }
+    });
+
+    document.querySelectorAll('button,input,textarea,select,[aria-label],[title],[placeholder]').forEach(el=>{
+      ['title','aria-label','placeholder'].forEach(attr=>{
+        if(!el.hasAttribute(attr))return;
+        const value=el.getAttribute(attr);
+        const translated=translateDynamic(value);
+        if(translated!==null)el.setAttribute(attr,translated);
+      });
+    });
+
+    // Targeted dynamic interface strings whose text also contains variable data.
+    document.querySelectorAll('.cabinetMeta').forEach(el=>{
+      const m=el.textContent.trim().match(/^(\d+)\s+words\s+·\s+(\d+)%\s+·\s+(.+)$/i);
+      if(m){
+        let status=m[3];
+        if(status==='Not yet opened.')status='尚未开启。';
+        else if(status==='Complete.')status='已完成。';
+        const r=status.match(/^(\d+)\s+of\s+(\d+)\s+remembered\.$/i);
+        if(r)status=`已记住 ${r[1]} / ${r[2]} 个。`;
+        el.textContent=`${m[1]} 词 · ${m[2]}% · ${status}`;
+      }
+    });
+
+    document.querySelectorAll('.cabinetActions button').forEach(b=>{
+      const t=zhExact(b.textContent);
+      if(t!==null)b.textContent=t;
+    });
+    document.querySelectorAll('.ledgerStat .name,.profileStat .name,.rankingTitle,.manualSection h3').forEach(el=>{
+      const t=translateDynamic(el.textContent);
+      if(t!==null)el.textContent=t;
+    });
+    document.querySelectorAll('.manualSection').forEach(sec=>{
+      sec.querySelectorAll('li,p,b').forEach(el=>{
+        if(el.children.length===0){
+          const t=translateDynamic(el.textContent);
+          if(t!==null)el.textContent=t;
+        }
+      });
+    });
+
+    document.querySelectorAll('option').forEach(o=>{
+      const t=zhExact(o.textContent);
+      if(t!==null)o.textContent=t;
+    });
+
+    // Dynamic auth/profile/status text.
+    document.querySelectorAll('.authError,.profileLoading,.profileNote,.profileNameStatus,.addWordStatus,.feedbackStatus,.actionModalWarning,.actionModalText,.actionModalText,.guestNotice,.rememberBox').forEach(el=>{
+      const t=translateDynamic(el.textContent);
+      if(t!==null)el.textContent=t;
+    });
+  }
+
+  // Wrap the existing renderer so every dynamic screen is localized without
+  // touching the underlying learning data or application logic.
+  if(typeof window.render==='function' && !window.__lexiconZhRenderWrapped){
+    const originalRender=window.render;
+    window.render=function(){
+      const result=originalRender.apply(this,arguments);
+      setTimeout(applyChineseUI,0);
+      return result;
+    };
+    window.__lexiconZhRenderWrapped=true;
+  }
+
+  // Keep the original English mode untouched. The observer only performs
+  // work while Chinese mode is active.
+  let applying=false;
+  const observer=new MutationObserver(()=>{
+    if(LANG!=='zh'||applying)return;
+    applying=true;
+    setTimeout(()=>{try{applyChineseUI();}finally{applying=false;}},0);
+  });
+  observer.observe(document.body,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:['title','aria-label','placeholder']});
+
+  const originalSetLang=window.setLang;
+  if(typeof originalSetLang==='function' && !window.__lexiconZhSetLangWrapped){
+    window.setLang=function(lang){
+      const result=originalSetLang.apply(this,arguments);
+      setTimeout(applyChineseUI,0);
+      return result;
+    };
+    window.__lexiconZhSetLangWrapped=true;
+  }
+
+  setTimeout(applyChineseUI,0);
+})();
+</script>
+
 <style id="lexicon-pet-addon">
 #lexicon-pet-wrap{
   position:fixed;
