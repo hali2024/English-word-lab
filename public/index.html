@@ -457,29 +457,24 @@ body{
 
 html[data-theme="night"]{
   color-scheme:dark;
-  --paper:#0d0d0c;--paper-deep:#1a1814;--ink:#eee4cc;--muted:#a99d86;
-  --line:rgba(212,175,55,.24);--line-dark:rgba(212,175,55,.46);
-  --accent:#d4af37;--accent-soft:#29220d;--navy:#b7a56e;
-  --good:#d4af37;--good-bg:#29220d;--bad:#b8a36d;--bad-bg:#211d12;
-  --white:#11110f;--shadow:0 28px 80px rgba(0,0,0,.52);
-  --gold:#d4af37;--gold-soft:rgba(212,175,55,.24);--page:#0b0b0a;--page-2:#15130f;
+  --paper:#000;--paper-deep:#111;--ink:#fff;--muted:#ccc;
+  --line:rgba(255,255,255,.20);--line-dark:rgba(255,255,255,.40);
+  --accent:#fff;--accent-soft:#111;--navy:#fff;
+  --good:#fff;--good-bg:#111;--bad:#fff;--bad-bg:#111;
+  --white:#000;--shadow:0 28px 80px rgba(0,0,0,.72);
+  --gold:#fff;--gold-soft:rgba(255,255,255,.20);--page:#000;--page-2:#111;
 }
-html[data-theme="night"] body{
-  background:
-    radial-gradient(circle at 14% 9%,rgba(255,220,190,.05),transparent 25rem),
-    radial-gradient(circle at 86% 70%,rgba(210,170,130,.04),transparent 29rem),
-    linear-gradient(135deg,#121211,#211e1c 53%,#181716);
-}
-html[data-theme="night"] body:before{opacity:.08;mix-blend-mode:screen}
-html[data-theme="night"] body:after{opacity:.05;background:repeating-linear-gradient(0deg,rgba(255,255,255,.08) 0,rgba(255,255,255,.08) 1px,transparent 1px,transparent 4px)}
+html[data-theme="night"] body{background:#000}
+html[data-theme="night"] body:before,
+html[data-theme="night"] body:after{opacity:0}
 html[data-theme="night"] .panel,
 html[data-theme="night"] .quiz,
 html[data-theme="night"] .detail,
 html[data-theme="night"] .interstitial,
 html[data-theme="night"] .modalCard,
 html[data-theme="night"] .drawerCard{
-  background:#15130f;
-  box-shadow:0 28px 80px rgba(0,0,0,.52);
+  background:#000;
+  box-shadow:0 28px 80px rgba(0,0,0,.72);
 }
 html[data-theme="night"] .option,
 html[data-theme="night"] .drawerSection button,
@@ -493,22 +488,22 @@ html[data-theme="night"] .addWordInput,
 html[data-theme="night"] .feedbackBox,
 html[data-theme="night"] .shelfAdmin input,
 html[data-theme="night"] .shelfAdmin textarea{
-  background:rgba(7,7,6,.36);color:var(--ink);border-color:var(--line-dark)
+  background:#000;color:#fff;border-color:#fff
 }
-html[data-theme="night"] .bookCover{background:#11100d;color:#d4af37;border-color:rgba(212,175,55,.66)}
-html[data-theme="night"] .bookCard{background:#12110e}
-html[data-theme="night"] .rootText,.html[data-theme="night"] .rememberBox,.html[data-theme="night"] .guestNotice,.html[data-theme="night"] .actionModalWarning{background:rgba(64,55,47,.22)}
-html[data-theme="night"] .stat,.html[data-theme="night"] .result,.html[data-theme="night"] .profileStat,.html[data-theme="night"] .ledgerStat,.html[data-theme="night"] .progressCard,.html[data-theme="night"] .practiceHomeMode{background:#12110e}
-html[data-theme="night"] .practiceHomeMode:hover{background:#12110e;border-color:var(--line-dark)}
-html[data-theme="night"] .practiceHubActions button{background:#12110e;color:var(--ink);border-color:var(--line-dark);box-shadow:0 10px 24px rgba(0,0,0,.28)}
-html[data-theme="night"] .practiceHubActions button:hover{background:#12110e;color:var(--accent);border-color:var(--line-dark);box-shadow:0 15px 30px rgba(0,0,0,.38)}
-html[data-theme="night"] .practiceHubActions button:hover:after{width:4px;opacity:.55}
-html[data-theme="night"] .practiceHomeMode,.html[data-theme="night"] .bookCard,.html[data-theme="night"] .practiceHubActions button{background-color:#12110e}
-html[data-theme="night"] .heatCell[data-level="1"]{background:#36312c}
-html[data-theme="night"] .heatCell[data-level="2"]{background:#4b4138}
-html[data-theme="night"] .heatCell[data-level="3"]{background:#665447}
-html[data-theme="night"] .heatCell[data-level="4"]{background:#8d6d5d}
-html[data-theme="night"] .heatCell[data-level="5"]{background:#b97680}
+html[data-theme="night"] .bookCover{background:#000;color:#fff;border-color:#fff}
+html[data-theme="night"] .bookCard{background:#000}
+html[data-theme="night"] .rootText,.html[data-theme="night"] .rememberBox,.html[data-theme="night"] .guestNotice,.html[data-theme="night"] .actionModalWarning{background:#111}
+html[data-theme="night"] .stat,.html[data-theme="night"] .result,.html[data-theme="night"] .profileStat,.html[data-theme="night"] .ledgerStat,.html[data-theme="night"] .progressCard,.html[data-theme="night"] .practiceHomeMode{background:#000}
+html[data-theme="night"] .practiceHomeMode:hover{background:#000;border-color:#fff}
+html[data-theme="night"] .practiceHubActions button{background:#000;color:#fff;border-color:#fff;box-shadow:none}
+html[data-theme="night"] .practiceHubActions button:hover{background:#000;color:#fff;border-color:#fff;box-shadow:none}
+html[data-theme="night"] .practiceHubActions button:hover:after{width:0;opacity:0}
+html[data-theme="night"] .practiceHomeMode,.html[data-theme="night"] .bookCard,.html[data-theme="night"] .practiceHubActions button{background-color:#000}
+html[data-theme="night"] .heatCell[data-level="1"]{background:#222}
+html[data-theme="night"] .heatCell[data-level="2"]{background:#444}
+html[data-theme="night"] .heatCell[data-level="3"]{background:#666}
+html[data-theme="night"] .heatCell[data-level="4"]{background:#888}
+html[data-theme="night"] .heatCell[data-level="5"]{background:#fff}
 html[data-theme="night"] .top h1,
 html[data-theme="night"] .panel h2,
 html[data-theme="night"] .interstitial h2,
@@ -519,7 +514,7 @@ html[data-theme="night"] .practiceHomeMode .practiceHomeName,
 html[data-theme="night"] .practiceHubActions .practiceName,
 html[data-theme="night"] .progressHero h3{color:var(--accent)}
 html[data-theme="night"] .practiceHomeMode:hover,
-html[data-theme="night"] .practiceHubActions button:hover{background-color:#12110e}
+html[data-theme="night"] .practiceHubActions button:hover{background-color:#000}
 
 </style>
 </head>
@@ -528,7 +523,6 @@ html[data-theme="night"] .practiceHubActions button:hover{background-color:#1211
 <div class="app">
   <div class="top">
     <div class="homeTools">
-      <button id="topCabinetButton" class="utilityButton" type="button" onclick="openCabinet()" data-i18n="cabinetBtn">The Cabinet</button>
       <button class="utilityButton" type="button" onclick="openSettings()" data-i18n="studyBtn">The Study</button>
     </div>
     <div class="accountBar" id="accountBar"></div>
@@ -812,7 +806,6 @@ become"></textarea>
 
       <div class="drawerSection">
         <button type="button" class="drawerPrimaryButton" onclick="openProfileFromDrawer()">Profile</button>
-        <button type="button" onclick="openWordStudio()">The Word Studio</button>
       </div>
 
       <div class="drawerSection">
