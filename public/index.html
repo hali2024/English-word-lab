@@ -306,6 +306,19 @@ textarea::placeholder{color:#a79f91}
 .sourceChoiceGrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .sourceChoiceGrid .panel{margin:0;box-shadow:none}
 .studyHomeButton{display:block;width:100%;max-width:360px;margin:16px auto 0}
+.practiceHubPanel{min-height:520px;display:flex;flex-direction:column;justify-content:center}
+.practiceHubStats{width:100%;max-width:760px;margin:22px auto 28px!important}
+.practiceHubActions{width:min(760px,100%);margin:0 auto;display:flex;flex-direction:column;gap:16px}
+.practiceHubActions button{width:100%;min-height:88px;font-size:21px;letter-spacing:.02em}
+.practiceHubPrompt{margin:12px 0 0!important;font-style:italic;font-size:12px!important}
+.profileNameSection{position:relative;margin-bottom:22px;padding:17px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.profileNameLabel{display:block;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#9a7b4e;font-weight:600;margin-bottom:9px}
+.profileNameRow{display:flex;gap:10px;align-items:center}
+.profileNameInput{position:relative;flex:1;min-width:0;padding:12px 14px;border:1px solid var(--line-dark);background:rgba(255,252,245,.55);color:var(--ink);outline:none;font-size:15px}
+.profileNameInput:focus{border-color:var(--accent)}
+.profileNameButton{flex:0 0 auto;font-size:11px;padding:9px 14px}
+.profileNameStatus{min-height:17px;margin-top:7px;color:var(--muted);font-size:11px;font-style:italic}
+@media(max-width:700px){.practiceHubPanel{min-height:480px}.practiceHubActions button{min-height:76px;font-size:18px}.profileNameRow{align-items:stretch;flex-direction:column}.profileNameButton{width:100%}}
 @media(max-width:700px){
   .profileGrid{grid-template-columns:1fr}
   .rankRow{grid-template-columns:32px 1fr auto}
@@ -1631,15 +1644,16 @@ function openPracticeHub(words,libraryId=null){
 function renderPracticeHub(){
   const lib=state.libraryId?getCabinet().find(x=>x.id===state.libraryId):null;
   const name=lib?lib.name:'This Session';
-  return `<section class="interstitial">
+  return `<section class="interstitial practiceHubPanel">
     <h2>${escapeHTML(name)}</h2>
-    <div class="stats" style="margin:22px 0 22px">${renderStats()}</div>
-    <div class="centerRow" style="flex-direction:column;align-items:stretch;max-width:360px;margin:0 auto">
+    <div class="stats practiceHubStats">${renderStats()}</div>
+    <div class="practiceHubActions">
       <button onclick="hubStartMode('wordToDef')">Word → Meaning</button>
       <button onclick="hubStartMode('defToWord')">Meaning → Word</button>
       <button onclick="hubStartMode('spelling')">Spelling Practice</button>
-      <button class="secondary studyHomeButton" onclick="openCabinet()">The Cabinet</button>
     </div>
+    <button class="secondary studyHomeButton" onclick="openCabinet()">The Cabinet</button>
+    <p class="practiceHubPrompt">Choose how you would like to practice</p>
   </section>`;
 }
 function hubStartMode(mode){
@@ -1807,7 +1821,26 @@ function renderProfile(){
   const studyDays=new Set(Object.keys(globalStats.dailyWords||{}).filter(k=>Array.isArray(globalStats.dailyWords[k])&&globalStats.dailyWords[k].length));
   let currentStreak=0;const cursor=new Date();cursor.setHours(12,0,0,0);while(true){const k=dateKey(cursor);if(!studyDays.has(k))break;currentStreak++;cursor.setDate(cursor.getDate()-1);}
   const bestDay=Object.entries(globalStats.daily||{}).sort((a,b)=>Number(b[1])-Number(a[1]))[0];
-  return `<div class="profileSummary">Your learning record is built from the study activity already saved to this account or browser.</div><div class="profileGrid"><div class="profileStat"><div class="value">${allWords.size}</div><div class="name">Words Encountered</div></div><div class="profileStat"><div class="value">${learned.size}</div><div class="name">Words Learned</div></div><div class="profileStat"><div class="value">${spelled.size}</div><div class="name">Words Spelled</div></div><div class="profileStat"><div class="value">${globalStats.mistakes||0}</div><div class="name">Total Mistakes</div></div><div class="profileStat"><div class="value">${studyDays.size}</div><div class="name">Study Days</div></div><div class="profileStat"><div class="value">${currentStreak}</div><div class="name">Current Streak</div></div></div><div class="rankingSection"><div class="rankingTitle">Most Practised · Top 10</div>${renderRanking(practised,'Practice count')}</div><div class="rankingSection"><div class="rankingTitle">Most Missed · Top 10</div>${renderRanking(missed,'Mistake count')}</div>${bestDay?`<div class="profileNote">Best study day · ${escapeHTML(formatDate(bestDay[0]))} · ${Number(bestDay[1])} words studied.</div>`:''}`;
+  const username=accountUser?.username||'';
+  return `<div class="profileSummary">Your learning record is built from the study activity already saved to this account or browser.</div><div class="profileNameSection"><label class="profileNameLabel" for="profileUsername">Username</label><div class="profileNameRow"><input id="profileUsername" class="profileNameInput" type="text" maxlength="24" value="${escapeHTML(username)}" placeholder="Choose a username"><button class="profileNameButton" type="button" onclick="saveUsername()">Save Username</button></div><div id="profileNameStatus" class="profileNameStatus"></div></div><div class="profileGrid"><div class="profileStat"><div class="value">${allWords.size}</div><div class="name">Words Encountered</div></div><div class="profileStat"><div class="value">${learned.size}</div><div class="name">Words Learned</div></div><div class="profileStat"><div class="value">${spelled.size}</div><div class="name">Words Spelled</div></div><div class="profileStat"><div class="value">${globalStats.mistakes||0}</div><div class="name">Total Mistakes</div></div><div class="profileStat"><div class="value">${studyDays.size}</div><div class="name">Study Days</div></div><div class="profileStat"><div class="value">${currentStreak}</div><div class="name">Current Streak</div></div></div><div class="rankingSection"><div class="rankingTitle">Most Practised · Top 10</div>${renderRanking(practised,'Practice count')}</div><div class="rankingSection"><div class="rankingTitle">Most Missed · Top 10</div>${renderRanking(missed,'Mistake count')}</div>${bestDay?`<div class="profileNote">Best study day · ${escapeHTML(formatDate(bestDay[0]))} · ${Number(bestDay[1])} words studied.</div>`:''}`;
+}
+async function saveUsername(){
+  const input=document.getElementById('profileUsername'),status=document.getElementById('profileNameStatus');
+  if(!input||!status)return;
+  const username=(input.value||'').trim();
+  status.textContent='';
+  if(accountMode!=='account'){status.textContent='Please log in to set a username.';return;}
+  if(!username){status.textContent='Please enter a username.';input.focus();return;}
+  if(username.length<2||username.length>24){status.textContent='Username must be 2–24 characters.';input.focus();return;}
+  if(!/^[A-Za-z0-9_ .-]+$/.test(username)){status.textContent='Use letters, numbers, spaces, _, . or - only.';input.focus();return;}
+  const button=document.querySelector('.profileNameButton');if(button)button.disabled=true;status.textContent='Saving…';
+  try{
+    const data=await apiJSON('/api/profile/username',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({username})});
+    accountUser=data.user;
+    status.textContent='Username saved.';
+    renderAccountBar();
+    showToast('Username saved.');
+  }catch(e){status.textContent=e.message||'Unable to save username.';}finally{if(button)button.disabled=false;}
 }
 async function sendFeedback(){
   const input=document.getElementById('feedbackText');
@@ -1847,7 +1880,7 @@ function openProfileFromDrawer(){openLayer('profilePopover','settingsDrawer');}
 function openLedgerFromDrawer(){openLayer('recordPopover','settingsDrawer');}
 function openAlmanacFromDrawer(){openLayer('almanacPopover','settingsDrawer');}
 function openRankingFromDrawer(){openLayer('rankingPopover','settingsDrawer');loadDailyRanking();}
-async function loadDailyRanking(){const el=document.getElementById('rankingContent');if(!el)return;el.innerHTML='<div class="profileLoading">Loading ranking…</div>';try{const r=await fetch('/api/ranking/daily',{credentials:'include',cache:'no-store'});const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data.error||'Ranking unavailable.');if(!Array.isArray(data.rankings)||!data.rankings.length){el.innerHTML='<div class="profileNote">No registered users found.</div>';return;}const rankings=data.rankings.slice(0,10);el.innerHTML=`<div class="ranking">${rankings.map((x,i)=>`<div class="rankRow"><div class="rankNo">No. ${i+1}</div><div class="rankWord">${escapeHTML(x.displayName||'Learner')}</div><div class="rankCount">${Number(x.score||0)} mastered</div></div>`).join('')}</div>`;}catch(e){el.innerHTML=`<div class="profileNote">${escapeHTML(e.message||'Ranking is unavailable.')}</div>`;}}
+async function loadDailyRanking(){const el=document.getElementById('rankingContent');if(!el)return;el.innerHTML='<div class="profileLoading">Loading ranking…</div>';try{const r=await fetch('/api/ranking/daily',{credentials:'include',cache:'no-store'});const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data.error||'Ranking unavailable.');if(!Array.isArray(data.rankings)||!data.rankings.length){el.innerHTML='<div class="profileNote">No registered users found.</div>';return;}const rankings=data.rankings.slice(0,10);el.innerHTML=`<div class="ranking">${rankings.map((x,i)=>`<div class="rankRow"><div class="rankNo">No. ${i+1}</div><div class="rankWord">${escapeHTML(x.username||'Learner')}</div><div class="rankCount">${Number(x.score||0)} mastered</div></div>`).join('')}</div>`;}catch(e){el.innerHTML=`<div class="profileNote">${escapeHTML(e.message||'Ranking is unavailable.')}</div>`;}}
 
 /* ---------- archive ---------- */
 let pendingArchiveAction=null;
