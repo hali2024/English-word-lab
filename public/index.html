@@ -1207,19 +1207,22 @@ meticulous,adjective,/məˈtɪkjələs/,C1,very careful about small details,She 
 }
 
 /* ---------- speech ---------- */
-let speechVoices=[];
-function loadSpeechVoices(){if(!TTS_SUPPORTED)return;speechVoices=window.speechSynthesis.getVoices();}
-if(TTS_SUPPORTED){loadSpeechVoices();window.speechSynthesis.onvoiceschanged=loadSpeechVoices;}
+let speechAudio=null;
+let speechRequestId=0;
+const EDGE_TTS_VOICE='en-US-AriaNeural';
 function speak(text){
   if(!TTS_SUPPORTED||!text)return;
+  const value=String(text).trim();
+  if(!value)return;
+  const requestId=++speechRequestId;
   try{
-    const synth=window.speechSynthesis;synth.cancel();
-    const u=new SpeechSynthesisUtterance(String(text));
-    const voices=speechVoices.length?speechVoices:synth.getVoices();
-    const englishVoice=voices.find(v=>/^en-US$/i.test(v.lang))||voices.find(v=>/^en-/i.test(v.lang))||voices.find(v=>/English/i.test(v.name));
-    if(englishVoice){u.voice=englishVoice;u.lang=englishVoice.lang;}else u.lang='en-US';
-    u.rate=.92;u.pitch=1;u.volume=1;synth.speak(u);
-  }catch(e){console.warn('Speech synthesis failed:',e);}
+    if(speechAudio){speechAudio.pause();speechAudio.currentTime=0;speechAudio.src='';}
+    const audio=new Audio('https://tts.kina.ink/tts?text='+encodeURIComponent(value)+'&voice='+encodeURIComponent(EDGE_TTS_VOICE)+'&rate='+encodeURIComponent('+0%'));
+    speechAudio=audio;
+    audio.preload='auto';
+    audio.volume=1;
+    audio.play().catch(e=>console.warn('Microsoft Edge Neural Voice playback failed:',e));
+  }catch(e){console.warn('Microsoft Edge Neural Voice failed:',e);}
 }
 function safeJSString(s){return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\r?\n/g,' ');}
 function speakerBtn(word){
@@ -1355,7 +1358,7 @@ function renderDictQuestionScreen(){
       <button type="button" class="speaker" title="Play pronunciation" onclick="speak('${safeJSString(w.word)}')"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round"><path d="M4 9v6h4l5 4V5L8 9H4"></path><path d="M16 9.5c1 .8 1.5 1.6 1.5 2.5s-.5 1.7-1.5 2.5"></path><path d="M18.5 7c1.7 1.4 2.5 3 2.5 5s-.8 3.6-2.5 5"></path></svg></button>
       <input class="dictInput" id="dictInput" lang="en" inputmode="latin" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="done" placeholder="Write what you hear" onbeforeinput="handleDictBeforeInput(event)" oncompositionstart="handleDictCompositionStart(event)" oncompositionend="handleDictCompositionEnd(event)" onpaste="handleDictPaste(event)" ondrop="handleDictDrop(event)" onkeydown="if(event.key==='Enter')checkDictation()">
       <div class="centerRow"><button class="secondary" type="button" onclick="speak('${safeJSString(w.word)}')">Replay</button><button class="secondary" type="button" onclick="toggleSpellingHint()">Hint</button><button type="button" onclick="checkDictation()">Submit</button></div>
-      <div id="spellingHint" class="spellingHint hidden">${w.phonetic?escapeHTML(w.phonetic):'No phonetic transcription available.'}</div>
+      <div id="spellingHint" class="spellingHint hidden">${(w.phonetic||w.ipa)?escapeHTML(w.phonetic||w.ipa):'No phonetic transcription available.'}</div>
     </div>
   </section>`;
 }
@@ -1451,6 +1454,7 @@ function renderComplete(){
     <div class="centerRow">
       <button onclick="restartSameLibrary()">Restart Recognition & Spelling</button>
       <button class="secondary" onclick="restartSpellingOnly()">Restart Spelling</button>
+      <button class="secondary" onclick="importNewLibrary()">Import New Library</button>
     </div>
   </section>`;
 }
@@ -2076,8 +2080,8 @@ if(accountMode==='account'){
 <style id="lexicon-pet-addon">
 #lexicon-pet-wrap{
   position:fixed;
-  right:6px;
-  bottom:4px;
+  right:10px;
+  bottom:8px;
   width:104px;
   height:112px;
   z-index:90;
@@ -2115,7 +2119,7 @@ if(accountMode==='account'){
 }
 #lexicon-pet-bubble.show{opacity:1;transform:translateY(0)}
 @media(max-width:600px){
-  #lexicon-pet-wrap{right:2px;bottom:0px;width:78px;height:86px}
+  #lexicon-pet-wrap{right:4px;bottom:3px;width:78px;height:86px}
   #lexicon-pet-wrap .lexicon-pet-hit{width:72px;height:80px}
   #lexicon-pet-bubble{right:8px;bottom:82px;width:160px;font-size:11px}
 }
