@@ -132,6 +132,7 @@ textarea::placeholder{color:#a79f91}
 .dictBox .speaker{width:68px;height:68px;font-size:26px;margin-bottom:18px}
 .dictInput{width:100%;max-width:360px;text-align:center;font-size:21px;line-height:1.3;padding:14px;border-radius:2px;border:1px solid var(--line-dark);background:transparent;letter-spacing:.04em;color:var(--ink)}
 .dictInput:focus{outline:none;border-color:var(--accent);box-shadow:none}
+.dictHint{margin-top:12px;color:var(--accent);font-size:18px;line-height:1.4;font-style:italic;letter-spacing:.03em}
 .dictInput.correct{border-color:var(--good);background:var(--good-bg);color:var(--good)}
 .dictInput.wrong{border-color:var(--bad);background:var(--bad-bg);color:var(--bad)}
 .centerRow{display:flex;justify-content:center;gap:10px;margin-top:18px;flex-wrap:wrap}
@@ -946,7 +947,8 @@ function normalizeWordRecord(w){
     synonyms:Array.isArray(w?.synonyms)?w.synonyms.map(String).map(x=>x.trim()).filter(Boolean):[],
     antonyms:Array.isArray(w?.antonyms)?w.antonyms.map(String).map(x=>x.trim()).filter(Boolean):[],
     root:String(w?.root||'').trim(),
-    cognates:Array.isArray(w?.cognates)?w.cognates.map(String).map(x=>x.trim()).filter(Boolean):[]
+    cognates:Array.isArray(w?.cognates)?w.cognates.map(String).map(x=>x.trim()).filter(Boolean):[],
+    phonetic:String(w?.phonetic||w?.ipa||w?.pronunciation||'').trim()
   };
 }
 
@@ -1250,29 +1252,64 @@ function advanceRound(){state.roundNumber++;beginRecognitionRound();loadRecognit
 function renderPhaseTransition(){
   return `<section class="interstitial">
     <h2>Recognition Complete</h2>
-    <p>Every word has been remembered in the latest round. The spelling test follows.</p>
-    <div class="centerRow"><button onclick="startDictationPhase()">Begin Spelling Test</button></div>
+    <p>Every word has been remembered in the latest round. Choose what you would like to do next.</p>
+    <div class="centerRow">
+      <button onclick="restartRecognitionOnly()">Restart Recognition</button>
+      <button onclick="startDictationPhase()">Begin Spelling Test</button>
+      <button class="secondary" onclick="exitToHome()">Exit to Home</button>
+    </div>
   </section>`;
+}
+function restartRecognitionOnly(){
+  const words=state.words,libraryId=state.libraryId,reviewMode=state.reviewMode;
+  state=freshState(words,libraryId,reviewMode);
+  beginRecognitionRound();loadRecognitionQuestion();save();render();
+}
+function exitToHome(){
+  try{localStorage.removeItem(KEY);}catch(e){}
+  state=null;
+  showHome();
+  resetImportFields();
+  window.scrollTo({top:0,behavior:'smooth'});
 }
 
 /* ---------- dictation ---------- */
 function startDictationPhase(){state.phase='dictation';state.dictQueue=shuffle(state.words.map((_,i)=>i));loadDictQuestion();save();render();}
 function loadDictQuestion(){
   if(state.dictQueue.length===0){state.phase='done';state.screen='complete';if(state.reviewMode)completeDailyReview();return;}
-  const id=state.dictQueue[0];state.current={id,checked:false,correct:null,inputVal:''};state.locked=false;state.screen='dictQuestion';
+  const id=state.dictQueue[0];state.current={id,checked:false,correct:null,inputVal:'',hintVisible:false};state.locked=false;state.screen='dictQuestion';
 }
 function renderDictQuestionScreen(){
   const w=state.words[state.current.id],remaining=uniq(state.dictQueue).length;
   recordWordEncounter(state.current.id);
   setTimeout(()=>speak(w.word),150);
+  const hint=state.current.hintVisible;
+  const phonetic=w.phonetic||'';
   return `<section class="quiz">
     <div class="mode">Spelling <small>${remaining} remaining</small></div>
     <div class="dictBox">
       <button type="button" class="speaker" title="Play pronunciation" onclick="speak('${safeJSString(w.word)}')"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round"><path d="M4 9v6h4l5 4V5L8 9H4"></path><path d="M16 9.5c1 .8 1.5 1.6 1.5 2.5s-.5 1.7-1.5 2.5"></path><path d="M18.5 7c1.7 1.4 2.5 3 2.5 5s-.8 3.6-2.5 5"></path></svg></button>
       <input class="dictInput" id="dictInput" lang="en" inputmode="latin" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="done" placeholder="Write what you hear" onbeforeinput="handleDictBeforeInput(event)" oncompositionstart="handleDictCompositionStart(event)" oncompositionend="handleDictCompositionEnd(event)" onpaste="handleDictPaste(event)" ondrop="handleDictDrop(event)" onkeydown="if(event.key==='Enter')checkDictation()">
-      <div class="centerRow"><button class="secondary" type="button" onclick="speak('${safeJSString(w.word)}')">Replay</button><button type="button" onclick="checkDictation()">Submit</button></div>
+      ${hint?`<div class="dictHint"><span>${phonetic?escapeHTML(phonetic):'IPA unavailable'}</span></div>`:''}
+      <div class="centerRow"><button class="secondary" type="button" onclick="toggleDictHint()">${hint?'Hide Hint':'Hint'}</button><button class="secondary" type="button" onclick="speak('${safeJSString(w.word)}')">Replay</button><button type="button" onclick="checkDictation()">Submit</button></div>
     </div>
   </section>`;
+}
+async function toggleDictHint(){
+  if(state.locked||!state.current)return;
+  if(state.current.hintVisible){state.current.hintVisible=false;save();render();return;}
+  const w=state.words[state.current.id];
+  if(!w.phonetic){
+    try{
+      const r=await fetch('https://api.dictionaryapi.dev/api/v2/entries/en/'+encodeURIComponent(w.word));
+      if(r.ok){
+        const data=await r.json();
+        const found=data?.[0]?.phonetics?.find(p=>p?.text);
+        w.phonetic=found?.text||'';
+      }
+    }catch(e){console.warn('Unable to load IPA hint:',e);}
+  }
+  state.current.hintVisible=true;save();render();
 }
 let dictCompositionActive=false;
 let dictCompositionStartValue='';
@@ -1360,10 +1397,19 @@ function renderComplete(){
       <div class="result"><div class="value">${dict}%</div><div class="name">Spelling</div><div class="note">${state.stats.dictAttempts} attempts</div></div>
     </div>
     <div class="centerRow">
-      <button onclick="restartSameLibrary()">Study Again</button>
-      <button class="secondary" onclick="importNewLibrary()">Import New Library</button>
+      <button onclick="restartSameLibrary()">Restart</button>
+      <button onclick="restartSpellingOnly()">Restart Spelling</button>
+      <button class="secondary" onclick="exitToHome()">Exit to Home</button>
     </div>
   </section>`;
+}
+function restartSpellingOnly(){
+  if(!state)return;
+  state.phase='dictation';
+  state.dictQueue=shuffle(state.words.map((_,i)=>i));
+  state.stats.dictAttempts=0;
+  state.stats.dictCorrect=0;
+  loadDictQuestion();save();render();
 }
 function restartSameLibrary(){
   const words=state.words,libraryId=state.libraryId,reviewMode=state.reviewMode;
