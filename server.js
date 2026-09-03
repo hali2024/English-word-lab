@@ -87,6 +87,9 @@ app.use('/api/data', (req, res, next) => {
   next();
 });
 
+app.use('/api/data', (req, res, next) => maintenanceGate(req, res, next));
+app.use('/api/generate', (req, res, next) => maintenanceGate(req, res, next));
+
 
 // ============================================================
 // Utility
@@ -275,6 +278,17 @@ async function initDB() {
       sent_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       UNIQUE(user_id, report_date)
     );
+
+    CREATE TABLE IF NOT EXISTS site_settings (
+      key TEXT PRIMARY KEY,
+      value JSONB NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS announcements (
+      id BIGSERIAL PRIMARY KEY,
+      content TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
   `);
 
   // Add username support to existing databases without deleting any data.
@@ -288,6 +302,103 @@ async function initDB() {
       ON users (LOWER(username))
       WHERE username IS NOT NULL AND username <> '';
   `);
+
+  await loadMaintenanceState();
+}
+
+
+// ============================================================
+// Maintenance mode
+// ============================================================
+
+const DEFAULT_MAINTENANCE_STATE = {
+  enabled: false,
+  message: '',
+  expectedEndAt: null
+};
+
+// In-memory cache so every request doesn't have to hit the DB.
+// Refreshed whenever the admin toggles maintenance, and once at boot.
+let maintenanceState = { ...DEFAULT_MAINTENANCE_STATE };
+
+async function loadMaintenanceState() {
+  if (!pool) {
+    return;
+  }
+
+  try {
+    const result = await pool.query(
+      `SELECT value FROM site_settings WHERE key='maintenance'`
+    );
+
+    if (result.rowCount) {
+      maintenanceState = {
+        ...DEFAULT_MAINTENANCE_STATE,
+        ...result.rows[0].value
+      };
+    }
+  } catch (error) {
+    console.error('Unable to load maintenance state:', error);
+  }
+}
+
+async function saveMaintenanceState(next) {
+  maintenanceState = {
+    enabled: !!next.enabled,
+    message: String(next.message || '').slice(0, 2000),
+    expectedEndAt: next.expectedEndAt || null
+  };
+
+  await pool.query(
+    `
+    INSERT INTO site_settings(key, value)
+    VALUES ('maintenance', $1)
+    ON CONFLICT (key) DO UPDATE SET value=$1
+    `,
+    [JSON.stringify(maintenanceState)]
+  );
+
+  return maintenanceState;
+}
+
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '';
+
+function requireAdminConfigured(res) {
+  if (!ADMIN_PASSWORD) {
+    res.status(503).json({
+      error: 'Admin access is not configured. Set ADMIN_PASSWORD in Railway.'
+    });
+
+    return false;
+  }
+
+  return true;
+}
+
+function requireAdmin(req, res, next) {
+  if (!req.session.isAdmin) {
+    return res.status(401).json({ error: 'Admin login required.' });
+  }
+
+  next();
+}
+
+// Blocks normal study traffic while maintenance is enabled.
+// Admin sessions (and the admin/auth/status endpoints themselves,
+// which are mounted separately) pass through untouched.
+function maintenanceGate(req, res, next) {
+  if (maintenanceState.enabled && !req.session.isAdmin) {
+    return res.status(503).json({
+      error: 'maintenance',
+      maintenance: {
+        enabled: true,
+        message: maintenanceState.message,
+        expectedEndAt: maintenanceState.expectedEndAt
+      }
+    });
+  }
+
+  next();
 }
 
 
@@ -2946,6 +3057,216 @@ app.post(
           'Unable to generate this word right now. Please try again.'
       });
     }
+  }
+);
+
+
+// ============================================================
+// SITE STATUS — public (maintenance state + announcement board)
+// ============================================================
+
+app.get(
+  '/api/site/status',
+  async (req, res) => {
+    try {
+      let announcements = [];
+
+      if (pool) {
+        const result = await pool.query(
+          `
+          SELECT id, content, created_at
+          FROM announcements
+          ORDER BY created_at DESC
+          LIMIT 30
+          `
+        );
+
+        announcements = result.rows.map(row => ({
+          id: row.id,
+          content: row.content,
+          createdAt: row.created_at
+        }));
+      }
+
+      res.json({
+        maintenance: maintenanceState,
+        announcements,
+        isAdmin: !!req.session.isAdmin
+      });
+    } catch (error) {
+      console.error(error);
+
+      res.status(500).json({
+        error: 'Unable to load site status.'
+      });
+    }
+  }
+);
+
+
+// ============================================================
+// ADMIN — login / logout / session check
+// ============================================================
+
+app.post(
+  '/api/admin/login',
+  async (req, res) => {
+    if (!requireAdminConfigured(res)) {
+      return;
+    }
+
+    const password = String(req.body?.password || '');
+
+    // Constant-time-ish comparison to avoid trivial timing leaks.
+    const a = Buffer.from(password);
+    const b = Buffer.from(ADMIN_PASSWORD);
+
+    const valid =
+      a.length === b.length &&
+      crypto.timingSafeEqual(a, b);
+
+    if (!valid) {
+      return res.status(401).json({ error: 'Incorrect admin password.' });
+    }
+
+    req.session.isAdmin = true;
+    await saveSession(req);
+
+    res.json({ ok: true });
+  }
+);
+
+app.post(
+  '/api/admin/logout',
+  async (req, res) => {
+    req.session.isAdmin = false;
+    await saveSession(req);
+    res.json({ ok: true });
+  }
+);
+
+app.get(
+  '/api/admin/check',
+  (req, res) => {
+    res.json({ isAdmin: !!req.session.isAdmin });
+  }
+);
+
+
+// ============================================================
+// ADMIN — maintenance toggle
+// ============================================================
+
+app.post(
+  '/api/admin/maintenance',
+  requireAdmin,
+  async (req, res) => {
+    if (!requireDB(res)) {
+      return;
+    }
+
+    try {
+      const next = await saveMaintenanceState({
+        enabled: !!req.body?.enabled,
+        message: req.body?.message,
+        expectedEndAt: req.body?.expectedEndAt
+      });
+
+      res.json({ maintenance: next });
+    } catch (error) {
+      console.error(error);
+
+      res.status(500).json({
+        error: 'Unable to update maintenance state.'
+      });
+    }
+  }
+);
+
+
+// ============================================================
+// ADMIN — announcement board (maintenance/update history)
+// ============================================================
+
+app.post(
+  '/api/admin/announcements',
+  requireAdmin,
+  async (req, res) => {
+    if (!requireDB(res)) {
+      return;
+    }
+
+    const content = String(req.body?.content || '').trim();
+
+    if (!content) {
+      return res.status(400).json({ error: 'Announcement content is required.' });
+    }
+
+    try {
+      const result = await pool.query(
+        `
+        INSERT INTO announcements(content)
+        VALUES ($1)
+        RETURNING id, content, created_at
+        `,
+        [content.slice(0, 2000)]
+      );
+
+      const row = result.rows[0];
+
+      res.json({
+        announcement: {
+          id: row.id,
+          content: row.content,
+          createdAt: row.created_at
+        }
+      });
+    } catch (error) {
+      console.error(error);
+
+      res.status(500).json({
+        error: 'Unable to create announcement.'
+      });
+    }
+  }
+);
+
+app.delete(
+  '/api/admin/announcements/:id',
+  requireAdmin,
+  async (req, res) => {
+    if (!requireDB(res)) {
+      return;
+    }
+
+    try {
+      await pool.query(
+        `DELETE FROM announcements WHERE id=$1`,
+        [req.params.id]
+      );
+
+      res.json({ ok: true });
+    } catch (error) {
+      console.error(error);
+
+      res.status(500).json({
+        error: 'Unable to delete announcement.'
+      });
+    }
+  }
+);
+
+
+// ============================================================
+// Admin panel page
+// ============================================================
+
+app.get(
+  '/admin',
+  (req, res) => {
+    res.sendFile(
+      path.join(__dirname, 'public', 'admin.html')
+    );
   }
 );
 
