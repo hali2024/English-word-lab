@@ -137,6 +137,7 @@ function userPublic(user) {
   return {
     id: user.id,
     email: user.email,
+    username: user.username || '',
     emailVerified: !!user.email_verified
   };
 }
@@ -192,6 +193,7 @@ async function initDB() {
     CREATE TABLE IF NOT EXISTS users (
       id UUID PRIMARY KEY,
       email TEXT NOT NULL UNIQUE,
+      username TEXT,
       password_hash TEXT NOT NULL,
       email_verified BOOLEAN NOT NULL DEFAULT FALSE,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -273,6 +275,18 @@ async function initDB() {
       sent_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       UNIQUE(user_id, report_date)
     );
+  `);
+
+  // Add username support to existing databases without deleting any data.
+  await pool.query(`
+    ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS username TEXT;
+  `);
+
+  await pool.query(`
+    CREATE UNIQUE INDEX IF NOT EXISTS users_username_unique
+      ON users (LOWER(username))
+      WHERE username IS NOT NULL AND username <> '';
   `);
 }
 
@@ -1273,6 +1287,132 @@ app.get(
 
 
 // ============================================================
+// PROFILE — UPDATE USERNAME
+// ============================================================
+
+app.put(
+  '/api/profile/username',
+  async (req, res) => {
+    if (!requireDB(res)) {
+      return;
+    }
+
+    if (!req.session.userId) {
+      return res.status(401).json({
+        error:
+          'Not logged in.'
+      });
+    }
+
+    try {
+      const username =
+        String(
+          req.body?.username || ''
+        ).trim();
+
+      if (!username) {
+        return res.status(400).json({
+          error:
+            'Please enter a username.'
+        });
+      }
+
+      if (
+        username.length < 2 ||
+        username.length > 24
+      ) {
+        return res.status(400).json({
+          error:
+            'Username must be 2 to 24 characters.'
+        });
+      }
+
+      if (
+        !/^[A-Za-z0-9_ .-]+$/.test(
+          username
+        )
+      ) {
+        return res.status(400).json({
+          error:
+            'Username may contain letters, numbers, spaces, underscores, periods, and hyphens only.'
+        });
+      }
+
+      const existing =
+        await pool.query(
+          `
+          SELECT id
+          FROM users
+          WHERE LOWER(username)=LOWER($1)
+            AND id<>$2
+          LIMIT 1
+          `,
+          [
+            username,
+            req.session.userId
+          ]
+        );
+
+      if (existing.rowCount) {
+        return res.status(409).json({
+          error:
+            'That username is already taken.'
+        });
+      }
+
+      const result =
+        await pool.query(
+          `
+          UPDATE users
+          SET
+            username=$1,
+            updated_at=NOW()
+          WHERE id=$2
+          RETURNING *
+          `,
+          [
+            username,
+            req.session.userId
+          ]
+        );
+
+      if (!result.rowCount) {
+        return res.status(404).json({
+          error:
+            'User account was not found.'
+        });
+      }
+
+      res.json({
+        ok: true,
+        user:
+          userPublic(
+            result.rows[0]
+          )
+      });
+    } catch (error) {
+      if (error?.code === '23505') {
+        return res.status(409).json({
+          error:
+            'That username is already taken.'
+        });
+      }
+
+      console.error(
+        'Username update error:',
+        error
+      );
+
+      res.status(500).json({
+        error:
+          'Unable to update username.'
+      });
+    }
+  }
+);
+
+
+// ============================================================
 // LOGOUT
 // ============================================================
 
@@ -1959,6 +2099,7 @@ app.get(
           SELECT
             u.id,
             u.email,
+            u.username,
             COUNT(se.id)::int AS score
           FROM users u
           LEFT JOIN study_events se
@@ -1967,8 +2108,13 @@ app.get(
            AND se.created_at >= CURRENT_DATE
            AND se.created_at < CURRENT_DATE + INTERVAL '1 day'
           WHERE u.email_verified=TRUE
-          GROUP BY u.id, u.email
-          ORDER BY score DESC, u.email ASC
+          GROUP BY u.id, u.email, u.username
+          ORDER BY
+            score DESC,
+            COALESCE(
+              NULLIF(LOWER(u.username), ''),
+              LOWER(u.email)
+            ) ASC
           LIMIT 100
           `
         );
@@ -1976,45 +2122,17 @@ app.get(
       const rankings =
         result.rows.map(
           (row, index) => {
-            const email =
+            const username =
               String(
-                row.email || ''
-              );
-
-            const at =
-              email.indexOf('@');
-
-            const local =
-              at >= 0
-                ? email.slice(
-                    0,
-                    at
-                  )
-                : email;
-
-            const domain =
-              at >= 0
-                ? email.slice(
-                    at + 1
-                  )
-                : '';
-
-            const maskedLocal =
-              local.length <= 2
-                ? `${local}***`
-                : `${local.slice(
-                    0,
-                    2
-                  )}***`;
+                row.username || ''
+              ).trim();
 
             return {
               rank:
                 index + 1,
 
               displayName:
-                domain
-                  ? `${maskedLocal}@${domain}`
-                  : maskedLocal,
+                username || 'Anonymous',
 
               score:
                 Number(
