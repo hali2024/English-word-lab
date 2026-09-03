@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Lexicon · 管理后台</title>
+<style>
+:root{
+  --paper:#f3ecdd;--ink:#2b2723;--muted:#75695c;--line:rgba(74,55,39,.20);
+  --accent:#71343b;--good:#2f6b3f;--good-bg:#e4efe4;--bad:#a13b3b;--bad-bg:#f6e4e2;
+  --white:#fbf7ed;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;min-height:100vh;color:var(--ink);background:var(--paper);
+  font-family:Georgia,"Times New Roman",serif;padding:40px 20px 80px;
+}
+.wrap{max-width:640px;margin:0 auto}
+h1{font-size:32px;font-weight:400;color:var(--accent);margin:0 0 4px}
+.sub{color:var(--muted);font-size:14px;margin:0 0 32px}
+.card{
+  background:var(--white);border:1px solid var(--line);border-radius:3px;
+  padding:24px;margin-bottom:24px;box-shadow:0 10px 30px rgba(52,38,24,.08);
+}
+h2{font-size:17px;font-weight:600;margin:0 0 16px;color:var(--ink)}
+label{display:block;font-size:12px;color:var(--muted);margin:14px 0 5px;letter-spacing:.03em}
+input[type=text],input[type=password],input[type=datetime-local],textarea{
+  width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:2px;
+  background:#fff;font:inherit;font-size:14px;color:var(--ink);
+}
+textarea{min-height:90px;resize:vertical}
+button{
+  border:1px solid var(--accent);border-radius:2px;padding:10px 18px;font-size:13px;
+  font-weight:500;cursor:pointer;background:var(--accent);color:var(--paper);margin-top:16px;
+}
+button.secondary{background:transparent;color:var(--accent)}
+button.danger{background:transparent;color:var(--bad);border-color:var(--bad)}
+button:disabled{opacity:.5;cursor:default}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.switch{display:flex;align-items:center;gap:10px;margin-top:4px}
+.switch input{width:18px;height:18px}
+.status{font-size:12px;padding:3px 9px;border-radius:20px;display:inline-block}
+.status.on{background:var(--bad-bg);color:var(--bad)}
+.status.off{background:var(--good-bg);color:var(--good)}
+.hint{font-size:12px;color:var(--muted);margin-top:6px}
+.list{margin-top:16px;border-top:1px solid var(--line);padding-top:12px}
+.item{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);font-size:13px}
+.item .content{flex:1;white-space:pre-wrap}
+.item .time{color:var(--muted);font-size:11px;white-space:nowrap}
+.item button{margin:0;padding:4px 9px;font-size:11px}
+#toast{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+  background:var(--ink);color:var(--paper);padding:10px 18px;border-radius:3px;
+  font-size:13px;display:none;z-index:99;
+}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>管理后台</h1>
+  <p class="sub">The Lexicon · 维护模式与公告板管理</p>
+
+  <div id="loginCard" class="card">
+    <h2>管理员登录</h2>
+    <label>密码</label>
+    <input type="password" id="pwInput" onkeydown="if(event.key==='Enter')doLogin()">
+    <button onclick="doLogin()">登录</button>
+    <p class="hint" id="loginError"></p>
+  </div>
+
+  <div id="panel" class="hidden">
+    <div class="card">
+      <h2>网站维护开关 <span id="maintStatus" class="status off">未开启</span></h2>
+      <div class="switch">
+        <input type="checkbox" id="maintToggle" onchange="onToggleChange()">
+        <span>开启维护模式（开启后，普通用户将无法使用练习功能）</span>
+      </div>
+      <label>给用户看的公告内容（会显示在首页/练习页公告板）</label>
+      <textarea id="maintMessage" placeholder="例如：网站正在升级词库系统，暂时无法使用练习功能。"></textarea>
+      <label>预计恢复时间（可选）</label>
+      <input type="datetime-local" id="maintEndAt">
+      <div class="row">
+        <button onclick="saveMaintenance()">保存并应用</button>
+        <button class="secondary" onclick="loadStatus()">刷新状态</button>
+      </div>
+      <p class="hint">保存后立即生效，普通用户无需刷新即可在下次请求时看到变化。</p>
+    </div>
+
+    <div class="card">
+      <h2>发布一条更新 / 维护公告</h2>
+      <p class="hint">用于在首页公告板留下一条历史记录，例如“维护已结束”“新增了 XX 功能”等。</p>
+      <textarea id="newAnnouncement" placeholder="写下这次更新或维护的内容…"></textarea>
+      <button onclick="postAnnouncement()">发布公告</button>
+      <div class="list" id="announcementList"></div>
+    </div>
+
+    <button class="danger" onclick="doLogout()">退出登录</button>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+let isAdmin=false;
+
+function toast(msg){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.style.display='block';
+  clearTimeout(toast.t);
+  toast.t=setTimeout(()=>el.style.display='none',2600);
+}
+
+async function doLogin(){
+  const password=document.getElementById('pwInput').value;
+  const errEl=document.getElementById('loginError');
+  errEl.textContent='';
+  try{
+    const r=await fetch('/api/admin/login',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      credentials:'include',
+      body:JSON.stringify({password})
+    });
+    const data=await r.json();
+    if(!r.ok){errEl.textContent=data.error||'登录失败';return;}
+    isAdmin=true;
+    document.getElementById('loginCard').classList.add('hidden');
+    document.getElementById('panel').classList.remove('hidden');
+    loadStatus();
+  }catch(e){errEl.textContent='网络错误，请重试。';}
+}
+
+async function doLogout(){
+  await fetch('/api/admin/logout',{method:'POST',credentials:'include'});
+  isAdmin=false;
+  document.getElementById('panel').classList.add('hidden');
+  document.getElementById('loginCard').classList.remove('hidden');
+  document.getElementById('pwInput').value='';
+}
+
+function toLocalInputValue(iso){
+  if(!iso)return '';
+  const d=new Date(iso);
+  const pad=n=>String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+async function loadStatus(){
+  try{
+    const r=await fetch('/api/site/status',{credentials:'include'});
+    const data=await r.json();
+    if(!data.isAdmin){
+      // Session expired or not logged in.
+      document.getElementById('panel').classList.add('hidden');
+      document.getElementById('loginCard').classList.remove('hidden');
+      return;
+    }
+    const m=data.maintenance||{};
+    document.getElementById('maintToggle').checked=!!m.enabled;
+    document.getElementById('maintMessage').value=m.message||'';
+    document.getElementById('maintEndAt').value=toLocalInputValue(m.expectedEndAt);
+    const statusEl=document.getElementById('maintStatus');
+    statusEl.textContent=m.enabled?'维护中':'未开启';
+    statusEl.className='status '+(m.enabled?'on':'off');
+
+    const list=document.getElementById('announcementList');
+    list.innerHTML=(data.announcements||[]).map(a=>`
+      <div class="item">
+        <div>
+          <div class="content">${escapeHTML(a.content)}</div>
+          <div class="time">${new Date(a.createdAt).toLocaleString('zh-CN')}</div>
+        </div>
+        <button class="danger" onclick="deleteAnnouncement(${a.id})">删除</button>
+      </div>
+    `).join('')||'<p class="hint">暂无公告记录。</p>';
+  }catch(e){toast('加载状态失败');}
+}
+
+function escapeHTML(s){
+  return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function onToggleChange(){
+  // Purely visual — the actual switch only takes effect on save.
+}
+
+async function saveMaintenance(){
+  const enabled=document.getElementById('maintToggle').checked;
+  const message=document.getElementById('maintMessage').value;
+  const endAtLocal=document.getElementById('maintEndAt').value;
+  const expectedEndAt=endAtLocal?new Date(endAtLocal).toISOString():null;
+  try{
+    const r=await fetch('/api/admin/maintenance',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      credentials:'include',
+      body:JSON.stringify({enabled,message,expectedEndAt})
+    });
+    const data=await r.json();
+    if(!r.ok){toast(data.error||'保存失败');return;}
+    toast('已保存并应用');
+    loadStatus();
+  }catch(e){toast('网络错误，保存失败');}
+}
+
+async function postAnnouncement(){
+  const content=document.getElementById('newAnnouncement').value.trim();
+  if(!content){toast('请输入公告内容');return;}
+  try{
+    const r=await fetch('/api/admin/announcements',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      credentials:'include',
+      body:JSON.stringify({content})
+    });
+    const data=await r.json();
+    if(!r.ok){toast(data.error||'发布失败');return;}
+    document.getElementById('newAnnouncement').value='';
+    toast('已发布');
+    loadStatus();
+  }catch(e){toast('网络错误，发布失败');}
+}
+
+async function deleteAnnouncement(id){
+  if(!confirm('确定删除这条公告吗？'))return;
+  try{
+    const r=await fetch('/api/admin/announcements/'+id,{method:'DELETE',credentials:'include'});
+    const data=await r.json();
+    if(!r.ok){toast(data.error||'删除失败');return;}
+    loadStatus();
+  }catch(e){toast('网络错误，删除失败');}
+}
+
+// If already logged in (session still valid), skip the login form.
+(async()=>{
+  try{
+    const r=await fetch('/api/admin/check',{credentials:'include'});
+    const data=await r.json();
+    if(data.isAdmin){
+      isAdmin=true;
+      document.getElementById('loginCard').classList.add('hidden');
+      document.getElementById('panel').classList.remove('hidden');
+      loadStatus();
+    }
+  }catch(e){}
+})();
+</script>
+</body>
+</html>
