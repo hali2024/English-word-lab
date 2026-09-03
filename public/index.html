@@ -122,6 +122,10 @@ textarea::placeholder{color:#a79f91}
 .block{margin-top:24px;padding-top:18px;border-top:1px solid var(--line)}
 .block h3{font-size:10px;text-transform:uppercase;letter-spacing:.18em;color:#9a7b4e;margin:0 0 10px;font-weight:600}
 .definition{font-size:21px;font-weight:400;line-height:1.5}
+.partOfSpeech{font-size:15px;font-style:italic;color:var(--muted);margin:-2px 0 8px}
+.wordMeta{display:flex;align-items:center;gap:10px;margin-top:4px;flex-wrap:wrap}
+.phonetic{font-size:15px;color:var(--muted);font-style:italic}
+.cefr{display:inline-block;border:1px solid var(--line-dark);padding:3px 7px;border-radius:2px;font-size:10px;letter-spacing:.12em;color:var(--accent);text-transform:uppercase}
 .examples{display:grid;gap:12px}
 .example{font-size:14px;line-height:1.7;color:var(--muted);font-style:italic;padding-left:15px;border-left:1px solid var(--accent)}
 .chips{display:flex;flex-wrap:wrap;gap:7px}
@@ -129,10 +133,10 @@ textarea::placeholder{color:#a79f91}
 .chip.empty{border:0;color:var(--muted);font-weight:500;font-style:italic;padding-left:0}
 .rootText{font-size:13px;line-height:1.75;color:var(--ink);background:rgba(230,218,197,.40);padding:14px;border-left:2px solid var(--accent)}
 .dictBox{display:flex;flex-direction:column;align-items:center;text-align:center;padding:18px 0 8px}
+.spellingHint{margin-top:12px;font-size:14px;color:var(--muted);font-style:italic;min-height:20px}
 .dictBox .speaker{width:68px;height:68px;font-size:26px;margin-bottom:18px}
 .dictInput{width:100%;max-width:360px;text-align:center;font-size:21px;line-height:1.3;padding:14px;border-radius:2px;border:1px solid var(--line-dark);background:transparent;letter-spacing:.04em;color:var(--ink)}
 .dictInput:focus{outline:none;border-color:var(--accent);box-shadow:none}
-.dictHint{margin-top:12px;color:var(--accent);font-size:18px;line-height:1.4;font-style:italic;letter-spacing:.03em}
 .dictInput.correct{border-color:var(--good);background:var(--good-bg);color:var(--good)}
 .dictInput.wrong{border-color:var(--bad);background:var(--bad-bg);color:var(--bad)}
 .centerRow{display:flex;justify-content:center;gap:10px;margin-top:18px;flex-wrap:wrap}
@@ -346,7 +350,7 @@ become"></textarea>
       <section class="panel">
         <h2>From a CSV</h2>
         <p class="hint">Paste your CSV here</p>
-        <textarea id="csvInput" placeholder="word,definition,example1,example2,example3,synonyms,antonyms,root_analysis,cognates
+        <textarea id="csvInput" placeholder="word,part_of_speech,phonetic,cefr,definition,example1,example2,example3,synonyms,antonyms,root_analysis,cognates
 "></textarea>
         <div class="row">
           <button onclick="loadCSV()">Load Library</button>
@@ -914,26 +918,90 @@ function loadPersistentStats(legacyState){
 
 function loadState(){
   let x=null;
-  try{x=JSON.parse(localStorage.getItem(KEY)||'null');}catch(e){}
+
+  try{
+    x=JSON.parse(localStorage.getItem(KEY)||'null');
+  }catch(e){
+    x=null;
+  }
+
   loadPersistentStats(x);
 
-  if(x&&Array.isArray(x.words)&&x.words.length){
+  if(x && Array.isArray(x.words) && x.words.length){
+
     state=x;
+
     state.libraryId=state.libraryId||null;
     state.reviewMode=!!state.reviewMode;
     state.words=state.words.map(normalizeWordRecord);
+
     if(!state.stats)state.stats={};
-    state.stats.recAttempts=typeof state.stats.recAttempts==='number'?state.stats.recAttempts:0;
-    state.stats.recCorrect=typeof state.stats.recCorrect==='number'?state.stats.recCorrect:0;
-    state.stats.dictAttempts=typeof state.stats.dictAttempts==='number'?state.stats.dictAttempts:0;
-    state.stats.dictCorrect=typeof state.stats.dictCorrect==='number'?state.stats.dictCorrect:0;
+
+    state.stats.recAttempts=
+      typeof state.stats.recAttempts==='number'
+        ? state.stats.recAttempts
+        : 0;
+
+    state.stats.recCorrect=
+      typeof state.stats.recCorrect==='number'
+        ? state.stats.recCorrect
+        : 0;
+
+    state.stats.dictAttempts=
+      typeof state.stats.dictAttempts==='number'
+        ? state.stats.dictAttempts
+        : 0;
+
+    state.stats.dictCorrect=
+      typeof state.stats.dictCorrect==='number'
+        ? state.stats.dictCorrect
+        : 0;
+
     state.stats.learnedWords=globalStats.learnedWords;
     state.stats.spelledWords=globalStats.spelledWords;
     state.stats.mistakes=globalStats.mistakes;
     state.stats.daily=globalStats.daily;
+
+    /*
+     * Repair an incomplete saved state.
+     *
+     * Older/partially-saved states may have screen="question"
+     * but current=null. Rendering such a state causes:
+     * Cannot read properties of null (reading 'id')
+     */
+    if(
+      state.screen==='question' &&
+      (
+        !state.current ||
+        !Number.isInteger(state.current.id) ||
+        !state.words[state.current.id]
+      )
+    ){
+      beginRecognitionRound();
+      loadRecognitionQuestion();
+    }
+
+    /*
+     * Also repair an invalid question queue.
+     */
+    if(
+      state.screen==='question' &&
+      (
+        !Array.isArray(state.roundQueue) ||
+        !state.roundQueue.length
+      )
+    ){
+      beginRecognitionRound();
+      loadRecognitionQuestion();
+    }
+
     showStudyView();
     render();
-  }else showHome();
+
+  }else{
+    showHome();
+  }
+
   renderReviewBanner();
 }
 
@@ -941,14 +1009,16 @@ function normalizeWordRecord(w){
   const examples=Array.isArray(w?.examples)?w.examples.map(String).map(x=>x.trim()).filter(Boolean).slice(0,3):(w?.example?[String(w.example).trim()]:[]);
   return {
     word:String(w?.word||'').trim(),
+    partOfSpeech:String(w?.partOfSpeech||'').trim(),
+    phonetic:String(w?.phonetic||w?.ipa||'').trim(),
+    cefr:String(w?.cefr||w?.cefrLevel||'').trim(),
     definition:String(w?.definition||'').trim(),
     example:examples[0]||'',
     examples,
     synonyms:Array.isArray(w?.synonyms)?w.synonyms.map(String).map(x=>x.trim()).filter(Boolean):[],
     antonyms:Array.isArray(w?.antonyms)?w.antonyms.map(String).map(x=>x.trim()).filter(Boolean):[],
     root:String(w?.root||'').trim(),
-    cognates:Array.isArray(w?.cognates)?w.cognates.map(String).map(x=>x.trim()).filter(Boolean):[],
-    phonetic:String(w?.phonetic||w?.ipa||w?.pronunciation||'').trim()
+    cognates:Array.isArray(w?.cognates)?w.cognates.map(String).map(x=>x.trim()).filter(Boolean):[]
   };
 }
 
@@ -984,11 +1054,11 @@ function parseCSV(text){
   if(!rows.length)return [];
   const header=rows[0].map(x=>x.toLowerCase().trim());
   const idx=name=>header.indexOf(name);
-  let wi=idx('word'),di=idx('definition'),ei=idx('example'),e1=idx('example1'),e2=idx('example2'),e3=idx('example3'),exs=idx('examples'),
+  let wi=idx('word'),pi=idx('part_of_speech')>=0?idx('part_of_speech'):idx('partOfSpeech'),ph=idx('phonetic')>=0?idx('phonetic'):idx('ipa'),ce=idx('cefr')>=0?idx('cefr'):idx('cefr_level'),di=idx('definition'),ei=idx('example'),e1=idx('example1'),e2=idx('example2'),e3=idx('example3'),exs=idx('examples'),
       si=idx('synonyms'),ai=idx('antonyms'),ri=idx('root_analysis')>=0?idx('root_analysis'):idx('root'),ci=idx('cognates');
   let dataRows;
   const hasHeader=wi>=0&&di>=0;
-  if(!hasHeader){wi=0;di=1;ei=2;si=3;ai=4;ri=5;ci=6;dataRows=rows;}
+  if(!hasHeader){wi=0;pi=-1;ph=-1;ce=-1;di=1;ei=2;si=3;ai=4;ri=5;ci=6;dataRows=rows;}
   else dataRows=rows.slice(1);
   const splitMulti=s=>s?s.split(';').map(x=>x.trim()).filter(Boolean):[];
   return dataRows.map(r=>{
@@ -997,7 +1067,11 @@ function parseCSV(text){
     else if(exs>=0)examples=splitMulti(r[exs]||'');
     else if(ei>=0&&(r[ei]||'').trim())examples=[(r[ei]||'').trim()];
     return normalizeWordRecord({
-      word:(r[wi]||'').trim(),definition:(r[di]||'').trim(),
+      word:(r[wi]||'').trim(),
+      partOfSpeech:pi>=0?(r[pi]||'').trim():'',
+      phonetic:ph>=0?(r[ph]||'').trim():'',
+      cefr:ce>=0?(r[ce]||'').trim():'',
+      definition:(r[di]||'').trim(),
       examples,example:examples[0]||'',
       synonyms:si>=0?splitMulti(r[si]):[],
       antonyms:ai>=0?splitMulti(r[ai]):[],
@@ -1125,38 +1199,35 @@ function clearLibrary(){
 }
 
 function downloadTemplate(){
-  const text=`word,definition,example1,example2,example3,synonyms,antonyms,root_analysis,cognates
-meticulous,very careful about small details,She is meticulous about her work.,His meticulous notes revealed every small error.,A meticulous eye can turn routine work into craft.,careful;thorough;precise,careless;sloppy,"From Latin meticulosus, meaning fearful or overly cautious, from metus meaning fear; developed into the sense of being extremely careful",meticulousness;meticulously
+  const text=`word,part_of_speech,phonetic,cefr,definition,example1,example2,example3,synonyms,antonyms,root_analysis,cognates
+meticulous,adjective,/məˈtɪkjələs/,C1,very careful about small details,She is meticulous about her work.,His meticulous notes revealed every small error.,A meticulous eye can turn routine work into craft.,careful;thorough;precise,careless;sloppy,"From Latin meticulosus, meaning fearful or overly cautious, from metus meaning fear; developed into the sense of being extremely careful",meticulousness;meticulously
 `;
   const blob=new Blob([text],{type:'text/csv;charset=utf-8'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='word_library_template.csv';a.click();URL.revokeObjectURL(a.href);
 }
 
 /* ---------- speech ---------- */
-  let speechAudio=null;
-  let speechRequestId=0;
-  const EDGE_TTS_VOICE='en-US-AriaNeural';
-  function speak(text){
-    if(!TTS_SUPPORTED||!text)return;
-    const value=String(text).trim();
-    if(!value)return;
-    const requestId=++speechRequestId;
-    try{
-      if(speechAudio){speechAudio.pause();speechAudio.currentTime=0;speechAudio.src='';}
-      const audio=new Audio('https://tts.kina.ink/tts?text='+encodeURIComponent(value)+'&voice='+encodeURIComponent(EDGE_TTS_VOICE)+'&rate='+encodeURIComponent('+0%'));
-      speechAudio=audio;
-      audio.preload='auto';
-      audio.volume=1;
-      audio.play().catch(e=>console.warn('Microsoft Edge Neural Voice playback failed:',e));
-    }catch(e){console.warn('Microsoft Edge Neural Voice failed:',e);}
-  }
-  function safeJSString(s){return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\r?\n/g,' ');}
-  function speakerBtn(word){
-    if(!TTS_SUPPORTED)return '';
-    return `<button type="button" class="speaker" title="Play pronunciation" onclick="event.stopPropagation();speak('${safeJSString(word)}')"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round"><path d="M4 9v6h4l5 4V5L8 9H4"></path><path d="M16 9.5c1 .8 1.5 1.6 1.5 2.5s-.5 1.7-1.5 2.5"></path><path d="M18.5 7c1.7 1.4 2.5 3 2.5 5s-.8 3.6-2.5 5"></path></svg></button>`;
-  }
+let speechVoices=[];
+function loadSpeechVoices(){if(!TTS_SUPPORTED)return;speechVoices=window.speechSynthesis.getVoices();}
+if(TTS_SUPPORTED){loadSpeechVoices();window.speechSynthesis.onvoiceschanged=loadSpeechVoices;}
+function speak(text){
+  if(!TTS_SUPPORTED||!text)return;
+  try{
+    const synth=window.speechSynthesis;synth.cancel();
+    const u=new SpeechSynthesisUtterance(String(text));
+    const voices=speechVoices.length?speechVoices:synth.getVoices();
+    const englishVoice=voices.find(v=>/^en-US$/i.test(v.lang))||voices.find(v=>/^en-/i.test(v.lang))||voices.find(v=>/English/i.test(v.name));
+    if(englishVoice){u.voice=englishVoice;u.lang=englishVoice.lang;}else u.lang='en-US';
+    u.rate=.92;u.pitch=1;u.volume=1;synth.speak(u);
+  }catch(e){console.warn('Speech synthesis failed:',e);}
+}
+function safeJSString(s){return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\r?\n/g,' ');}
+function speakerBtn(word){
+  if(!TTS_SUPPORTED)return '';
+  return `<button type="button" class="speaker" title="Play pronunciation" onclick="event.stopPropagation();speak('${safeJSString(word)}')"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round"><path d="M4 9v6h4l5 4V5L8 9H4"></path><path d="M16 9.5c1 .8 1.5 1.6 1.5 2.5s-.5 1.7-1.5 2.5"></path><path d="M18.5 7c1.7 1.4 2.5 3 2.5 5s-.8 3.6-2.5 5"></path></svg></button>`;
+}
 
-  /* ---------- recognition ---------- */
+/* ---------- recognition ---------- */
 function beginRecognitionRound(){
   state.roundQueue=shuffle(state.activeIds);
   state.roundPos=0;
@@ -1223,9 +1294,9 @@ function renderDetailScreen(){
   const examples=w.examples&&w.examples.length?w.examples:(w.example?[w.example]:[]);
   return `<section class="detail">
     ${banner}
-    <div class="wordRow">${speakerBtn(w.word)}<div class="word" style="font-size:31px">${escapeHTML(w.word)}</div></div>
+    <div class="wordRow">${speakerBtn(w.word)}<div><div class="word" style="font-size:31px">${escapeHTML(w.word)}</div>${w.phonetic||w.cefr?`<div class="wordMeta">${w.phonetic?`<span class="phonetic">${escapeHTML(w.phonetic)}</span>`:''}${w.cefr?`<span class="cefr">${escapeHTML(w.cefr)}</span>`:''}</div>`:''}</div></div>
     ${renderFamiliarity(w.word)}
-    <div class="block"><h3>Definition</h3><div class="definition">${escapeHTML(w.definition)}</div></div>
+    <div class="block"><h3>Definition</h3>${w.partOfSpeech?`<div class="partOfSpeech">${escapeHTML(w.partOfSpeech)}</div>`:''}<div class="definition">${escapeHTML(w.definition)}</div></div>
     ${examples.length?`<div class="block"><h3>Examples</h3><div class="examples">${examples.slice(0,3).map(x=>`<div class="example">${escapeHTML(x)}</div>`).join('')}</div></div>`:''}
     <div class="block"><h3>Synonyms</h3>${chips(w.synonyms)}</div>
     <div class="block"><h3>Antonyms</h3>${chips(w.antonyms)}</div>
@@ -1252,64 +1323,45 @@ function advanceRound(){state.roundNumber++;beginRecognitionRound();loadRecognit
 function renderPhaseTransition(){
   return `<section class="interstitial">
     <h2>Recognition Complete</h2>
-    <p>Every word has been remembered in the latest round. Choose what you would like to do next.</p>
-    <div class="centerRow">
-      <button onclick="restartRecognitionOnly()">Restart Recognition</button>
-      <button onclick="startDictationPhase()">Begin Spelling Test</button>
-      <button class="secondary" onclick="exitToHome()">Exit to Home</button>
-    </div>
+    <p>Every word has been remembered in the latest round.</p>
+    <div class="centerRow"><button onclick="restartRecognitionOnly()">Restart Recognition</button><button class="secondary" onclick="exitToHome()">Exit to Home</button><button onclick="startDictationPhase()">Begin Spelling Test</button></div>
   </section>`;
 }
 function restartRecognitionOnly(){
   const words=state.words,libraryId=state.libraryId,reviewMode=state.reviewMode;
-  state=freshState(words,libraryId,reviewMode);
-  beginRecognitionRound();loadRecognitionQuestion();save();render();
+  state=freshState(words,libraryId,reviewMode);beginRecognitionRound();loadRecognitionQuestion();save();render();
 }
 function exitToHome(){
-  try{localStorage.removeItem(KEY);}catch(e){}
+  localStorage.removeItem(KEY);
   state=null;
   showHome();
-  resetImportFields();
-  window.scrollTo({top:0,behavior:'smooth'});
 }
 
 /* ---------- dictation ---------- */
 function startDictationPhase(){state.phase='dictation';state.dictQueue=shuffle(state.words.map((_,i)=>i));loadDictQuestion();save();render();}
 function loadDictQuestion(){
   if(state.dictQueue.length===0){state.phase='done';state.screen='complete';if(state.reviewMode)completeDailyReview();return;}
-  const id=state.dictQueue[0];state.current={id,checked:false,correct:null,inputVal:'',hintVisible:false};state.locked=false;state.screen='dictQuestion';
+  const id=state.dictQueue[0];state.current={id,checked:false,correct:null,inputVal:''};state.locked=false;state.screen='dictQuestion';
 }
 function renderDictQuestionScreen(){
   const w=state.words[state.current.id],remaining=uniq(state.dictQueue).length;
   recordWordEncounter(state.current.id);
   setTimeout(()=>speak(w.word),150);
-  const hint=state.current.hintVisible;
-  const phonetic=w.phonetic||'';
+  const total=state.words.length,completed=Math.max(0,total-remaining);
   return `<section class="quiz">
     <div class="mode">Spelling <small>${remaining} remaining</small></div>
+    <div class="progress"><div class="bar" style="width:${total?completed/total*100:0}%"></div></div>
     <div class="dictBox">
       <button type="button" class="speaker" title="Play pronunciation" onclick="speak('${safeJSString(w.word)}')"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round"><path d="M4 9v6h4l5 4V5L8 9H4"></path><path d="M16 9.5c1 .8 1.5 1.6 1.5 2.5s-.5 1.7-1.5 2.5"></path><path d="M18.5 7c1.7 1.4 2.5 3 2.5 5s-.8 3.6-2.5 5"></path></svg></button>
       <input class="dictInput" id="dictInput" lang="en" inputmode="latin" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="done" placeholder="Write what you hear" onbeforeinput="handleDictBeforeInput(event)" oncompositionstart="handleDictCompositionStart(event)" oncompositionend="handleDictCompositionEnd(event)" onpaste="handleDictPaste(event)" ondrop="handleDictDrop(event)" onkeydown="if(event.key==='Enter')checkDictation()">
-      ${hint?`<div class="dictHint"><span>${phonetic?escapeHTML(phonetic):'IPA unavailable'}</span></div>`:''}
-      <div class="centerRow"><button class="secondary" type="button" onclick="toggleDictHint()">${hint?'Hide Hint':'Hint'}</button><button class="secondary" type="button" onclick="speak('${safeJSString(w.word)}')">Replay</button><button type="button" onclick="checkDictation()">Submit</button></div>
+      <div class="centerRow"><button class="secondary" type="button" onclick="speak('${safeJSString(w.word)}')">Replay</button><button class="secondary" type="button" onclick="toggleSpellingHint()">Hint</button><button type="button" onclick="checkDictation()">Submit</button></div>
+      <div id="spellingHint" class="spellingHint hidden">${w.phonetic?escapeHTML(w.phonetic):'No phonetic transcription available.'}</div>
     </div>
   </section>`;
 }
-async function toggleDictHint(){
-  if(state.locked||!state.current)return;
-  if(state.current.hintVisible){state.current.hintVisible=false;save();render();return;}
-  const w=state.words[state.current.id];
-  if(!w.phonetic){
-    try{
-      const r=await fetch('https://api.dictionaryapi.dev/api/v2/entries/en/'+encodeURIComponent(w.word));
-      if(r.ok){
-        const data=await r.json();
-        const found=data?.[0]?.phonetics?.find(p=>p?.text);
-        w.phonetic=found?.text||'';
-      }
-    }catch(e){console.warn('Unable to load IPA hint:',e);}
-  }
-  state.current.hintVisible=true;save();render();
+function toggleSpellingHint(){
+  const el=document.getElementById('spellingHint');
+  if(el)el.classList.toggle('hidden');
 }
 let dictCompositionActive=false;
 let dictCompositionStartValue='';
@@ -1364,10 +1416,10 @@ function renderDictFeedbackScreen(){
   const w=state.words[state.current.id],correct=state.current.correct;
   const banner=correct?`<div class="banner good">Well spelled.</div>`:`<div class="banner bad">Not yet. The word returns to the end of the queue.</div>`;
   return `<section class="detail">${banner}
-    <div class="wordRow">${speakerBtn(w.word)}<div class="word" style="font-size:30px">${escapeHTML(w.word)}</div></div>
+    <div class="wordRow">${speakerBtn(w.word)}<div><div class="word" style="font-size:30px">${escapeHTML(w.word)}</div>${w.phonetic||w.cefr?`<div class="wordMeta">${w.phonetic?`<span class="phonetic">${escapeHTML(w.phonetic)}</span>`:''}${w.cefr?`<span class="cefr">${escapeHTML(w.cefr)}</span>`:''}</div>`:''}</div></div>
     ${renderFamiliarity(w.word)}
     <div class="block"><h3>Your Spelling</h3><div class="definition" style="color:${correct?'var(--good)':'var(--bad)'}">${escapeHTML(state.current.inputVal)}</div></div>
-    <div class="block"><h3>Definition</h3><div class="definition">${escapeHTML(w.definition)}</div></div>
+    <div class="block"><h3>Definition</h3>${w.partOfSpeech?`<div class="partOfSpeech">${escapeHTML(w.partOfSpeech)}</div>`:''}<div class="definition">${escapeHTML(w.definition)}</div></div>
     <div class="centerRow"><button onclick="continueDictation()">Continue</button></div>
   </section>`;
 }
@@ -1397,23 +1449,21 @@ function renderComplete(){
       <div class="result"><div class="value">${dict}%</div><div class="name">Spelling</div><div class="note">${state.stats.dictAttempts} attempts</div></div>
     </div>
     <div class="centerRow">
-      <button onclick="restartSameLibrary()">Restart</button>
-      <button onclick="restartSpellingOnly()">Restart Spelling</button>
-      <button class="secondary" onclick="exitToHome()">Exit to Home</button>
+      <button onclick="restartSameLibrary()">Restart Recognition & Spelling</button>
+      <button class="secondary" onclick="restartSpellingOnly()">Restart Spelling</button>
     </div>
   </section>`;
-}
-function restartSpellingOnly(){
-  if(!state)return;
-  state.phase='dictation';
-  state.dictQueue=shuffle(state.words.map((_,i)=>i));
-  state.stats.dictAttempts=0;
-  state.stats.dictCorrect=0;
-  loadDictQuestion();save();render();
 }
 function restartSameLibrary(){
   const words=state.words,libraryId=state.libraryId,reviewMode=state.reviewMode;
   state=freshState(words,libraryId,reviewMode);beginRecognitionRound();loadRecognitionQuestion();save();render();
+}
+function restartSpellingOnly(){
+  state.phase='dictation';
+  state.dictQueue=shuffle(state.words.map((_,i)=>i));
+  loadDictQuestion();
+  save();
+  render();
 }
 
 /* ---------- daily review ---------- */
@@ -2026,8 +2076,8 @@ if(accountMode==='account'){
 <style id="lexicon-pet-addon">
 #lexicon-pet-wrap{
   position:fixed;
-  right:7px;
-  bottom:6px;
+  right:6px;
+  bottom:4px;
   width:104px;
   height:112px;
   z-index:90;
@@ -2065,7 +2115,7 @@ if(accountMode==='account'){
 }
 #lexicon-pet-bubble.show{opacity:1;transform:translateY(0)}
 @media(max-width:600px){
-  #lexicon-pet-wrap{right:3px;bottom:2px;width:78px;height:86px}
+  #lexicon-pet-wrap{right:2px;bottom:0px;width:78px;height:86px}
   #lexicon-pet-wrap .lexicon-pet-hit{width:72px;height:80px}
   #lexicon-pet-bubble{right:8px;bottom:82px;width:160px;font-size:11px}
 }
