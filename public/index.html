@@ -20,7 +20,7 @@ body{
   background:
     radial-gradient(circle at 14% 9%,rgba(255,255,255,.55),transparent 25rem),
     radial-gradient(circle at 88% 72%,rgba(255,255,255,.28),transparent 28rem),
-    linear-gradient(135deg,#ded2bf,#d6c9b5 50%,#e2d7c5);
+    linear-gradient(135deg,#e7ddcb,#ddd0bb 50%,#eee5d5);
   font-family:Georgia,"Times New Roman",serif;
   -webkit-font-smoothing:antialiased;
 }
@@ -308,12 +308,17 @@ textarea::placeholder{color:#a79f91}
 .studyHomeButton{display:block;width:100%;max-width:360px;margin:16px auto 0}
 .practiceHubPanel{min-height:520px;display:flex;flex-direction:column;justify-content:center}
 .practiceHubStats{width:100%;max-width:760px;margin:22px auto 28px!important}
-.practiceHubActions{width:min(820px,100%);margin:18px auto 0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
-.practiceHubActions button{width:100%;min-height:118px;font-size:17px;letter-spacing:.02em;text-align:left;padding:18px 20px;background:linear-gradient(145deg,rgba(113,52,59,.98),rgba(84,38,44,.98));border:1px solid rgba(113,52,59,.75);box-shadow:0 12px 28px rgba(52,38,24,.12);display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:7px}
-.practiceHubActions button:hover{background:linear-gradient(145deg,#54262c,#71343b);box-shadow:0 16px 34px rgba(52,38,24,.16);transform:translateY(-2px)}
-.practiceHubActions .practiceIndex{font-size:9px;letter-spacing:.18em;text-transform:uppercase;opacity:.72}
-.practiceHubActions .practiceName{font-size:20px;line-height:1.2}
-.practiceHubActions .practiceDesc{font-size:11px;line-height:1.45;opacity:.78;font-style:italic}
+.practiceHubActions{width:min(820px,100%);margin:20px auto 0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}
+.practiceHubActions button{position:relative;width:100%;min-height:126px;font-size:17px;letter-spacing:.02em;text-align:left;padding:21px 24px;background:linear-gradient(135deg,rgba(255,253,247,.97),rgba(239,229,211,.92));color:var(--ink);border:1px solid rgba(113,82,55,.30);box-shadow:0 10px 24px rgba(67,48,31,.08);display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:7px;overflow:hidden}
+.practiceHubActions button:before{content:"";position:absolute;inset:7px;border:1px solid rgba(170,138,91,.18);pointer-events:none}
+.practiceHubActions button:after{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:rgba(113,52,59,.68);opacity:.55;transition:opacity .18s ease,width .18s ease}
+.practiceHubActions button:hover{background:linear-gradient(135deg,#fffdf7,#eee3d1);color:var(--accent);border-color:rgba(113,52,59,.38);box-shadow:0 15px 30px rgba(67,48,31,.12);transform:translateY(-2px)}
+.practiceHubActions button:hover:after{opacity:.9;width:6px}
+.practiceHubActions .practiceIndex{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:#9a7b4e;opacity:1}
+.practiceHubActions .practiceName{font-size:21px;line-height:1.2;color:#3d342c}
+.practiceHubActions button:hover .practiceName{color:var(--accent)}
+.practiceHubActions .practiceDesc{font-size:11px;line-height:1.45;color:var(--muted);opacity:1;font-style:italic}
+.practiceHubPanel{background:linear-gradient(rgba(255,255,255,.28),rgba(255,255,255,.04)),rgba(251,247,237,.90);box-shadow:0 28px 70px rgba(52,38,24,.12)}
 .practiceHubActions .practiceWide{grid-column:1/-1}
 .practiceHubPrompt{margin:18px 0 0!important;font-style:italic;font-size:12px!important}
 @media(max-width:700px){.practiceHubActions{grid-template-columns:1fr;gap:11px}.practiceHubActions .practiceWide{grid-column:auto}.practiceHubActions button{min-height:92px}.practiceHubActions .practiceName{font-size:18px}}
@@ -1114,6 +1119,10 @@ function loadState(){
       loadRecognitionQuestion();
     }
 
+    if(state.screen==='dictQuestion' && (!state.current || !Number.isInteger(state.current.id) || !state.words[state.current.id])){
+      loadDictQuestion();
+    }
+
     showStudyView();
     render();
 
@@ -1489,10 +1498,10 @@ function loadRecognitionQuestion(){
   else options=buildDefinitionOptions(id);
   state.current={id,options,answered:false,selected:null,correct:null};
   state.locked=false;state.screen='question';
+  recordWordEncounter(id);
 }
 function renderQuestionScreen(){
   const w=state.words[state.current.id];
-  recordWordEncounter(state.current.id);
   const roundNote=state.roundNumber>1?`<small>Round ${state.roundNumber} · Reviewing ${state.roundQueue.length} words</small>`:`<small>${state.roundQueue.length} words total</small>`;
   const mode=state.mode;
   const isDefToWord=mode==='defToWord';
@@ -1600,6 +1609,117 @@ function returnToPracticeHub(){
 }
 
 /* ---------- dictation ---------- */
+function startDictationPhase(){
+  state.phase='dictation';
+  state.mode='spelling';
+  state.dictQueue=shuffle(state.words.map((_,i)=>i));
+  loadDictQuestion();
+  save();
+  render();
+}
+function loadDictQuestion(){
+  if(!Array.isArray(state.dictQueue))state.dictQueue=[];
+  if(state.dictQueue.length===0){
+    state.phase='done';
+    state.screen='complete';
+    state.current=null;
+    if(state.reviewMode)completeDailyReview();
+    return;
+  }
+  const id=state.dictQueue[0];
+  if(!Number.isInteger(id)||!state.words[id]){
+    state.dictQueue.shift();
+    loadDictQuestion();
+    return;
+  }
+  state.current={id,checked:false,correct:null,inputVal:''};
+  state.locked=false;
+  state.screen='dictQuestion';
+  recordWordEncounter(id);
+}
+function renderDictQuestionScreen(){
+  if(!state.current||!state.words[state.current.id]){
+    loadDictQuestion();
+    if(state.screen!=='dictQuestion')return '';
+  }
+  const w=state.words[state.current.id],remaining=uniq(state.dictQueue).length;
+  setTimeout(()=>speak(w.word),150);
+  const total=state.words.length,completed=Math.max(0,total-remaining);
+  return `<section class="quiz">
+    <div class="mode">Spelling <small>${remaining} remaining</small></div>
+    <div class="progress"><div class="bar" style="width:${total?completed/total*100:0}%"></div></div>
+    <div class="dictBox">
+      <button type="button" class="speaker" title="Play pronunciation" onclick="speak('${safeJSString(w.word)}')"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round"><path d="M4 9v6h4l5 4V5L8 9H4"></path><path d="M16 9.5c1 .8 1.5 1.6 1.5 2.5s-.5 1.7-1.5 2.5"></path><path d="M18.5 7c1.7 1.4 2.5 3 2.5 5s-.8 3.6-2.5 5"></path></svg></button>
+      <input class="dictInput" id="dictInput" lang="en" inputmode="latin" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="done" placeholder="Write what you hear" onbeforeinput="handleDictBeforeInput(event)" oncompositionstart="handleDictCompositionStart(event)" oncompositionend="handleDictCompositionEnd(event)" onpaste="handleDictPaste(event)" ondrop="handleDictDrop(event)" onkeydown="if(event.key==='Enter')checkDictation()">
+      <div class="centerRow"><button class="secondary" type="button" onclick="speak('${safeJSString(w.word)}')">Replay</button><button type="button" onclick="checkDictation()">Submit</button></div>
+    </div>
+  </section>`;
+}
+let dictCompositionActive=false;
+let dictCompositionStartValue='';
+let dictCheatingNoticeOpen=false;
+function focusDictInput(){const el=document.getElementById('dictInput');if(el)el.focus();}
+function showCheatingNotice(message){
+  if(dictCheatingNoticeOpen)return;
+  dictCheatingNoticeOpen=true;
+  const title=document.getElementById('cabinetActionTitle'),intro=document.getElementById('cabinetActionIntro'),input=document.getElementById('cabinetActionInput'),warning=document.getElementById('cabinetActionWarning'),btn=document.getElementById('cabinetActionConfirmButton');
+  title.textContent='A gentle reminder';
+  intro.textContent='This spelling test is meant to measure what you can spell yourself.';
+  input.classList.add('hidden');
+  warning.classList.remove('hidden');
+  warning.textContent=message||'Please type the word yourself using direct English letter input. Paste and predictive-composition input are not allowed during the spelling test.';
+  btn.textContent='Understood';
+  btn.onclick=()=>{closeLayer(null,'cabinetActionModal');dictCheatingNoticeOpen=false;setTimeout(focusDictInput,50);};
+  openLayer('cabinetActionModal');
+}
+function handleDictCompositionStart(){
+  const el=document.getElementById('dictInput');
+  dictCompositionStartValue=el?el.value:'';
+  dictCompositionActive=true;
+}
+function handleDictCompositionEnd(){
+  dictCompositionActive=false;
+  const el=document.getElementById('dictInput');
+  if(el)el.value=dictCompositionStartValue;
+  showCheatingNotice('Predictive or IME composition was detected. Please type the spelling directly instead of selecting a suggested completed word. Voice input is still allowed.');
+}
+function handleDictBeforeInput(event){
+  if(event.inputType==='insertFromPaste'||event.inputType==='insertFromDrop')return;
+  if(dictCompositionActive)return;
+  if(typeof event.data==='string' && /[^A-Za-z' -]/.test(event.data)){event.preventDefault();showCheatingNotice('Only direct English letters are accepted in the spelling test.');return;}
+}
+function handleDictPaste(event){event.preventDefault();showCheatingNotice('Pasting the answer is not allowed during the spelling test. Please type it yourself.');}
+function handleDictDrop(event){event.preventDefault();showCheatingNotice('Dropping text into the answer box is not allowed during the spelling test. Please type it yourself.');}
+function checkDictation(){
+  if(state.locked)return;
+  if(dictCompositionActive){showCheatingNotice('Please finish typing with direct English letter input before submitting.');return;}
+  const el=document.getElementById('dictInput'),val=(el?el.value:'').trim();
+  if(!val)return;
+  if(!/^[A-Za-z][A-Za-z' -]*$/.test(val)){showCheatingNotice('The answer contains characters that are not accepted in the spelling test. Please type the word directly in English.');return;}
+  state.locked=true;
+  const w=state.words[state.current.id],correct=val.toLowerCase()===w.word.toLowerCase();
+  state.stats.dictAttempts++;
+  recordQuestion();
+  if(correct){state.stats.dictCorrect++;recordSpelledWord(state.current.id);}else recordMistake(state.current.id);
+  state.current.checked=true;state.current.correct=correct;state.current.inputVal=val;
+  state.dictQueue.shift();
+  if(!correct)state.dictQueue.push(state.current.id);
+  state.screen='dictFeedback';
+  save();
+  render();
+}
+function renderDictFeedbackScreen(){
+  const w=state.words[state.current.id],correct=state.current.correct;
+  const banner=correct?`<div class="banner good">Well spelled.</div>`:`<div class="banner bad">Not yet. The word returns to the end of the queue.</div>`;
+  return `<section class="detail">${banner}
+    <div class="wordRow">${speakerBtn(w.word)}<div><div class="word" style="font-size:30px">${escapeHTML(w.word)}</div>${w.phonetic||w.cefr?`<div class="wordMeta">${w.phonetic?`<span class="phonetic">${escapeHTML(w.phonetic)}</span>`:''}${w.cefr?`<span class="cefr">${escapeHTML(w.cefr)}</span>`:''}</div>`:''}</div></div>
+    ${renderFamiliarity(w.word)}
+    <div class="block"><h3>Your Spelling</h3><div class="definition" style="color:${correct?'var(--good)':'var(--bad)'}">${escapeHTML(state.current.inputVal)}</div></div>
+    <div class="block"><h3>Definition</h3>${w.partOfSpeech?`<div class="partOfSpeech">${escapeHTML(w.partOfSpeech)}</div>`:''}<div class="definition">${escapeHTML(w.definition)}</div></div>
+    <div class="centerRow"><button onclick="continueDictation()">Continue</button></div>
+  </section>`;
+}
+function continueDictation(){loadDictQuestion();save();render();}
 /* ---------- familiarity ---------- */
 function renderFamiliarity(word){
   const ws=globalStats.wordStats?.[normalizeWordKey(word)];
@@ -2161,6 +2281,8 @@ async function loadRemoteData(){
 }
 let syncTimer=null;
 let syncInFlight=false;
+let syncPending=false;
+let syncRevision=0;
 let lastServerUpdatedAt=null;
 let lastLocalMutationAt=0;
 let hasUnsyncedLocalChanges=false;
@@ -2168,20 +2290,36 @@ let hasUnsyncedLocalChanges=false;
 async function syncAccountDataNow(){
   if(accountMode!=='account')return true;
   clearTimeout(syncTimer);
+  if(syncInFlight){
+    syncPending=true;
+    return true;
+  }
   syncInFlight=true;
+  syncPending=false;
+  const requestRevision=syncRevision;
   try{
+    const payload={
+      cabinet:getCabinet(),
+      globalStats:JSON.parse(JSON.stringify(globalStats)),
+      currentState:state?JSON.parse(JSON.stringify(state)):null
+    };
     const r=await fetch('/api/data',{
       method:'PUT',
       headers:{'Content-Type':'application/json'},
       credentials:'include',
-      body:JSON.stringify({
-        cabinet:getCabinet(),
-        globalStats,
-        currentState:state
-      })
+      body:JSON.stringify(payload)
     });
     const data=await r.json().catch(()=>({}));
-    if(r.ok&&data.updatedAt){lastServerUpdatedAt=data.updatedAt;hasUnsyncedLocalChanges=false;return true;}
+    if(r.ok&&data.updatedAt){
+      // Only mark the server clean if nothing changed while this request was in flight.
+      if(requestRevision===syncRevision){
+        lastServerUpdatedAt=data.updatedAt;
+        hasUnsyncedLocalChanges=false;
+      }else{
+        hasUnsyncedLocalChanges=true;
+      }
+      return true;
+    }
     console.warn('Account sync failed:',data.error||r.status);
     return false;
   }catch(e){
@@ -2189,6 +2327,11 @@ async function syncAccountDataNow(){
     return false;
   }finally{
     syncInFlight=false;
+    if(syncPending||requestRevision!==syncRevision||hasUnsyncedLocalChanges){
+      syncPending=false;
+      clearTimeout(syncTimer);
+      syncTimer=setTimeout(()=>{syncAccountDataNow();},60);
+    }
   }
 }
 
@@ -2196,20 +2339,22 @@ function syncAccountData(){
   if(accountMode!=='account')return;
   hasUnsyncedLocalChanges=true;
   lastLocalMutationAt=Date.now();
+  syncRevision++;
   clearTimeout(syncTimer);
   syncTimer=setTimeout(()=>{syncAccountDataNow();},350);
 }
 
-// Pull newer account data periodically so an account opened on another
-// device is not stuck with stale localStorage until the user logs in again.
+// Pull newer account data periodically, but never replace an active local
+// practice session while a local write is pending or has just happened.
 let remotePollTimer=setInterval(async()=>{
-  if(accountMode!=='account'||!accountUser||syncInFlight||Date.now()-lastLocalMutationAt<1500)return;
-  if(hasUnsyncedLocalChanges){syncAccountDataNow();return;}
+  if(accountMode!=='account'||!accountUser||syncInFlight||hasUnsyncedLocalChanges||Date.now()-lastLocalMutationAt<3000)return;
   try{
-    const r=await fetch('/api/data',{credentials:'include'});
+    const r=await fetch('/api/data',{credentials:'include',cache:'no-store'});
     if(!r.ok)return;
     const data=await r.json();
     if(!data.updatedAt||data.updatedAt===lastServerUpdatedAt)return;
+    // A remote update is safe to apply only when the local session is completely idle.
+    if(syncInFlight||hasUnsyncedLocalChanges||Date.now()-lastLocalMutationAt<3000)return;
     lastServerUpdatedAt=data.updatedAt;
     if(data.cabinet)localStorage.setItem(CABINET_KEY,JSON.stringify(data.cabinet));else localStorage.removeItem(CABINET_KEY);
     if(data.globalStats)localStorage.setItem(STATS_KEY,JSON.stringify(data.globalStats));else localStorage.removeItem(STATS_KEY);
@@ -2291,6 +2436,7 @@ async function saveEditedLibrary(){
   let synced=true;
   if(accountMode==='account'){
     lastLocalMutationAt=Date.now();
+    syncRevision++;
     synced=await syncAccountDataNow();
   }
 
