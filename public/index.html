@@ -358,6 +358,31 @@ textarea::placeholder{color:#a79f91}
   bottom:28px;
   align-items:flex-end;
 }
+
+/* Announcement board */
+.announcementDetails{border:1px solid var(--line);padding:10px 14px;background:rgba(251,247,237,.45)}
+.announcementDetails summary{cursor:pointer;list-style:none;display:block}
+.announcementDetails summary::-webkit-details-marker{display:none}
+.announcementDetails summary>span{display:block;font-weight:600;color:var(--accent);font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px}
+.announcementLatest{padding:6px 0 2px;font-size:13px;line-height:1.55}
+.announcementLatestText{color:var(--ink)}
+.announcementAll{margin-top:8px;border-top:1px solid var(--line)}
+
+/* Recommended library bookshelf */
+.bookshelfWrap{position:relative;padding:8px 2px 26px;margin-top:6px}
+.bookshelf{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:20px 16px;position:relative;padding:8px 4px 28px}
+.bookshelf:after{content:"";position:absolute;left:0;right:0;bottom:0;height:12px;border-top:3px solid #9a7b4e;border-bottom:1px solid rgba(74,55,39,.35);background:linear-gradient(#b59668,#8a6b43);box-shadow:0 5px 0 rgba(74,55,39,.12)}
+.bookCard{position:relative;min-height:230px;padding:14px 12px 12px;background:linear-gradient(135deg,rgba(255,255,255,.38),rgba(230,218,197,.42));border:1px solid rgba(74,55,39,.22);box-shadow:0 10px 22px rgba(52,38,24,.12);cursor:default;transition:transform .18s ease,box-shadow .18s ease}
+.bookCard:hover{transform:translateY(-3px);box-shadow:0 15px 28px rgba(52,38,24,.17)}
+.bookCover{height:145px;display:flex;align-items:center;justify-content:center;text-align:center;padding:16px;color:#f3ecdd;background:linear-gradient(145deg,#71343b,#4d252b);border:4px double rgba(220,190,125,.62);box-shadow:inset 0 0 0 5px rgba(255,255,255,.05),0 7px 12px rgba(52,38,24,.18);font-size:21px;line-height:1.2;letter-spacing:.03em}
+.bookCover span{display:block;max-width:135px}
+.bookMeta{padding:10px 2px 0}.bookName{font-size:16px;color:#54262c}.bookDesc{font-size:11px;color:var(--muted);line-height:1.55;margin-top:4px;min-height:34px}.bookCount{font-size:10px;color:#9a7b4e;margin-top:6px;letter-spacing:.08em}.bookActions{display:flex;gap:6px;margin-top:9px}.bookActions button{flex:1;padding:7px 5px;font-size:10px}
+.shelfAdmin{margin:4px 0 18px;padding:14px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:rgba(230,218,197,.22)}
+.shelfAdmin input,.shelfAdmin textarea{width:100%;padding:9px;border:1px solid var(--line-dark);background:rgba(255,252,245,.6);color:var(--ink);font-size:12px;outline:none}.shelfAdmin textarea{min-height:70px;margin-top:7px;resize:vertical}.shelfAdmin .row{margin-top:8px}
+.progressPage{position:relative}.progressHero{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;padding-bottom:18px;border-bottom:1px solid var(--line);margin-bottom:20px}.progressHero h3{margin:0;color:#54262c;font-size:28px;font-weight:400}.progressHero p{margin:5px 0 0;color:var(--muted);font-size:12px}.progressPeriod{font-size:10px;letter-spacing:.14em;color:#9a7b4e;text-transform:uppercase}.progressCards{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);margin-bottom:20px}.progressCard{background:rgba(255,252,245,.55);padding:16px 12px}.progressCard .value{font-size:28px;color:var(--accent)}.progressCard .label{font-size:9px;letter-spacing:.12em}.progressSection{border-top:1px solid var(--line);padding-top:16px;margin-top:18px}.progressSection h4{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#9a7b4e;margin:0 0 12px}.activityChart{display:flex;align-items:flex-end;gap:5px;height:130px;padding:8px 4px 0;border-bottom:1px solid var(--line)}.activityBar{flex:1;min-width:5px;background:var(--accent);opacity:.78;position:relative}.activityBar span{position:absolute;bottom:-20px;left:50%;transform:translateX(-50%);font-size:8px;color:var(--muted);white-space:nowrap}.progressLists{display:grid;grid-template-columns:1fr 1fr;gap:18px}.progressList{border-top:1px solid var(--line)}.progressRow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);font-size:12px}.progressRow .wordName{color:var(--ink)}.progressRow .wordStat{color:var(--muted);font-size:10px}.progressEmpty{color:var(--muted);font-style:italic;font-size:12px;padding:14px 0}
+.gamepadFocus{outline:2px solid var(--accent)!important;outline-offset:3px;box-shadow:0 0 0 3px rgba(113,52,59,.13)!important}
+@media(max-width:700px){.progressCards{grid-template-columns:repeat(2,1fr)}.progressLists{grid-template-columns:1fr}.bookshelf{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
 </style>
 </head>
 <body>
@@ -366,6 +391,7 @@ textarea::placeholder{color:#a79f91}
   <div class="top">
     <div class="homeTools">
       <button id="topCabinetButton" class="utilityButton" type="button" onclick="openCabinet()" data-i18n="cabinetBtn">The Cabinet</button>
+      <button id="topRecommendedButton" class="utilityButton" type="button" onclick="openRecommendedLibraries()" data-i18n="recommendedBtn">Recommended Libraries</button>
       <button class="utilityButton" type="button" onclick="openSettings()" data-i18n="studyBtn">The Study</button>
     </div>
     <div class="accountBar" id="accountBar"></div>
@@ -585,8 +611,9 @@ become"></textarea>
   <div id="cabinetModal" class="modalLayer hidden" aria-hidden="true" onclick="closeLayer(event,'cabinetModal')">
     <div class="modalCard" onclick="event.stopPropagation()">
       <button class="modalClose" type="button" aria-label="Close" onclick="closeLayer(null,'cabinetModal')">×</button>
-      <h2 class="modalTitle">The Cabinet</h2>
-      <p class="modalIntro">Volumes kept for another day.</p>
+      <h2 class="modalTitle" data-i18n="cabinetTitle">The Cabinet</h2>
+      <p class="modalIntro" data-i18n="cabinetIntro">Volumes kept for another day.</p>
+      <div class="modalActions" style="justify-content:flex-start;margin:0 0 18px"><button class="secondary" type="button" onclick="openRecommendedLibraries()" data-i18n="recommendedBtn">Recommended Libraries</button></div>
       <div id="cabinetContent"></div>
     </div>
   </div>
@@ -639,6 +666,7 @@ become"></textarea>
 
       <div class="drawerSection">
         <button type="button" onclick="openProfileFromDrawer()">Profile</button>
+        <button type="button" onclick="openProgressPage()" data-i18n="progressBtn">My Progress</button>
         <button type="button" onclick="openLedgerFromDrawer()">The Ledger</button>
         <button type="button" onclick="openAlmanacFromDrawer()">The Almanac</button>
         <button type="button" onclick="openRankingFromDrawer()">Ranking</button>
@@ -696,6 +724,32 @@ become"></textarea>
       <h2 class="modalTitle">Ranking</h2>
       <p class="modalIntro">Today’s ranking by words mastered through spelling.</p>
       <div id="rankingContent"></div>
+    </div>
+  </div>
+
+  <!-- Recommended Libraries -->
+  <div id="recommendedModal" class="modalLayer hidden" aria-hidden="true" onclick="closeLayer(event,'recommendedModal')">
+    <div class="modalCard" onclick="event.stopPropagation()">
+      <button class="modalClose" type="button" aria-label="Close" onclick="closeLayer(null,'recommendedModal')">×</button>
+      <h2 class="modalTitle" data-i18n="recommendedTitle">Recommended Libraries</h2>
+      <p class="modalIntro" data-i18n="recommendedIntro">A shelf of curated vocabulary volumes.</p>
+      <div id="recommendedAdminPanel" class="shelfAdmin hidden">
+        <div style="font-size:15px;color:#54262c">Admin · Add a volume to the shelf</div>
+        <input id="recommendedNameInput" maxlength="80" placeholder="Library title">
+        <textarea id="recommendedDescInput" maxlength="300" placeholder="Short description"></textarea>
+        <input id="recommendedFileInput" type="file" accept=".csv,.json,text/csv,application/json" style="margin-top:8px">
+        <div class="row"><button type="button" onclick="uploadRecommendedLibrary()">Upload to Shelf</button></div>
+        <p id="recommendedAdminStatus" class="hint" style="margin-bottom:0"></p>
+      </div>
+      <div id="recommendedContent" class="bookshelfWrap"></div>
+    </div>
+  </div>
+
+  <!-- My Progress -->
+  <div id="progressPopover" class="modalLayer hidden" aria-hidden="true" onclick="closeLayer(event,'progressPopover')">
+    <div class="modalCard" onclick="event.stopPropagation()">
+      <button class="modalClose" type="button" aria-label="Close" onclick="closeLayer(null,'progressPopover')">×</button>
+      <div id="progressContent"></div>
     </div>
   </div>
 
@@ -834,6 +888,12 @@ const I18N={
     appTitle:'The Lexicon',
     appSub:'A private study of language',
     cabinetBtn:'The Cabinet',
+    cabinetTitle:'The Cabinet',
+    cabinetIntro:'Volumes kept for another day.',
+    recommendedBtn:'Recommended Libraries',
+    recommendedTitle:'Recommended Libraries',
+    recommendedIntro:'A shelf of curated vocabulary volumes.',
+    progressBtn:'My Progress',
     studyBtn:'The Study',
     studioTitle:'The Word Studio',
     studioHint:'Enter the words you wish to study.',
@@ -883,12 +943,19 @@ const I18N={
     maintenanceTitle:'Under Maintenance',
     maintenanceExpected:'Expected to be back by',
     announcementBoardTitle:'Announcements',
+    wordsEncountered:'Words Encountered',learned:'Words Learned',spelled:'Words Spelled',mistakes:'Total Mistakes',noPractice:'No practice count recorded yet.',noMistakes:'No mistake count recorded yet.',
     noAnnouncements:'No announcements yet.'
   },
   zh:{
     appTitle:'辞典',
     appSub:'',
     cabinetBtn:'词库集',
+    cabinetTitle:'词库集',
+    cabinetIntro:'留待日后研习的词书。',
+    recommendedBtn:'推荐词库',
+    recommendedTitle:'推荐词库',
+    recommendedIntro:'陈列经遴选的主题词书。',
+    progressBtn:'我的学习进度',
     studyBtn:'设置',
     studioTitle:'AI生成',
     studioHint:'输入你想要学习的单词。',
@@ -938,6 +1005,7 @@ const I18N={
     maintenanceTitle:'网站维护中',
     maintenanceExpected:'预计恢复时间',
     announcementBoardTitle:'公告板',
+    wordsEncountered:'遇见词汇',learned:'掌握词汇',spelled:'完成拼写',mistakes:'错误总数',noPractice:'尚无学习次数记录。',noMistakes:'尚无错误记录。',
     noAnnouncements:'暂无公告。'
   }
 };
@@ -989,21 +1057,14 @@ function applyMaintenanceOverlay(){
   }
 }
 function renderAnnouncementBoard(){
-  const el=document.getElementById('announcementBoard');
-  if(!el)return;
+  const el=document.getElementById('announcementBoard');if(!el)return;
   const list=siteStatus.announcements||[];
   if(!list.length){el.innerHTML='';return;}
   const locale=LANG==='zh'?'zh-CN':'en-US';
-  const items=list.slice(0,8).map(a=>`
-    <div style="padding:8px 0;border-bottom:1px solid var(--line)">
-      <div>${escapeHTML(a.content)}</div>
-      <div class="hint" style="margin-top:2px">${new Date(a.createdAt).toLocaleString(locale)}</div>
-    </div>
-  `).join('');
-  el.innerHTML=`<details style="border:1px solid var(--line);border-radius:3px;padding:10px 14px">
-    <summary style="cursor:pointer;font-weight:600">${t('announcementBoardTitle')}</summary>
-    <div style="margin-top:8px">${items}</div>
-  </details>`;
+  const latest=list[0];
+  const latestHTML=`<div class="announcementLatest"><div class="announcementLatestText">${escapeHTML(latest.content)}</div><div class="hint" style="margin-top:3px">${new Date(latest.createdAt).toLocaleString(locale)}</div></div>`;
+  const items=list.map(a=>`<div style="padding:8px 0;border-bottom:1px solid var(--line)"><div>${escapeHTML(a.content)}</div><div class="hint" style="margin-top:2px">${new Date(a.createdAt).toLocaleString(locale)}</div></div>`).join('');
+  el.innerHTML=`<details class="announcementDetails"><summary><span>${t('announcementBoardTitle')}</span>${latestHTML}</summary><div class="announcementAll">${items}</div></details>`;
 }
 
 let state=null;
@@ -1358,10 +1419,12 @@ function showStudyView(){
   document.getElementById('homeArea').classList.add('hidden');
   document.getElementById('appArea').classList.remove('hidden');
   document.getElementById('topCabinetButton')?.classList.add('hidden');
+  document.getElementById('topRecommendedButton')?.classList.add('hidden');
   touchStudyTime();
 }
 function showTopHomeTools(){
   document.getElementById('topCabinetButton')?.classList.remove('hidden');
+  document.getElementById('topRecommendedButton')?.classList.remove('hidden');
 }
 
 function resetImportFields(){
@@ -2127,19 +2190,120 @@ function openCabinetAction(type,id){
   openLayer('cabinetActionModal','cabinetModal');
   if(type==='rename')setTimeout(()=>input.focus(),40);
 }
-function renameLibrary(id){openCabinetAction('rename',id);}
+function renameLibrary(id){const lib=getCabinet().find(x=>x.id===id);if(!lib)return;if(lib.lockedRename){showToast(LANG==='zh'?'推荐词书不可更名。':'Recommended volumes cannot be renamed.');return;}openCabinetAction('rename',id);}
 function clearLibraryProgress(id){openCabinetAction('clear',id);}
 function deleteLibrary(id){openCabinetAction('remove',id);}
 function confirmCabinetAction(){
   if(dictCheatingNoticeOpen)return;
   if(!pendingCabinetAction)return;
   const {type,id}=pendingCabinetAction,cabinet=getCabinet(),lib=cabinet.find(x=>x.id===id);if(!lib)return;
-  if(type==='rename'){const input=document.getElementById('cabinetActionInput'),clean=(input.value||'').trim();if(!clean){input.focus();return;}lib.name=clean;lib.updatedAt=new Date().toISOString();setCabinet(cabinet);pendingCabinetAction=null;closeLayer(null,'cabinetActionModal');renderCabinet();return;}
+  if(type==='rename'){if(lib.lockedRename){pendingCabinetAction=null;closeLayer(null,'cabinetActionModal');return;}const input=document.getElementById('cabinetActionInput'),clean=(input.value||'').trim();if(!clean){input.focus();return;}lib.name=clean;lib.updatedAt=new Date().toISOString();setCabinet(cabinet);pendingCabinetAction=null;closeLayer(null,'cabinetActionModal');renderCabinet();return;}
   if(type==='clear'){lib.progress=null;lib.updatedAt=new Date().toISOString();setCabinet(cabinet);if(state?.libraryId===id){state=freshState(lib.words,id,false);beginRecognitionRound();loadRecognitionQuestion();save();pendingCabinetAction=null;closeLayer(null,'cabinetActionModal');openCabinet();render();return;}pendingCabinetAction=null;closeLayer(null,'cabinetActionModal');renderCabinet();return;}
   setCabinet(cabinet.filter(x=>x.id!==id));
   if(state?.libraryId===id){localStorage.removeItem(KEY);state=null;showHome();}
   pendingCabinetAction=null;closeLayer(null,'cabinetActionModal');renderCabinet();
 }
+
+
+/* ---------- Recommended libraries ---------- */
+let recommendedLibraries=[];
+async function loadRecommendedLibraries(){
+  try{const r=await fetch('/api/recommended-libraries',{credentials:'include',cache:'no-store'});if(!r.ok)throw new Error('Unable to load recommended libraries.');recommendedLibraries=await r.json();renderRecommendedLibraries();}catch(e){const el=document.getElementById('recommendedContent');if(el)el.innerHTML=`<div class="emptyState">${escapeHTML(e.message)}</div>`;}}
+function openRecommendedLibraries(){
+  closeLayer(null,'cabinetModal');
+  document.getElementById('recommendedAdminPanel')?.classList.toggle('hidden',!siteStatus.isAdmin);
+  openLayer('recommendedModal');
+  loadRecommendedLibraries();
+}
+function renderRecommendedLibraries(){
+  const el=document.getElementById('recommendedContent');if(!el)return;
+  if(!recommendedLibraries.length){el.innerHTML=`<div class="emptyState">${LANG==='zh'?'书架暂时空置。':'The shelf is empty.'}</div>`;return;}
+  el.innerHTML=`<div class="bookshelf">${recommendedLibraries.map(lib=>`<article class="bookCard">
+    <div class="bookCover"><span>${escapeHTML(lib.name)}</span></div>
+    <div class="bookMeta"><div class="bookName">${escapeHTML(lib.name)}</div><div class="bookDesc">${escapeHTML(lib.description||'')}</div><div class="bookCount">${Number(lib.words?.length||0)} ${LANG==='zh'?'词':'WORDS'}</div>
+      <div class="bookActions"><button type="button" onclick="downloadRecommendedLibrary('${escapeHTML(lib.id)}')">${LANG==='zh'?'收入词库':'Add to Cabinet'}</button>${siteStatus.isAdmin?`<button class="ghost" type="button" onclick="deleteRecommendedLibrary('${escapeHTML(lib.id)}')">${LANG==='zh'?'撤下':'Remove'}</button>`:''}</div>
+    </div></article>`).join('')}</div>`;
+}
+function downloadRecommendedLibrary(id){
+  const src=recommendedLibraries.find(x=>String(x.id)===String(id));if(!src)return;
+  const cabinet=getCabinet();
+  const existing=cabinet.find(x=>x.sourceRecommendedId===src.id);
+  if(existing){showToast(LANG==='zh'?'这部词书已经收入词库。':'This volume is already in your Cabinet.');return;}
+  const lib={id:'recommended_'+src.id+'_'+Date.now(),name:String(src.name||'Recommended Volume'),description:String(src.description||''),words:(Array.isArray(src.words)?src.words:[]).map(normalizeWordRecord),progress:null,updatedAt:new Date().toISOString(),sourceRecommendedId:src.id,lockedRename:true};
+  setCabinet([...cabinet,lib]);renderCabinet();showToast(LANG==='zh'?'词书已收入词库。':'Volume added to your Cabinet.');
+}
+async function uploadRecommendedLibrary(){
+  const name=(document.getElementById('recommendedNameInput')?.value||'').trim();
+  const description=(document.getElementById('recommendedDescInput')?.value||'').trim();
+  const file=document.getElementById('recommendedFileInput')?.files?.[0];
+  const status=document.getElementById('recommendedAdminStatus');
+  if(!name||!file){if(status)status.textContent=LANG==='zh'?'请填写书名并选择 CSV/JSON 文件。':'Enter a title and choose a CSV/JSON file.';return;}
+  try{
+    const text=await file.text();let words;
+    if(/\.json$/i.test(file.name)){const parsed=JSON.parse(text);words=Array.isArray(parsed)?parsed:(Array.isArray(parsed.words)?parsed.words:[]);}else{words=parseCSV(text);}
+    words=words.map(normalizeWordRecord).filter(x=>x.word&&x.definition);
+    if(!words.length)throw new Error(LANG==='zh'?'文件中没有可用词汇。':'No usable words were found.');
+    const r=await fetch('/api/admin/recommended-libraries',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({name,description,words})});
+    const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data.error||'Upload failed.');
+    document.getElementById('recommendedNameInput').value='';document.getElementById('recommendedDescInput').value='';document.getElementById('recommendedFileInput').value='';
+    if(status)status.textContent=LANG==='zh'?'已上架。':'Published.';await loadRecommendedLibraries();
+  }catch(e){if(status)status.textContent=e.message||'Upload failed.';}
+}
+async function deleteRecommendedLibrary(id){
+  if(!siteStatus.isAdmin)return;if(!confirm(LANG==='zh'?'确定从推荐书架撤下这部词书？':'Remove this volume from the recommendation shelf?'))return;
+  try{const r=await fetch('/api/admin/recommended-libraries/'+encodeURIComponent(id),{method:'DELETE',credentials:'include'});const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data.error||'Unable to remove.');await loadRecommendedLibraries();}catch(e){showToast(e.message);}
+}
+
+/* ---------- My Progress ---------- */
+function openProgressPage(){closeAllLayers();renderProgressPage();openLayer('progressPopover');}
+function renderProgressPage(){
+  const el=document.getElementById('progressContent');if(!el)return;flushStudyTime();
+  const wordsEncountered=new Set(Object.keys(globalStats.wordStats||{})).size;
+  const learned=(globalStats.learnedWords||[]).length;
+  const spelled=(globalStats.spelledWords||[]).length;
+  const mistakes=Number(globalStats.mistakes||0);
+  const days=Object.entries(globalStats.dailyWords||{}).filter(([,v])=>Array.isArray(v)&&v.length).sort((a,b)=>a[0].localeCompare(b[0]));
+  const recent=days.slice(-14);
+  const max=Math.max(1,...recent.map(([,v])=>Array.isArray(v)?v.length:0));
+  const activity=recent.map(([k,v])=>`<div class="activityBar" title="${escapeHTML(formatDate(k))} · ${v.length} words" style="height:${Math.max(5,Math.round(v.length/max*108))}px"><span>${escapeHTML(k.slice(5))}</span></div>`).join('');
+  const practised=getRanking('practised',8),missed=getRanking('mistakes',8);
+  const row=(x,label)=>`<div class="progressRow"><span class="wordName">${escapeHTML(x.word)}</span><span class="wordStat">${x[label]||0}</span></div>`;
+  el.innerHTML=`<div class="progressPage"><div class="progressHero"><div><h3>${LANG==='zh'?'我的学习进度':'My Progress'}</h3><p>${LANG==='zh'?'你的学习轨迹与词汇掌握情况。':'A record of your vocabulary journey and learning activity.'}</p></div><div class="progressPeriod">${LANG==='zh'?'学习档案':'LEARNING RECORD'}</div></div>
+  <div class="progressCards"><div class="progressCard"><div class="value">${wordsEncountered}</div><div class="label">${t('wordsEncountered')}</div></div><div class="progressCard"><div class="value">${learned}</div><div class="label">${t('learned')}</div></div><div class="progressCard"><div class="value">${spelled}</div><div class="label">${t('spelled')}</div></div><div class="progressCard"><div class="value">${mistakes}</div><div class="label">${t('mistakes')}</div></div></div>
+  <div class="progressSection"><h4>${LANG==='zh'?'近十四日学习活动':'Activity · Last 14 Days'}</h4><div class="activityChart">${activity||`<div class="progressEmpty">${LANG==='zh'?'尚无学习活动。':'No study activity recorded yet.'}</div>`}</div></div>
+  <div class="progressLists"><div class="progressSection"><h4>${LANG==='zh'?'最常学习':'Most Practised'}</h4><div class="progressList">${practised.length?practised.map(x=>row(x,'practised')).join(''):`<div class="progressEmpty">${t('noPractice')}</div>`}</div></div><div class="progressSection"><h4>${LANG==='zh'?'最易出错':'Most Missed'}</h4><div class="progressList">${missed.length?missed.map(x=>row(x,'mistakes')).join(''):`<div class="progressEmpty">${t('noMistakes')}</div>`}</div></div></div></div>`;
+}
+
+/* ---------- Gamepad navigation ---------- */
+let gamepadLastButtons=[],gamepadLastMove=0,gamepadLastAxis=0;
+function visibleFocusable(){return [...document.querySelectorAll('button,input,textarea,select,[tabindex]:not([tabindex="-1"])')].filter(el=>{const r=el.getBoundingClientRect();const st=getComputedStyle(el);return st.display!=='none'&&st.visibility!=='hidden'&&!el.disabled&&r.width>0&&r.height>0;});}
+function gamepadMove(dx,dy){
+  const items=visibleFocusable();if(!items.length)return;
+  const active=document.activeElement;let cur=items.includes(active)?active:null;
+  if(!cur){items[0].focus();return;}
+  const a=cur.getBoundingClientRect(),ax=a.left+a.width/2,ay=a.top+a.height/2;
+  const candidates=items.filter(el=>el!==cur).map(el=>{const r=el.getBoundingClientRect(),x=r.left+r.width/2,y=r.top+r.height/2;const vx=x-ax,vy=y-ay;const primary=dx?vx*dx:vy*dy;if(primary<=4)return null;const cross=dx?Math.abs(vy):Math.abs(vx);const dist=Math.hypot(vx,vy);return {el,score:primary+cross*0.7+dist*0.12};}).filter(Boolean).sort((a,b)=>a.score-b.score);
+  if(candidates[0]){candidates[0].el.focus({preventScroll:false});candidates[0].el.classList.add('gamepadFocus');setTimeout(()=>candidates[0]?.el.classList.remove('gamepadFocus'),350);}
+}
+function gamepadPoll(){
+  const pads=navigator.getGamepads?navigator.getGamepads():[];const pad=[...pads].find(Boolean);
+  if(pad){
+    const now=performance.now();
+    let dx=0,dy=0;
+    if(pad.buttons[12]?.pressed)dy=-1;else if(pad.buttons[13]?.pressed)dy=1;else if(pad.buttons[14]?.pressed)dx=-1;else if(pad.buttons[15]?.pressed)dx=1;
+    const ax=Math.abs(pad.axes?.[0]||0),ay=Math.abs(pad.axes?.[1]||0);
+    if(!dx&&ax>.55)dx=(pad.axes[0]>0)?1:-1;if(!dy&&ay>.55)dy=(pad.axes[1]>0)?1:-1;
+    if((dx||dy)&&now-gamepadLastMove>190){gamepadMove(dx,dy);gamepadLastMove=now;}
+    const buttons=pad.buttons||[];const pressed=i=>!!buttons[i]?.pressed&&!gamepadLastButtons[i];
+    if(pressed(0)){const el=document.activeElement;if(el&&typeof el.click==='function')el.click();}
+    if(pressed(1)){const layers=[...document.querySelectorAll('.modalLayer:not(.hidden),.drawerLayer:not(.hidden)')];const top=layers[layers.length-1];if(top)closeLayer(null,top.id);}
+    if(pressed(9)){openSettings();}
+    gamepadLastButtons=buttons.map(b=>!!b.pressed);
+  }else{gamepadLastButtons=[];}
+  requestAnimationFrame(gamepadPoll);
+}
+window.addEventListener('gamepadconnected',()=>{if(!document.activeElement||document.activeElement===document.body){const f=visibleFocusable()[0];if(f)f.focus();}});
+requestAnimationFrame(gamepadPoll);
 
 /* ---------- Ledger / Almanac ---------- */
 function renderLedger(){
