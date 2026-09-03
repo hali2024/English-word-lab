@@ -317,8 +317,6 @@ const DEFAULT_MAINTENANCE_STATE = {
   expectedEndAt: null
 };
 
-// In-memory cache so every request doesn't have to hit the DB.
-// Refreshed whenever the admin toggles maintenance, and once at boot.
 let maintenanceState = { ...DEFAULT_MAINTENANCE_STATE };
 
 async function loadMaintenanceState() {
@@ -383,9 +381,6 @@ function requireAdmin(req, res, next) {
   next();
 }
 
-// Blocks normal study traffic while maintenance is enabled.
-// Admin sessions (and the admin/auth/status endpoints themselves,
-// which are mounted separately) pass through untouched.
 function maintenanceGate(req, res, next) {
   if (maintenanceState.enabled && !req.session.isAdmin) {
     return res.status(503).json({
@@ -884,26 +879,6 @@ app.post(
             'Password must be at least 8 characters.'
         });
       }
-
-      /*
-       * IMPORTANT:
-       *
-       * Email verification is stored
-       * in PostgreSQL rather than relying
-       * only on the browser session.
-       *
-       * This prevents the old bug where:
-       *
-       * Verify email
-       *      ↓
-       * Enter password
-       *      ↓
-       * Create account
-       *      ↓
-       * "Please verify your email"
-       *
-       * could appear again.
-       */
 
       const verified =
         await isVerifiedForRegistration(
@@ -1537,12 +1512,6 @@ app.post(
           { path: '/' }
         );
 
-        /*
-         * Remove the old cookie too.
-         * This lets existing users upgrade
-         * cleanly from the previous build.
-         */
-
         res.clearCookie(
           'connect.sid',
           { path: '/' }
@@ -1689,11 +1658,6 @@ app.post(
       });
     } catch (error) {
       console.error(error);
-
-      /*
-       * Do not reveal whether an email
-       * belongs to an account.
-       */
 
       res.json({
         ok: true,
@@ -1916,8 +1880,6 @@ async function recordStudyEvents(
   newStats,
   hadPreviousSnapshot
 ) {
-  // The first ever /api/data save only establishes the baseline.
-  // This prevents old historical counters from becoming today's events.
   if (!hadPreviousSnapshot) {
     return;
   }
@@ -2117,9 +2079,6 @@ async function recordStudyEvents(
       ]
     );
   }
-
-  // Count every newly successful spelling mastery for today's ranking.
-  // Repeating the same word successfully is counted again.
 
   const oldDailyMastery =
     oldData.dailySpellingMastery &&
@@ -2329,13 +2288,55 @@ app.put(
       const previous =
         await client.query(
           `
-          SELECT global_stats
+          SELECT cabinet, global_stats
           FROM user_data
           WHERE user_id=$1
           FOR UPDATE
           `,
           [req.session.userId]
         );
+
+      // Recommended volumes are immutable in name. Keep the
+      // server-side copy authoritative so a client cannot bypass
+      // the UI by editing localStorage before synchronizing.
+      const previousCabinet = Array.isArray(previous.rows[0]?.cabinet)
+        ? previous.rows[0].cabinet
+        : [];
+
+      const previousRecommendedBySource = new Map(
+        previousCabinet
+          .filter(
+            item =>
+              item &&
+              item.sourceRecommendedId &&
+              item.lockedRename
+          )
+          .map(
+            item => [
+              String(item.sourceRecommendedId),
+              item
+            ]
+          )
+      );
+
+      for (const item of cabinet) {
+        if (
+          !item ||
+          !item.sourceRecommendedId
+        ) {
+          continue;
+        }
+
+        const oldItem =
+          previousRecommendedBySource.get(
+            String(item.sourceRecommendedId)
+          );
+
+        if (oldItem) {
+          item.name = oldItem.name;
+          item.lockedRename = true;
+        }
+      }
 
       await recordStudyEvents(
         client,
@@ -2898,11 +2899,6 @@ Do not add extra fields.
       })
     );
 
-  // The model occasionally leaves "phonetic" blank even when asked for it.
-  // Before validating, try to backfill any missing transcription from a
-  // free public dictionary so the in-app spelling "Hint" always has
-  // something to show instead of silently staying empty.
-
   await Promise.all(
     result.words.map(
       async item => {
@@ -3077,7 +3073,6 @@ app.get(
           SELECT id, content, created_at
           FROM announcements
           ORDER BY created_at DESC
-          LIMIT 30
           `
         );
 
@@ -3117,7 +3112,6 @@ app.post(
 
     const password = String(req.body?.password || '');
 
-    // Constant-time-ish comparison to avoid trivial timing leaks.
     const a = Buffer.from(password);
     const b = Buffer.from(ADMIN_PASSWORD);
 
@@ -3126,13 +3120,18 @@ app.post(
       crypto.timingSafeEqual(a, b);
 
     if (!valid) {
-      return res.status(401).json({ error: 'Incorrect admin password.' });
+      return res.status(401).json({
+        error:
+          'Incorrect admin password.'
+      });
     }
 
     req.session.isAdmin = true;
     await saveSession(req);
 
-    res.json({ ok: true });
+    res.json({
+      ok: true
+    });
   }
 );
 
@@ -3141,14 +3140,20 @@ app.post(
   async (req, res) => {
     req.session.isAdmin = false;
     await saveSession(req);
-    res.json({ ok: true });
+
+    res.json({
+      ok: true
+    });
   }
 );
 
 app.get(
   '/api/admin/check',
   (req, res) => {
-    res.json({ isAdmin: !!req.session.isAdmin });
+    res.json({
+      isAdmin:
+        !!req.session.isAdmin
+    });
   }
 );
 
@@ -3166,18 +3171,28 @@ app.post(
     }
 
     try {
-      const next = await saveMaintenanceState({
-        enabled: !!req.body?.enabled,
-        message: req.body?.message,
-        expectedEndAt: req.body?.expectedEndAt
-      });
+      const next =
+        await saveMaintenanceState({
+          enabled:
+            !!req.body?.enabled,
 
-      res.json({ maintenance: next });
+          message:
+            req.body?.message,
+
+          expectedEndAt:
+            req.body?.expectedEndAt
+        });
+
+      res.json({
+        maintenance:
+          next
+      });
     } catch (error) {
       console.error(error);
 
       res.status(500).json({
-        error: 'Unable to update maintenance state.'
+        error:
+          'Unable to update maintenance state.'
       });
     }
   }
@@ -3185,7 +3200,7 @@ app.post(
 
 
 // ============================================================
-// ADMIN — announcement board (maintenance/update history)
+// ADMIN — announcement board
 // ============================================================
 
 app.post(
@@ -3196,36 +3211,56 @@ app.post(
       return;
     }
 
-    const content = String(req.body?.content || '').trim();
+    const content =
+      String(
+        req.body?.content ||
+          ''
+      ).trim();
 
     if (!content) {
-      return res.status(400).json({ error: 'Announcement content is required.' });
+      return res.status(400).json({
+        error:
+          'Announcement content is required.'
+      });
     }
 
     try {
-      const result = await pool.query(
-        `
-        INSERT INTO announcements(content)
-        VALUES ($1)
-        RETURNING id, content, created_at
-        `,
-        [content.slice(0, 2000)]
-      );
+      const result =
+        await pool.query(
+          `
+          INSERT INTO announcements(content)
+          VALUES ($1)
+          RETURNING id, content, created_at
+          `,
+          [
+            content.slice(
+              0,
+              2000
+            )
+          ]
+        );
 
-      const row = result.rows[0];
+      const row =
+        result.rows[0];
 
       res.json({
         announcement: {
-          id: row.id,
-          content: row.content,
-          createdAt: row.created_at
+          id:
+            row.id,
+
+          content:
+            row.content,
+
+          createdAt:
+            row.created_at
         }
       });
     } catch (error) {
       console.error(error);
 
       res.status(500).json({
-        error: 'Unable to create announcement.'
+        error:
+          'Unable to create announcement.'
       });
     }
   }
@@ -3241,16 +3276,24 @@ app.delete(
 
     try {
       await pool.query(
-        `DELETE FROM announcements WHERE id=$1`,
-        [req.params.id]
+        `
+        DELETE FROM announcements
+        WHERE id=$1
+        `,
+        [
+          req.params.id
+        ]
       );
 
-      res.json({ ok: true });
+      res.json({
+        ok: true
+      });
     } catch (error) {
       console.error(error);
 
       res.status(500).json({
-        error: 'Unable to delete announcement.'
+        error:
+          'Unable to delete announcement.'
       });
     }
   }
@@ -3265,7 +3308,11 @@ app.get(
   '/admin',
   (req, res) => {
     res.sendFile(
-      path.join(__dirname, 'public', 'admin.html')
+      path.join(
+        __dirname,
+        'public',
+        'admin.html'
+      )
     );
   }
 );
@@ -3301,6 +3348,399 @@ app.use(
       'live2d'
     )
   )
+);
+
+
+// ============================================================
+// RECOMMENDED LIBRARIES
+// ============================================================
+
+function cleanRecommendedWord(word) {
+  if (
+    !word ||
+    typeof word !== 'object'
+  ) {
+    return null;
+  }
+
+  const examples =
+    Array.isArray(
+      word.examples
+    )
+      ? word.examples
+          .map(
+            x =>
+              String(
+                x || ''
+              ).trim()
+          )
+          .filter(Boolean)
+          .slice(
+            0,
+            3
+          )
+      : (
+          word.example
+            ? [
+                String(
+                  word.example
+                ).trim()
+              ]
+            : []
+        );
+
+  const clean = {
+    word:
+      String(
+        word.word ||
+          ''
+      ).trim(),
+
+    partOfSpeech:
+      String(
+        word.partOfSpeech ||
+          word.part_of_speech ||
+          ''
+      ).trim(),
+
+    phonetic:
+      String(
+        word.phonetic ||
+          word.ipa ||
+          ''
+      ).trim(),
+
+    cefr:
+      String(
+        word.cefr ||
+          word.cefrLevel ||
+          word.cefr_level ||
+          ''
+      ).trim(),
+
+    definition:
+      String(
+        word.definition ||
+          ''
+      ).trim(),
+
+    example:
+      examples[0] ||
+      '',
+
+    examples,
+
+    synonyms:
+      Array.isArray(
+        word.synonyms
+      )
+        ? word.synonyms
+            .map(String)
+            .map(
+              x =>
+                x.trim()
+            )
+            .filter(Boolean)
+        : [],
+
+    antonyms:
+      Array.isArray(
+        word.antonyms
+      )
+        ? word.antonyms
+            .map(String)
+            .map(
+              x =>
+                x.trim()
+            )
+            .filter(Boolean)
+        : [],
+
+    root:
+      String(
+        word.root ||
+          word.root_analysis ||
+          ''
+      ).trim(),
+
+    cognates:
+      Array.isArray(
+        word.cognates
+      )
+        ? word.cognates
+            .map(String)
+            .map(
+              x =>
+                x.trim()
+            )
+            .filter(Boolean)
+        : []
+  };
+
+  return clean.word
+    ? clean
+    : null;
+}
+
+
+async function getRecommendedLibraries() {
+  if (!pool) {
+    return [];
+  }
+
+  const result =
+    await pool.query(
+      `
+      SELECT value
+      FROM site_settings
+      WHERE key='recommended_libraries'
+      `
+    );
+
+  const value =
+    result.rows[0]?.value;
+
+  return Array.isArray(value)
+    ? value
+    : [];
+}
+
+
+async function saveRecommendedLibraries(
+  libraries
+) {
+  await pool.query(
+    `
+    INSERT INTO site_settings(
+      key,
+      value
+    )
+    VALUES(
+      'recommended_libraries',
+      $1::jsonb
+    )
+
+    ON CONFLICT(key)
+    DO UPDATE SET
+      value=
+        EXCLUDED.value
+    `,
+    [
+      JSON.stringify(
+        libraries
+      )
+    ]
+  );
+}
+
+
+// Public: everyone may browse the shelf.
+
+app.get(
+  '/api/recommended-libraries',
+  async (req, res) => {
+    try {
+      const libraries =
+        await getRecommendedLibraries();
+
+      res.set(
+        'Cache-Control',
+        'no-store'
+      );
+
+      res.json(
+        libraries
+      );
+    } catch (error) {
+      console.error(
+        'Unable to load recommended libraries:',
+        error
+      );
+
+      res.status(500).json({
+        error:
+          'Unable to load recommended libraries.'
+      });
+    }
+  }
+);
+
+
+// Admin: publish a new volume.
+
+app.post(
+  '/api/admin/recommended-libraries',
+  requireAdmin,
+  async (req, res) => {
+    if (!requireDB(res)) {
+      return;
+    }
+
+    const name =
+      String(
+        req.body?.name ||
+          ''
+      ).trim();
+
+    const description =
+      String(
+        req.body?.description ||
+          ''
+      ).trim();
+
+    const incomingWords =
+      Array.isArray(
+        req.body?.words
+      )
+        ? req.body.words
+        : [];
+
+    if (!name) {
+      return res.status(400).json({
+        error:
+          'Library title is required.'
+      });
+    }
+
+    if (!incomingWords.length) {
+      return res.status(400).json({
+        error:
+          'At least one word is required.'
+      });
+    }
+
+    if (
+      incomingWords.length >
+      5000
+    ) {
+      return res.status(400).json({
+        error:
+          'A recommended library may contain at most 5000 words.'
+      });
+    }
+
+    try {
+      const words =
+        incomingWords
+          .map(
+            cleanRecommendedWord
+          )
+          .filter(Boolean)
+          .slice(
+            0,
+            5000
+          );
+
+      if (!words.length) {
+        return res.status(400).json({
+          error:
+            'No usable words were found.'
+        });
+      }
+
+      const libraries =
+        await getRecommendedLibraries();
+
+      const library = {
+        id:
+          crypto.randomUUID(),
+
+        name:
+          name.slice(
+            0,
+            80
+          ),
+
+        description:
+          description.slice(
+            0,
+            300
+          ),
+
+        words,
+
+        createdAt:
+          new Date()
+            .toISOString(),
+
+        updatedAt:
+          new Date()
+            .toISOString()
+      };
+
+      libraries.unshift(
+        library
+      );
+
+      await saveRecommendedLibraries(
+        libraries.slice(
+          0,
+          100
+        )
+      );
+
+      res.json({
+        library
+      });
+    } catch (error) {
+      console.error(
+        'Unable to publish recommended library:',
+        error
+      );
+
+      res.status(500).json({
+        error:
+          'Unable to publish recommended library.'
+      });
+    }
+  }
+);
+
+
+// Admin: remove a volume from the public shelf.
+
+app.delete(
+  '/api/admin/recommended-libraries/:id',
+  requireAdmin,
+  async (req, res) => {
+    if (!requireDB(res)) {
+      return;
+    }
+
+    try {
+      const libraries =
+        await getRecommendedLibraries();
+
+      const next =
+        libraries.filter(
+          x =>
+            String(
+              x?.id
+            ) !==
+            String(
+              req.params.id
+            )
+        );
+
+      await saveRecommendedLibraries(
+        next
+      );
+
+      res.json({
+        ok: true
+      });
+    } catch (error) {
+      console.error(
+        'Unable to remove recommended library:',
+        error
+      );
+
+      res.status(500).json({
+        error:
+          'Unable to remove recommended library.'
+      });
+    }
+  }
 );
 
 
