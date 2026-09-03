@@ -1131,56 +1131,30 @@ meticulous,very careful about small details,She is meticulous about her work.,Hi
 }
 
 /* ---------- speech ---------- */
-let speechVoices=[];
-let speechAudio=null;
-let speechRequestId=0;
-function loadSpeechVoices(){if(!TTS_SUPPORTED)return;speechVoices=window.speechSynthesis.getVoices();}
-if(TTS_SUPPORTED){loadSpeechVoices();window.speechSynthesis.onvoiceschanged=loadSpeechVoices;}
-function speakWithBrowser(text){
-  if(!TTS_SUPPORTED||!text)return;
-  try{
-    const synth=window.speechSynthesis;synth.cancel();
-    const u=new SpeechSynthesisUtterance(String(text));
-    const voices=speechVoices.length?speechVoices:synth.getVoices();
-    const englishVoice=voices.find(v=>/^en-US$/i.test(v.lang))||voices.find(v=>/^en-/i.test(v.lang))||voices.find(v=>/English/i.test(v.name));
-    if(englishVoice){u.voice=englishVoice;u.lang=englishVoice.lang;}else u.lang='en-US';
-    u.rate=.92;u.pitch=1;u.volume=1;synth.speak(u);
-  }catch(e){console.warn('Browser speech synthesis failed:',e);}
-}
-function speak(text){
-  if(!TTS_SUPPORTED||!text)return;
-  const value=String(text).trim();
-  if(!value)return;
-  const requestId=++speechRequestId;
-  try{
-    if(speechAudio){speechAudio.pause();speechAudio.currentTime=0;}
-    const url='https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en&q='+encodeURIComponent(value);
-    const audio=new Audio(url);
-    speechAudio=audio;
-    audio.preload='auto';
-    audio.volume=1;
-    let finished=false;
-    const fallback=()=>{
-      if(finished||requestId!==speechRequestId)return;
-      finished=true;
-      speakWithBrowser(value);
-    };
-    audio.onended=()=>{finished=true;};
-    audio.onerror=fallback;
-    const playPromise=audio.play();
-    if(playPromise&&typeof playPromise.catch==='function'){playPromise.catch(fallback);}
-  }catch(e){
-    console.warn('Online pronunciation failed:',e);
-    speakWithBrowser(value);
+  let speechAudio=null;
+  let speechRequestId=0;
+  const EDGE_TTS_VOICE='en-US-AriaNeural';
+  function speak(text){
+    if(!TTS_SUPPORTED||!text)return;
+    const value=String(text).trim();
+    if(!value)return;
+    const requestId=++speechRequestId;
+    try{
+      if(speechAudio){speechAudio.pause();speechAudio.currentTime=0;speechAudio.src='';}
+      const audio=new Audio('https://tts.kina.ink/tts?text='+encodeURIComponent(value)+'&voice='+encodeURIComponent(EDGE_TTS_VOICE)+'&rate='+encodeURIComponent('+0%'));
+      speechAudio=audio;
+      audio.preload='auto';
+      audio.volume=1;
+      audio.play().catch(e=>console.warn('Microsoft Edge Neural Voice playback failed:',e));
+    }catch(e){console.warn('Microsoft Edge Neural Voice failed:',e);}
   }
-}
-function safeJSString(s){return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\r?\n/g,' ');}
-function speakerBtn(word){
-  if(!TTS_SUPPORTED)return '';
-  return `<button type="button" class="speaker" title="Play pronunciation" onclick="event.stopPropagation();speak('${safeJSString(word)}')"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round"><path d="M4 9v6h4l5 4V5L8 9H4"></path><path d="M16 9.5c1 .8 1.5 1.6 1.5 2.5s-.5 1.7-1.5 2.5"></path><path d="M18.5 7c1.7 1.4 2.5 3 2.5 5s-.8 3.6-2.5 5"></path></svg></button>`;
-}
+  function safeJSString(s){return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\r?\n/g,' ');}
+  function speakerBtn(word){
+    if(!TTS_SUPPORTED)return '';
+    return `<button type="button" class="speaker" title="Play pronunciation" onclick="event.stopPropagation();speak('${safeJSString(word)}')"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round"><path d="M4 9v6h4l5 4V5L8 9H4"></path><path d="M16 9.5c1 .8 1.5 1.6 1.5 2.5s-.5 1.7-1.5 2.5"></path><path d="M18.5 7c1.7 1.4 2.5 3 2.5 5s-.8 3.6-2.5 5"></path></svg></button>`;
+  }
 
-/* ---------- recognition ---------- */
+  /* ---------- recognition ---------- */
 function beginRecognitionRound(){
   state.roundQueue=shuffle(state.activeIds);
   state.roundPos=0;
