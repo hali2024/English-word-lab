@@ -2020,6 +2020,9 @@ Return valid JSON only in this exact structure:
   "words": [
     {
       "word": "exact input word",
+      "partOfSpeech": "standard English part of speech",
+      "phonetic": "IPA pronunciation",
+      "cefr": "CEFR level from A1, A2, B1, B2, C1, C2",
       "definition": "clear concise English definition",
       "examples": [
         "sentence 1",
@@ -2035,6 +2038,10 @@ Return valid JSON only in this exact structure:
 }
 
 Preserve the input word exactly.
+Return the most appropriate standard part of speech for the word.
+Return a concise IPA pronunciation in /slashes/.
+Return one CEFR level only: A1, A2, B1, B2, C1, or C2.
+Do not include explanations outside the JSON.
 
 Return exactly one item.
 
@@ -2053,6 +2060,9 @@ Return valid JSON only with this structure:
   "words": [
     {
       "word": "exact input",
+      "partOfSpeech": "standard English part of speech",
+      "phonetic": "IPA pronunciation",
+      "cefr": "CEFR level from A1, A2, B1, B2, C1, C2",
       "definition": "clear concise definition",
       "examples": [
         "sentence 1",
@@ -2184,6 +2194,24 @@ Do not add extra fields.
         word:
           list[index],
 
+        partOfSpeech:
+          String(
+            item?.partOfSpeech ||
+              ''
+          ).trim(),
+
+        phonetic:
+          String(
+            item?.phonetic ||
+              ''
+          ).trim(),
+
+        cefr:
+          String(
+            item?.cefr ||
+              ''
+          ).trim(),
+
         definition:
           String(
             item?.definition ||
@@ -2263,10 +2291,28 @@ Do not add extra fields.
       );
     }
 
+    if (!item.partOfSpeech) {
+      console.warn(
+        `DeepSeek did not return a part of speech for "${item.word}"`
+      );
+    }
+
+    if (!item.phonetic) {
+      console.warn(
+        `DeepSeek did not return a phonetic transcription for "${item.word}"`
+      );
+    }
+
+    if (!item.cefr) {
+      console.warn(
+        `DeepSeek did not return a CEFR level for "${item.word}"`
+      );
+    }
+
     if (
       item.examples.length !==
       3
-    ) {
+    ){
       throw new Error(
         `DeepSeek did not return exactly three examples for "${item.word}"`
       );
