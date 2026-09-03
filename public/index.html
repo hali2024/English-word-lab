@@ -1364,23 +1364,41 @@ function renderDictQuestionScreen(){
 }
 async function toggleSpellingHint(){
   const el=document.getElementById('spellingHint');
-  if(!el)return;
-  if(el.classList.contains('hidden')){
-    const w=state?.words?.[state?.current?.id];
-    if(w && !(w.phonetic||w.ipa)){
-      try{
-        const r=await fetch('https://api.dictionaryapi.dev/api/v2/entries/en/'+encodeURIComponent(w.word));
-        if(r.ok){
-          const data=await r.json();
-          const found=data?.[0]?.phonetics?.find(p=>p?.text);
-          w.phonetic=found?.text||'';
-        }
-      }catch(e){console.warn('Unable to load IPA hint:',e);}
-    }
-    const phonetic=w?.phonetic||w?.ipa||'';
-    el.textContent=phonetic||'IPA unavailable';
+  if(!el||!state||!state.current||!state.words?.[state.current.id])return;
+  const w=state.words[state.current.id];
+
+  // If the word already has IPA/phonetic data, just reveal it.
+  if(w.phonetic||w.ipa){
+    el.textContent=w.phonetic||w.ipa;
+    el.classList.toggle('hidden');
+    return;
   }
-  el.classList.toggle('hidden');
+
+  // Otherwise fetch IPA automatically instead of showing
+  // “No phonetic transcription available.”
+  if(!el.classList.contains('hidden')){
+    el.classList.add('hidden');
+    return;
+  }
+  el.textContent='Loading phonetic transcription…';
+  el.classList.remove('hidden');
+
+  try{
+    const word=String(w.word||'').trim();
+    const response=await fetch('https://api.dictionaryapi.dev/api/v2/entries/en/'+encodeURIComponent(word));
+    if(!response.ok)throw new Error('IPA lookup failed');
+    const data=await response.json();
+    const phonetic=(data?.[0]?.phonetic||data?.[0]?.phonetics?.map(p=>p?.text).find(Boolean)||'').trim();
+    if(!phonetic)throw new Error('No IPA returned');
+
+    // Store it on the current word so the hint works immediately
+    // and remains available on later screens in this session.
+    w.phonetic=phonetic;
+    el.textContent=phonetic;
+    save();
+  }catch(error){
+    el.textContent='Phonetic transcription unavailable for this word.';
+  }
 }
 let dictCompositionActive=false;
 let dictCompositionStartValue='';
