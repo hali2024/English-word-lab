@@ -13,6 +13,51 @@
   --good:#71343b;--good-bg:#eee1dc;--bad:#5e5148;--bad-bg:#e9e1d5;
   --white:#fbf7ed;--shadow:0 24px 65px rgba(52,38,24,.13);
 }
+html.theme-dark{
+  --paper:#1b1712;--paper-deep:#141110;--ink:#e9dfcd;--muted:#a8987f;
+  --line:rgba(233,223,205,.14);--line-dark:rgba(233,223,205,.30);
+  --accent:#d19a5e;--accent-soft:#3a2c1f;--navy:#8a97a5;
+  --good:#d19a5e;--good-bg:#3a2c1f;--bad:#a8987f;--bad-bg:#2a241c;
+  --white:#231d16;--shadow:0 24px 70px rgba(0,0,0,.6);
+}
+html.theme-dark body{
+  background:
+    radial-gradient(circle at 14% 9%,rgba(255,255,255,.035),transparent 25rem),
+    radial-gradient(circle at 88% 72%,rgba(255,255,255,.025),transparent 28rem),
+    linear-gradient(135deg,#171310,#1c1712 50%,#141110);
+}
+html.theme-dark body:before{opacity:.10}
+html.theme-dark body:after{opacity:.08}
+html.theme-dark ::selection{background:var(--ink);color:#1b1712}
+html.theme-dark .panel,html.theme-dark .quiz,html.theme-dark .detail,html.theme-dark .interstitial,
+html.theme-dark .modalCard,html.theme-dark .drawerCard,html.theme-dark .bookCard{
+  background:linear-gradient(rgba(255,255,255,.03),rgba(255,255,255,.01)),rgba(30,25,19,.92);
+}
+html.theme-dark textarea,html.theme-dark .authInput,html.theme-dark .nameInput,html.theme-dark .dictInput,
+html.theme-dark .addWordInput,html.theme-dark .editRow,html.theme-dark .stat,html.theme-dark .ledgerStat,
+html.theme-dark .profileStat,html.theme-dark .progressCard,html.theme-dark .result,html.theme-dark .rankRow,
+html.theme-dark .cabinetActionInput,html.theme-dark .actionModalInput,html.theme-dark .shelfAdmin,
+html.theme-dark .shelfAdmin input,html.theme-dark .shelfAdmin textarea,html.theme-dark .moveSelect,
+html.theme-dark .profileNameInput{
+  background:rgba(30,25,19,.75);color:var(--ink);border-color:var(--line-dark);
+}
+html.theme-dark .rootText{background:rgba(58,44,31,.45)}
+html.theme-dark .heatCell{background:rgba(30,25,19,.6);border-color:rgba(233,223,205,.12)}
+html.theme-dark .heatCell[data-level="1"]{background:#3a2f22}
+html.theme-dark .heatCell[data-level="2"]{background:#54432c}
+html.theme-dark .heatCell[data-level="3"]{background:#7a5c34}
+html.theme-dark .heatCell[data-level="4"]{background:#a97b40}
+html.theme-dark .heatCell[data-level="5"]{background:#d19a5e}
+html.theme-dark .toast{background:#d19a5e;color:#1e1a15}
+html.theme-dark .practiceHubActions button{background:linear-gradient(135deg,rgba(40,33,25,.97),rgba(30,25,19,.92));color:var(--ink)}
+html.theme-dark .practiceHubActions .practiceName{color:#f0e6d4}
+html.theme-dark .practiceHubPanel{background:linear-gradient(rgba(255,255,255,.02),rgba(255,255,255,0)),rgba(27,23,18,.92)}
+/* Premium bound-book polish (both themes) */
+body{box-shadow:inset 0 0 180px rgba(35,22,8,.10)}
+html.theme-dark body{box-shadow:inset 0 0 220px rgba(0,0,0,.45)}
+h1{text-shadow:0 1px 0 rgba(255,255,255,.4)}
+html.theme-dark h1{text-shadow:0 1px 0 rgba(0,0,0,.6)}
+.panel,.quiz,.detail,.interstitial,.modalCard,.drawerCard{box-shadow:var(--shadow),0 0 0 1px rgba(170,138,91,.06)}
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
 body{
@@ -252,6 +297,7 @@ textarea::placeholder{color:#a79f91}
 .addWordStatus{position:relative;color:var(--muted);font-size:11px;font-style:italic;min-height:17px;margin-top:8px}
 .profileSummary{position:relative;margin-bottom:20px;color:var(--muted);font-size:12px;font-style:italic;line-height:1.7}
 .profileGrid{position:relative;display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);margin-bottom:22px}
+.profileGrid.profileGrid8{grid-template-columns:repeat(4,1fr)}
 .profileStat{background:rgba(255,252,245,.55);padding:18px 12px;text-align:center}
 .profileStat .value{font-size:30px;color:var(--accent);line-height:1}
 .profileStat .name{margin-top:7px;font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
@@ -332,6 +378,7 @@ textarea::placeholder{color:#a79f91}
 @media(max-width:700px){.practiceHubPanel{min-height:480px}.practiceHubActions button{min-height:76px;font-size:18px}.profileNameRow{align-items:stretch;flex-direction:column}.profileNameButton{width:100%}}
 @media(max-width:700px){
   .profileGrid{grid-template-columns:1fr}
+  .profileGrid.profileGrid8{grid-template-columns:repeat(2,1fr)}
   .rankRow{grid-template-columns:32px 1fr auto}
   .app{width:min(100% - 24px,900px);padding:28px 0 52px}
   .panel,.quiz,.detail,.interstitial{padding:23px 18px}
@@ -391,7 +438,6 @@ textarea::placeholder{color:#a79f91}
   <div class="top">
     <div class="homeTools">
       <button id="topCabinetButton" class="utilityButton" type="button" onclick="openCabinet()" data-i18n="cabinetBtn">The Cabinet</button>
-      <button id="topRecommendedButton" class="utilityButton" type="button" onclick="openRecommendedLibraries()" data-i18n="recommendedBtn">Recommended Libraries</button>
       <button class="utilityButton" type="button" onclick="openSettings()" data-i18n="studyBtn">The Study</button>
     </div>
     <div class="accountBar" id="accountBar"></div>
@@ -407,10 +453,12 @@ textarea::placeholder{color:#a79f91}
     </div>
   </div>
 
-  <div id="homeArea">
+  <div id="topNotices">
     <div id="announcementBoard" class="hint" style="margin-bottom:18px"></div>
     <div id="reviewBanner" class="reviewBanner hidden"></div>
+  </div>
 
+  <div id="homeArea" class="hidden">
     <div id="importArea">
       <section id="importPanel" class="panel">
         <h2 data-i18n="studioTitle">The Word Studio</h2>
@@ -665,11 +713,7 @@ become"></textarea>
       <p class="drawerIntro" data-i18n="drawerIntro">Records, almanac, and the archive.</p>
 
       <div class="drawerSection">
-        <button type="button" onclick="openProfileFromDrawer()">Profile</button>
-        <button type="button" onclick="openProgressPage()" data-i18n="progressBtn">My Progress</button>
-        <button type="button" onclick="openLedgerFromDrawer()">The Ledger</button>
-        <button type="button" onclick="openAlmanacFromDrawer()">The Almanac</button>
-        <button type="button" onclick="openRankingFromDrawer()">Ranking</button>
+        <button type="button" onclick="openProfileFromDrawer()">Profile &amp; Records</button>
       </div>
 
       <div class="drawerSection">
@@ -685,6 +729,7 @@ become"></textarea>
 
       <div class="drawerSection">
         <button type="button" id="langToggleBtn" onclick="toggleLang()">中文</button>
+        <button type="button" id="themeToggleBtn" onclick="toggleTheme()">Night Mode</button>
       </div>
     </aside>
   </div>
@@ -883,6 +928,17 @@ const TTS_SUPPORTED='speechSynthesis' in window;
 /* ---------- language / i18n ---------- */
 const LANG_KEY='theLexicon_lang_v1';
 let LANG=localStorage.getItem(LANG_KEY)||'en';
+
+/* ---------- theme (day / night) ---------- */
+const THEME_KEY='theLexicon_theme_v1';
+let THEME=localStorage.getItem(THEME_KEY)||'light';
+function applyTheme(){
+  document.documentElement.classList.toggle('theme-dark',THEME==='dark');
+  const btn=document.getElementById('themeToggleBtn');
+  if(btn)btn.textContent=THEME==='dark'?(LANG==='zh'?'日间模式':'Day Mode'):(LANG==='zh'?'夜间模式':'Night Mode');
+}
+function setTheme(mode){THEME=mode==='dark'?'dark':'light';localStorage.setItem(THEME_KEY,THEME);applyTheme();}
+function toggleTheme(){setTheme(THEME==='dark'?'light':'dark');}
 const I18N={
   en:{
     appTitle:'The Lexicon',
@@ -916,14 +972,14 @@ const I18N={
     modeAntonym:'Antonym Choice',
     modeFillBlank:'Fill in the Blank',
     modeSpelling:'Spelling Practice',
-    descWordToDef:' ',
-    descDefToWord:' ',
-    descListening:' ',
-    descSynonym:' ',
-    descAntonym:' ',
-    descFillBlank:' ',
-    descSpelling:' ',
-    bannerGood:'Well remembered',
+    descWordToDef:'Read the word and choose its meaning.',
+    descDefToWord:'Read the definition and choose the word.',
+    descListening:'Listen to the pronunciation and choose the word.',
+    descSynonym:'Choose the word’s closest synonym.',
+    descAntonym:'Choose the word’s closest antonym.',
+    descFillBlank:'Complete a sentence with the right word.',
+    descSpelling:'Listen and type the spelling yourself.',
+    bannerGood:'Well remembered.',
     bannerBad:'Worth another look.',
     definitionHeader:'Definition',
     examplesHeader:'Examples',
@@ -938,8 +994,8 @@ const I18N={
     completed:'Completed',
     accuracy:'Accuracy',
     sessionDefault:'This Session',
-    practiceHubIntro:' ',
-    choosePracticePrompt:' ',
+    practiceHubIntro:'A small collection of ways to revisit this vocabulary.',
+    choosePracticePrompt:'Choose how you would like to practice',
     maintenanceTitle:'Under Maintenance',
     maintenanceExpected:'Expected to be back by',
     announcementBoardTitle:'Announcements',
@@ -1025,6 +1081,7 @@ function applyI18n(){
   const langBtn=document.getElementById('langToggleBtn');
   if(langBtn)langBtn.textContent=t('langSwitchTo');
   renderAnnouncementBoard();
+  applyTheme();
 }
 
 /* ---------- site status: maintenance mode + announcement board ---------- */
@@ -1381,10 +1438,35 @@ function loadState(){
     render();
 
   }else{
-    showHome();
+    enterLandingHome();
   }
 
   renderReviewBanner();
+  updateTopNotices();
+}
+
+function enterLandingHome(){
+  const cabinet=getCabinet();
+  if(cabinet.length){
+    const sorted=[...cabinet].sort((a,b)=>new Date(b.updatedAt||0)-new Date(a.updatedAt||0));
+    const lib=sorted[0];
+    if(lib.progress&&Array.isArray(lib.progress.words)&&lib.progress.words.length){
+      state=JSON.parse(JSON.stringify(lib.progress));
+      state.words=state.words.map(normalizeWordRecord);
+      state.libraryId=lib.id;
+      state.reviewMode=false;
+      state.screen='practiceHub';
+      state.locked=false;
+    }else{
+      state=freshState(lib.words.map(normalizeWordRecord),lib.id,false,'wordToDef');
+      state.screen='practiceHub';
+    }
+    showStudyView();
+    save();
+    render();
+  }else{
+    showHome();
+  }
 }
 
 function normalizeWordRecord(w){
@@ -1414,17 +1496,22 @@ function showHome(){
   document.getElementById('importArea').classList.remove('hidden');
   document.getElementById('appArea').classList.add('hidden');
   renderReviewBanner();
+  updateTopNotices();
 }
 function showStudyView(){
   document.getElementById('homeArea').classList.add('hidden');
   document.getElementById('appArea').classList.remove('hidden');
-  document.getElementById('topCabinetButton')?.classList.add('hidden');
-  document.getElementById('topRecommendedButton')?.classList.add('hidden');
   touchStudyTime();
+  updateTopNotices();
 }
 function showTopHomeTools(){
   document.getElementById('topCabinetButton')?.classList.remove('hidden');
-  document.getElementById('topRecommendedButton')?.classList.remove('hidden');
+}
+function updateTopNotices(){
+  const el=document.getElementById('topNotices');
+  if(!el)return;
+  const show=!state||state.screen==='practiceHub';
+  el.classList.toggle('hidden',!show);
 }
 
 function resetImportFields(){
@@ -2103,6 +2190,7 @@ function reviewCandidates(){
 }
 function renderReviewBanner(){
   const el=document.getElementById('reviewBanner');if(!el)return;
+  updateTopNotices();
   const day=todayKey(),completed=globalStats.dailyReview?.[day];
   const candidates=reviewCandidates();
   if(completed||!candidates.length){el.classList.add('hidden');el.innerHTML='';return;}
@@ -2335,13 +2423,28 @@ function getRanking(type,limit=10){
 }
 function renderRanking(items,label){if(!items.length)return `<div class="profileNote">No ${label.toLowerCase()} recorded yet.</div>`;return `<div class="ranking">${items.map((x,i)=>`<div class="rankRow"><div class="rankNo">No. ${i+1}</div><div class="rankWord">${escapeHTML(x.word)}</div><div class="rankCount">${label==='Practice count'?x.practised+' '+(x.practised===1?'time':'times'):x.mistakes+' '+(x.mistakes===1?'mistake':'mistakes')}</div></div>`).join('')}</div>`;}
 function renderProfile(){
+  flushStudyTime();
   const practised=getRanking('practised',10),missed=getRanking('mistakes',10),allWords=new Set(Object.keys(globalStats.wordStats||{})),learned=new Set(globalStats.learnedWords||[]),spelled=new Set(globalStats.spelledWords||[]);
   const studyDays=new Set(Object.keys(globalStats.dailyWords||{}).filter(k=>Array.isArray(globalStats.dailyWords[k])&&globalStats.dailyWords[k].length));
   let currentStreak=0;const cursor=new Date();cursor.setHours(12,0,0,0);while(true){const k=dateKey(cursor);if(!studyDays.has(k))break;currentStreak++;cursor.setDate(cursor.getDate()-1);}
   const bestDay=Object.entries(globalStats.daily||{}).sort((a,b)=>Number(b[1])-Number(a[1]))[0];
   const username=accountUser?.username||'';
   const hasUsername=!!username;
-  return `<div class="profileSummary">Your learning record is built from the study activity already saved to this account or browser.</div><div class="profileNameSection"><label class="profileNameLabel" for="profileUsername">Username</label><div class="profileNameRow"><input id="profileUsername" class="profileNameInput" type="text" maxlength="24" value="${escapeHTML(username)}" placeholder="Choose a username" ${hasUsername?'disabled':''}><button id="profileNameButton" class="profileNameButton" type="button" onclick="${hasUsername?'editUsername()':'saveUsername()'}">${hasUsername?'Edit':'Save Username'}</button></div><div id="profileNameStatus" class="profileNameStatus"></div></div><div class="profileGrid"><div class="profileStat"><div class="value">${allWords.size}</div><div class="name">Words Encountered</div></div><div class="profileStat"><div class="value">${learned.size}</div><div class="name">Words Learned</div></div><div class="profileStat"><div class="value">${spelled.size}</div><div class="name">Words Spelled</div></div><div class="profileStat"><div class="value">${globalStats.mistakes||0}</div><div class="name">Total Mistakes</div></div><div class="profileStat"><div class="value">${studyDays.size}</div><div class="name">Study Days</div></div><div class="profileStat"><div class="value">${currentStreak}</div><div class="name">Current Streak</div></div></div><div class="rankingSection"><div class="rankingTitle">Most Practised · Top 10</div>${renderRanking(practised,'Practice count')}</div><div class="rankingSection"><div class="rankingTitle">Most Missed · Top 10</div>${renderRanking(missed,'Mistake count')}</div>${bestDay?`<div class="profileNote">Best study day · ${escapeHTML(formatDate(bestDay[0]))} · ${Number(bestDay[1])} words studied.</div>`:''}`;
+  const questions=Number(globalStats.questionCount||0);
+  const hours=(Number(globalStats.studySeconds||0)/3600).toFixed(1);
+  const days=Object.entries(globalStats.dailyWords||{}).filter(([,v])=>Array.isArray(v)&&v.length).sort((a,b)=>a[0].localeCompare(b[0]));
+  const recent=days.slice(-14);
+  const max=Math.max(1,...recent.map(([,v])=>Array.isArray(v)?v.length:0));
+  const activity=recent.map(([k,v])=>`<div class="activityBar" title="${escapeHTML(formatDate(k))} · ${v.length} words" style="height:${Math.max(5,Math.round(v.length/max*108))}px"><span>${escapeHTML(k.slice(5))}</span></div>`).join('');
+  return `<div class="profileSummary">${LANG==='zh'?'你的完整学习档案：统计、活动、年鉴与今日排行。':'Your complete learning record: statistics, activity, the almanac, and today’s ranking.'}</div>
+  <div class="profileNameSection"><label class="profileNameLabel" for="profileUsername">${LANG==='zh'?'用户名':'Username'}</label><div class="profileNameRow"><input id="profileUsername" class="profileNameInput" type="text" maxlength="24" value="${escapeHTML(username)}" placeholder="${LANG==='zh'?'请输入用户名':'Choose a username'}" ${hasUsername?'disabled':''}><button id="profileNameButton" class="profileNameButton" type="button" onclick="${hasUsername?'editUsername()':'saveUsername()'}">${hasUsername?(LANG==='zh'?'编辑':'Edit'):(LANG==='zh'?'保存用户名':'Save Username')}</button></div><div id="profileNameStatus" class="profileNameStatus"></div></div>
+  <div class="profileGrid profileGrid8"><div class="profileStat"><div class="value">${allWords.size}</div><div class="name">${t('wordsEncountered')}</div></div><div class="profileStat"><div class="value">${learned.size}</div><div class="name">${t('learned')}</div></div><div class="profileStat"><div class="value">${spelled.size}</div><div class="name">${t('spelled')}</div></div><div class="profileStat"><div class="value">${globalStats.mistakes||0}</div><div class="name">${t('mistakes')}</div></div><div class="profileStat"><div class="value">${studyDays.size}</div><div class="name">${LANG==='zh'?'学习日数':'Study Days'}</div></div><div class="profileStat"><div class="value">${currentStreak}</div><div class="name">${LANG==='zh'?'当前连续学习':'Current Streak'}</div></div><div class="profileStat"><div class="value">${questions}</div><div class="name">${LANG==='zh'?'已答题数':'Questions Answered'}</div></div><div class="profileStat"><div class="value">${hours}h</div><div class="name">${LANG==='zh'?'学习时长':'Time Studied'}</div></div></div>
+  <div class="rankingSection"><div class="rankingTitle">${LANG==='zh'?'近十四日学习活动':'Activity · Last 14 Days'}</div><div class="activityChart">${activity||`<div class="progressEmpty">${LANG==='zh'?'尚无学习活动。':'No study activity recorded yet.'}</div>`}</div></div>
+  <div class="rankingSection"><div class="rankingTitle">${LANG==='zh'?'最常学习 · 前十':'Most Practised · Top 10'}</div>${renderRanking(practised,'Practice count')}</div>
+  <div class="rankingSection"><div class="rankingTitle">${LANG==='zh'?'最易错误 · 前十':'Most Missed · Top 10'}</div>${renderRanking(missed,'Mistake count')}</div>
+  ${bestDay?`<div class="profileNote">${LANG==='zh'?'学习最佳日':'Best study day'} · ${escapeHTML(formatDate(bestDay[0]))} · ${Number(bestDay[1])} ${LANG==='zh'?'词':'words studied'}.</div>`:''}
+  <div class="rankingSection"><div class="rankingTitle">${LANG==='zh'?'年鉴':'The Almanac'}</div>${renderAlmanac()}</div>
+  <div class="rankingSection"><div class="rankingTitle">${LANG==='zh'?'今日排行':'Today’s Ranking'}</div><div id="profileDailyRanking" class="profileLoading">${LANG==='zh'?'正在载入……':'Loading ranking…'}</div></div>`;
 }
 function editUsername(){
   const input=document.getElementById('profileUsername'),button=document.getElementById('profileNameButton'),status=document.getElementById('profileNameStatus');
@@ -2402,7 +2505,7 @@ async function sendFeedback(){
 
 /* ---------- layers ---------- */
 const layerParents={};
-function openLayer(id,parentId=null){closeAllLayers();const el=document.getElementById(id);if(!el)return;if(parentId)layerParents[id]=parentId;el.classList.remove('hidden');el.setAttribute('aria-hidden','false');if(id==='recordPopover')document.getElementById('ledgerStats').innerHTML=renderLedger();if(id==='almanacPopover')document.getElementById('almanacContent').innerHTML=renderAlmanac();if(id==='profilePopover'){document.getElementById('profileContent').innerHTML=renderProfile();}if(id==='feedbackPopover'){document.getElementById('feedbackStatus').textContent='';}document.body.style.overflow='hidden';}
+function openLayer(id,parentId=null){closeAllLayers();const el=document.getElementById(id);if(!el)return;if(parentId)layerParents[id]=parentId;el.classList.remove('hidden');el.setAttribute('aria-hidden','false');if(id==='recordPopover')document.getElementById('ledgerStats').innerHTML=renderLedger();if(id==='almanacPopover')document.getElementById('almanacContent').innerHTML=renderAlmanac();if(id==='profilePopover'){document.getElementById('profileContent').innerHTML=renderProfile();loadDailyRankingInto('profileDailyRanking');}if(id==='feedbackPopover'){document.getElementById('feedbackStatus').textContent='';}document.body.style.overflow='hidden';}
 function closeLayer(event,id){if(event&&event.target!==event.currentTarget)return;if(id==='authModal')return;const el=document.getElementById(id);if(el){el.classList.add('hidden');el.setAttribute('aria-hidden','true');}document.body.style.overflow='';if(id==='cabinetActionModal'&&dictCheatingNoticeOpen){dictCheatingNoticeOpen=false;setTimeout(focusDictInput,50);}const parent=layerParents[id];if(parent&&document.getElementById(parent)){delete layerParents[id];openLayer(parent);}}
 function closeAllLayers(){document.querySelectorAll('.modalLayer,.drawerLayer').forEach(el=>{el.classList.add('hidden');el.setAttribute('aria-hidden','true');});document.body.style.overflow='';}
 function openSettings(){openLayer('settingsDrawer');}
@@ -2410,7 +2513,8 @@ function openProfileFromDrawer(){openLayer('profilePopover','settingsDrawer');}
 function openLedgerFromDrawer(){openLayer('recordPopover','settingsDrawer');}
 function openAlmanacFromDrawer(){openLayer('almanacPopover','settingsDrawer');}
 function openRankingFromDrawer(){openLayer('rankingPopover','settingsDrawer');loadDailyRanking();}
-async function loadDailyRanking(){const el=document.getElementById('rankingContent');if(!el)return;el.innerHTML='<div class="profileLoading">Loading ranking…</div>';try{const r=await fetch('/api/ranking/daily',{credentials:'include',cache:'no-store'});const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data.error||'Ranking unavailable.');if(!Array.isArray(data.rankings)||!data.rankings.length){el.innerHTML='<div class="profileNote">No registered users found.</div>';return;}const rankings=data.rankings.slice(0,10);const displayName=x=>{const direct=x.username||x.displayName||x.name||x.user?.username||x.profile?.username;const isMe=(x.userId&&accountUser?.id&&String(x.userId)===String(accountUser.id))||(x.id&&accountUser?.id&&String(x.id)===String(accountUser.id))||(x.email&&accountUser?.email&&String(x.email).toLowerCase()===String(accountUser.email).toLowerCase());return direct||((isMe&&accountUser?.username)||'Learner');};el.innerHTML=`<div class="ranking">${rankings.map((x,i)=>`<div class="rankRow"><div class="rankNo">No. ${i+1}</div><div class="rankWord">${escapeHTML(displayName(x))}</div><div class="rankCount">${Number(x.score||0)} mastered</div></div>`).join('')}</div>`;}catch(e){el.innerHTML=`<div class="profileNote">${escapeHTML(e.message||'Ranking is unavailable.')}</div>`;}}
+async function loadDailyRankingInto(elId){const el=document.getElementById(elId);if(!el)return;el.innerHTML='<div class="profileLoading">Loading ranking…</div>';try{const r=await fetch('/api/ranking/daily',{credentials:'include',cache:'no-store'});const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data.error||'Ranking unavailable.');if(!Array.isArray(data.rankings)||!data.rankings.length){el.innerHTML='<div class="profileNote">No registered users found.</div>';return;}const rankings=data.rankings.slice(0,10);const displayName=x=>{const direct=x.username||x.displayName||x.name||x.user?.username||x.profile?.username;const isMe=(x.userId&&accountUser?.id&&String(x.userId)===String(accountUser.id))||(x.id&&accountUser?.id&&String(x.id)===String(accountUser.id))||(x.email&&accountUser?.email&&String(x.email).toLowerCase()===String(accountUser.email).toLowerCase());return direct||((isMe&&accountUser?.username)||'Learner');};el.innerHTML=`<div class="ranking">${rankings.map((x,i)=>`<div class="rankRow"><div class="rankNo">No. ${i+1}</div><div class="rankWord">${escapeHTML(displayName(x))}</div><div class="rankCount">${Number(x.score||0)} mastered</div></div>`).join('')}</div>`;}catch(e){el.innerHTML=`<div class="profileNote">${escapeHTML(e.message||'Ranking is unavailable.')}</div>`;}}
+function loadDailyRanking(){return loadDailyRankingInto('rankingContent');}
 
 /* ---------- archive ---------- */
 let pendingArchiveAction=null;
@@ -2422,7 +2526,7 @@ function restoreArchive(event){const file=event.target.files?.[0];if(!file)retur
 /* ---------- toast / stats / dispatcher ---------- */
 function showToast(message){const el=document.getElementById('toast');el.textContent=message;el.classList.remove('hidden');clearTimeout(showToast.timer);showToast.timer=setTimeout(()=>el.classList.add('hidden'),2200);}
 function renderStats(){const total=state.words.length;let v2=0,l2=t('mastered'),v3='0%',l3=t('accuracy');if(state.phase==='recognition'){v2=state.masteredIds.length;v3=state.stats.recAttempts?Math.round(state.stats.recCorrect/state.stats.recAttempts*100)+'%':'0%';}else if(state.phase==='dictation'){l2=t('completed');v2=total-uniq(state.dictQueue).length;v3=state.stats.dictAttempts?Math.round(state.stats.dictCorrect/state.stats.dictAttempts*100)+'%':'0%';}else{v2=total;v3='100%';}return `<div class="stat"><div class="num">${total}</div><div class="label">${t('totalWords')}</div></div><div class="stat"><div class="num">${v2}</div><div class="label">${l2}</div></div><div class="stat"><div class="num">${v3}</div><div class="label">${l3}</div></div>`;}
-function render(){if(!state){renderReviewBanner();return;}const statsRow=document.getElementById('statsRow');statsRow.innerHTML=renderStats();statsRow.classList.toggle('hidden',state.screen==='practiceHub');const stage=document.getElementById('stage');switch(state.screen){case 'practiceHub':stage.innerHTML=renderPracticeHub();break;case 'question':stage.innerHTML=renderQuestionScreen();break;case 'practiceUnavailable':stage.innerHTML=renderPracticeUnavailable();break;case 'detail':stage.innerHTML=renderDetailScreen();break;case 'roundTransition':stage.innerHTML=renderRoundTransition();break;case 'phaseTransition':stage.innerHTML=renderPhaseTransition();break;case 'dictQuestion':stage.innerHTML=renderDictQuestionScreen();focusDictInput();break;case 'dictFeedback':stage.innerHTML=renderDictFeedbackScreen();break;case 'complete':stage.innerHTML=renderComplete();break;default:stage.innerHTML='';}}
+function render(){if(!state){renderReviewBanner();updateTopNotices();return;}updateTopNotices();const statsRow=document.getElementById('statsRow');statsRow.innerHTML=renderStats();statsRow.classList.toggle('hidden',state.screen==='practiceHub');const stage=document.getElementById('stage');switch(state.screen){case 'practiceHub':stage.innerHTML=renderPracticeHub();break;case 'question':stage.innerHTML=renderQuestionScreen();break;case 'practiceUnavailable':stage.innerHTML=renderPracticeUnavailable();break;case 'detail':stage.innerHTML=renderDetailScreen();break;case 'roundTransition':stage.innerHTML=renderRoundTransition();break;case 'phaseTransition':stage.innerHTML=renderPhaseTransition();break;case 'dictQuestion':stage.innerHTML=renderDictQuestionScreen();focusDictInput();break;case 'dictFeedback':stage.innerHTML=renderDictFeedbackScreen();break;case 'complete':stage.innerHTML=renderComplete();break;default:stage.innerHTML='';}}
 
 /* ---------- account / authentication ---------- */
 const ACCOUNT_KEY='theLexicon_accountMode_v2';
@@ -2822,6 +2926,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden)flushStudyT
 window.addEventListener('pagehide',flushStudyTime);
 renderAccountBar();
 closeAllLayers();
+applyTheme();
 applyI18n();
 loadSiteStatus();
 if(resetToken){openResetFromToken();}
